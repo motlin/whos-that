@@ -1,0 +1,74 @@
+# Applies the D1 migrations and deploys the Worker -- the game's assets and the leaderboard API -- on push to main,
+# once the checks pass.
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: just check
+      - run: just test
+      - run: just install
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: just test-browser
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist
+
+  deploy:
+    needs: build
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://whos-that.motlin.com
+    steps:
+      # wrangler.toml, src/worker/ and migrations/ come from the repo; dist/ is what the build job just made.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Nothing is cached in a job that holds the Cloudflare credentials.
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          cache: false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: just install
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: dist
+      # Migrations go first, so the new Worker never runs against an older schema. Applied ones are skipped.
+      - name: Apply D1 migrations
+        run: node_modules/.bin/wrangler d1 migrations apply whos-that --remote
+        env:
+          CI: "true"
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # The custom domain is a flag rather than a route in wrangler.toml, as in elemental-arena's deploy.
+      - name: Deploy the Worker
+        run: node_modules/.bin/wrangler deploy --domain whos-that.motlin.com
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

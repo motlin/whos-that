@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who's That?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Patrick+Hand&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/styles/game.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <filter id="wob" filterUnits="userSpaceOnUse" x="-40" y="-80" width="280" height="360">
+   <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7" result="n"/>
+   <feDisplacementMap in="SourceGraphic" in2="n" scale="4.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+ </defs>
+</svg>
+<button class="btn corner" id="home" title="Menu">🏠</button>
+<button class="btn corner" id="snd" title="Sound">🔊</button>
+<div id="screen"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

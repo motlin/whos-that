@@ -1,0 +1,39 @@
+{
+	"name": "whos-that",
+	"version": "0.0.0",
+	"private": true,
+	"description": "A face-memory game",
+	"type": "module",
+	"scripts":
+	{
+		"preinstall": "npx only-allow pnpm",
+		"dev": "vp dev",
+		"preview": "vp preview",
+		"build": "vp build",
+		"oxlint": "vp lint . --fix",
+		"oxlint:ci": "vp lint . --format github",
+		"fmt": "oxfmt-next-line",
+		"fmt:ci": "oxfmt-next-line --check",
+		"fallow": "fallow fix --yes --no-create-config",
+		"fallow:ci": "fallow dead-code",
+		"typecheck": "tsc --noEmit",
+		"test": "node node_modules/vitest/dist/cli.js",
+		"test:browser": "vp build && playwright test",
+		"deploy": "wrangler deploy --domain whos-that.motlin.com",
+		"prepare": "VITE_GIT_HOOKS=0 vp config"
+	},
+	"devDependencies":
+	{
+		"@playwright/test": "1.64.1",
+		"@types/node": "^26.6.6",
+		"fallow": "^3.33.1",
+		"markdownlint-cli2": "^0.24.0",
+		"miniflare": "5.20261104.0-beta",
+		"typescript": "^7.0.2",
+		"vite": "catalog:",
+		"vite-plus": "catalog:",
+		"vitest": "catalog:",
+		"wrangler": "^4.156.0"
+	},
+	"packageManager": "pnpm@12.12.1"
+}
