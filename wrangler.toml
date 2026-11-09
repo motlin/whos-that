@@ -19,5 +19,5 @@ run_worker_first = ["/api/*"]
 binding = "DB"
 database_name = "whos-that"
 # Placeholder until the first deploy: replace it with the id `wrangler d1 create whos-that` prints.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "e854cbfd-5b8f-4941-abe7-a460ace2057f"
 migrations_dir = "migrations"
