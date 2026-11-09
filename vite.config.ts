@@ -218,7 +218,7 @@ export default defineConfig(
 						"vitest/no-identical-title": "error",
 					},
 				},
-				// The game in src/game/ is a faithful port of legacy/original.html, and tests/unit/parity.test.ts compares the two.
+				// The game in src/game/ started as a port of a single-file artifact and keeps its loose typing.
 				{
 					files: ["src/game/**/*.ts"],
 					rules:

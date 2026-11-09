@@ -8,15 +8,11 @@ import
 	sortTop,
 	validateSubmission,
 } from "../../src/shared/scores.ts";
-import {legacySource} from "../support/legacy.ts";
 
 describe("levelPoints", () =>
 {
-	it("is the original award() formula", () =>
+	it("gives 100 points plus 10 per level cleared before, plus up to 100 for time left", () =>
 	{
-		expect(legacySource()).toContain(
-			"function award(frac){const pts=100+10*(G.level-1)+Math.round(100*frac);G.score+=pts;",
-		);
 		expect([levelPoints(1, 0), levelPoints(1, 1), levelPoints(3, 0.5), levelPoints(10, 0.004)]).toStrictEqual([
 			100, 200, 170, 190,
 		]);

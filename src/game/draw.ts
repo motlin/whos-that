@@ -177,9 +177,10 @@ function hairFront(f: Face, g: Geo, hc: string): string
 		case 9:
 		{
 			let p = `<path ${st} d="M${L - 2} ${ey - 10} C${L - 6} ${t - 28} ${R + 6} ${t - 28} ${R + 2} ${ey - 10} Q${R - 6} ${fb} 100 ${fb - 6} Q${L + 6} ${fb} ${L - 2} ${ey - 10}Z"/>`;
+			// The curls stop above the ears, so ears and earrings stay in sight.
 			for (let i = 0; i < 11; i++)
 			{
-				const [x, y] = P(Math.PI * (0.97 + (i * 1.06) / 10), 2);
+				const [x, y] = P(Math.PI * (1.15 + (i * 0.7) / 10), 2);
 				p += `<circle ${st} cx="${x}" cy="${y}" r="11"/>`;
 			}
 			return p;
@@ -246,7 +247,9 @@ function eye(st: number, x: number, y: number, ic: string, s: number, sk: string
 		case 2:
 			return base(7, 4.5, 2);
 		case 3:
-			return base(11, 6.5, 3) + `<path d="M${x - 12} ${y + 1} A12 12 0 0 1 ${x + 12} ${y + 1}Z" fill="${sk}"/>`;
+			return (
+				base(11, 6.5, 3) + `<path d="M${x - 11.8} ${y - 2} A12 12 0 0 1 ${x + 11.8} ${y - 2}Z" fill="${sk}"/>`
+			);
 		case 4:
 			return `<path d="M${x - 15} ${y} Q${x} ${y - 12} ${x + 15} ${y} Q${x} ${y + 12} ${x - 15} ${y}Z" fill="#fff"/><circle cx="${x}" cy="${y}" r="5.5" fill="${ic}" stroke-width="1.6"/><circle cx="${x}" cy="${y}" r="2.6" fill="#111" stroke="none"/><circle cx="${x - 2}" cy="${y - 2}" r="1.4" fill="#fff" stroke="none"/>`;
 		case 5:
@@ -342,11 +345,12 @@ function mouth(f: Face, g: Geo): string
 	}
 	return "";
 }
-function beardBack(f: Face, g: Geo, hc: string): string
+function beardBack(f: Face, g: Geo, hc: string, sk: string): string
 {
 	const {L, R, b, ny, my, w} = g;
+	// The full beard starts below the cheeks and leaves an opening, so cheeks and mouth show on any hair color.
 	if (f.facialHair === 3)
-		return `<path fill="${hc}" d="M${L + 3} ${N1(ny - 6)} Q${L + 2} ${b + 2} 100 ${b + 10} Q${R - 2} ${b + 2} ${R - 3} ${N1(ny - 6)} Q${R - 12} ${N1(ny + 2)} 122 ${N1(my - 6)} Q100 ${N1(my - 14)} 78 ${N1(my - 6)} Q${L + 12} ${N1(ny + 2)} ${L + 3} ${N1(ny - 6)}Z"/>`;
+		return `<path fill="${hc}" d="M${L + 3} ${N1(ny + 18)} Q${L + 2} ${b + 2} 100 ${b + 10} Q${R - 2} ${b + 2} ${R - 3} ${N1(ny + 18)} Q${R - 12} ${N1(ny + 22)} 122 ${N1(my - 6)} Q100 ${N1(my - 14)} 78 ${N1(my - 6)} Q${L + 12} ${N1(ny + 22)} ${L + 3} ${N1(ny + 18)}Z"/><ellipse fill="${sk}" cx="100" cy="${N1(my + 8)}" rx="21" ry="14"/>`;
 	if (f.facialHair === 4)
 	{
 		const y = Number(N1(my));
@@ -375,7 +379,7 @@ function mustache(f: Face, g: Geo, hc: string): string
 	}
 	return "";
 }
-function cheeks(f: Face, g: Geo): string
+function cheeks(f: Face, g: Geo, sk: string): string
 {
 	const {w, ny} = g;
 	const cy = Number(N1(ny + 8)),
@@ -399,7 +403,7 @@ function cheeks(f: Face, g: Geo): string
 				] as const)
 					s += `<circle cx="${x + a}" cy="${cy + c}" r="1.7"/>`;
 			}
-			return `<g fill="#9c5228" stroke="none">${s}</g>`;
+			return `<g fill="${shade(sk, -0.5)}" stroke="none">${s}</g>`;
 		}
 		case 3:
 			return `<circle cx="${rx - 2}" cy="${cy + 4}" r="3" fill="#3b2a20" stroke="none"/>`;
@@ -447,28 +451,25 @@ function glasses(f: Face, g: Geo): string
 	{
 		case 1:
 			return (
-				`<g fill="rgba(255,255,255,.2)"><circle cx="${lx}" cy="${y}" r="15"/><circle cx="${rx}" cy="${y}" r="15"/></g>` +
+				`<g fill="none"><circle cx="${lx}" cy="${y}" r="15"/><circle cx="${rx}" cy="${y}" r="15"/></g>` +
 				arms(15)
 			);
 		case 2:
 			return (
-				`<g fill="rgba(255,255,255,.2)"><rect x="${lx - 16}" y="${y - 12}" width="32" height="24" rx="4"/><rect x="${rx - 16}" y="${y - 12}" width="32" height="24" rx="4"/></g>` +
+				`<g fill="none"><rect x="${lx - 16}" y="${y - 12}" width="32" height="24" rx="4"/><rect x="${rx - 16}" y="${y - 12}" width="32" height="24" rx="4"/></g>` +
 				arms(16)
 			);
 		case 3:
 		{
 			const lens = (x: number): string =>
 				`M${x - 18} ${y - 9} L${x + 16} ${y - 9} Q${x + 16} ${y + 14} ${x} ${y + 13} Q${x - 18} ${y + 12} ${x - 18} ${y - 9}Z`;
-			return (
-				`<path fill="#1d1d1d" d="${lens(lx)} ${lens(rx)}"/>` +
-				arms(16) +
-				`<path stroke="#fff" stroke-width="2.5" fill="none" d="M${lx - 11} ${y - 4} l7 0 M${rx - 11} ${y - 4} l7 0"/>`
-			);
+			// Thick frames with clear lenses: no tint ever hides the eyes or their color.
+			return `<path fill="none" stroke="#1d1d1d" stroke-width="5" d="${lens(lx)} ${lens(rx)}"/>` + arms(16);
 		}
 		case 4:
-			return `<circle cx="${rx}" cy="${y}" r="15" fill="rgba(255,255,255,.2)" stroke="#c9a227" stroke-width="4"/><path fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="3 3" d="M${rx + 11} ${y + 11} Q${rx + 22} ${y + 40} ${rx + 8} ${y + 62}"/>`;
+			return `<circle cx="${rx}" cy="${y}" r="15" fill="none" stroke="#c9a227" stroke-width="4"/><path fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="3 3" d="M${rx + 11} ${y + 11} Q${rx + 22} ${y + 40} ${rx + 8} ${y + 62}"/>`;
 		case 5:
-			return `<g fill="rgba(255,105,180,.22)" stroke="#ff4fa0" stroke-width="4"><path d="${star(lx, y + 1, 19, 9.5)}"/><path d="${star(rx, y + 1, 19, 9.5)}"/></g><path fill="none" stroke="#ff4fa0" stroke-width="4" d="M${lx + 10} ${y - 2} Q100 ${y - 8} ${rx - 10} ${y - 2}"/>`;
+			return `<g fill="none" stroke="#ff4fa0" stroke-width="4"><path d="${star(lx, y + 1, 22, 13)}"/><path d="${star(rx, y + 1, 22, 13)}"/></g><path fill="none" stroke="#ff4fa0" stroke-width="4" d="M${lx + 13} ${y - 2} Q100 ${y - 8} ${rx - 13} ${y - 2}"/>`;
 	}
 	return "";
 }
@@ -617,8 +618,8 @@ export function faceSVG(f: Face, o: FaceOptions = {}): string
 		neckwear(f) +
 		ears(f, g, sk) +
 		`<g fill="${sk}">${headShape(f, g)}</g>` +
-		cheeks(f, g) +
-		beardBack(f, g, hc) +
+		cheeks(f, g, sk) +
+		beardBack(f, g, hc, sk) +
 		hairFront(f, g, hc) +
 		eyes(f, g) +
 		brows(f, g, hc) +

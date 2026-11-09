@@ -134,20 +134,14 @@ export const FEATURES: Record<FeatureKey, Feature> =
 };
 export const KEYS = Object.keys(FEATURES) as FeatureKey[];
 const HAT_COLORED = new Set([1, 2, 3, 5, 6, 7]);
-// The curls of hair style 9 are drawn over the ears: only the pointy (3) and sideways (4) ears poke out, and earrings never do.
-const CURLS = 9;
-const EARS_PAST_CURLS = new Set([3, 4]);
 
 function visible(f: Face, k: FeatureKey): boolean
 {
-	if ((k === "eyes" || k === "eyeColor") && f.glasses === 3) return false;
 	if (k === "hatColor" && !HAT_COLORED.has(f.hat)) return false;
-	if (k === "earrings" && f.hairStyle === CURLS) return false;
-	if (k === "ears" && f.hairStyle === CURLS && !EARS_PAST_CURLS.has(f.ears)) return false;
 	return true;
 }
 
-function valid(f: Face): boolean
+export function valid(f: Face): boolean
 {
 	return !(f.hat && f.hairStyle === 7);
 }

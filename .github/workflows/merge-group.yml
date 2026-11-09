@@ -74,6 +74,7 @@ jobs:
           path: ~/.local/share/pnpm/store
           key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
       - run: just test
+      - run: just test-visibility
 
   markdownlint:
     runs-on: ubuntu-latest

@@ -30,14 +30,17 @@ format: install
     pre-commit run just-fmt --all-files
     oxfmt-next-line {{ if ci != "" { "--check" } else { "" } }}
 
-# Run checks (lint + typecheck; formatting is `just format`) and confirm the legacy artifact is untouched
+# Run checks (lint + typecheck; formatting is `just format`)
 check *args: install
     vp run --cache check {{ if ci != "" { "" } else { "--fix" } }} {{ args }}
-    node scripts/verify-legacy.ts
 
 # Run tests
 test *args: install
     vp run --cache test:run {{ args }}
+
+# Render every single-feature change next to every other feature and fail when one is hidden
+test-visibility *args: install
+    pnpm run test:visibility {{ args }}
 
 # Type-check the project
 typecheck: install
@@ -72,7 +75,7 @@ pre-commit: install
 # Run all pre-commit checks
 [arg("quick", long, value="true", help="Skip tests")]
 verify quick="": check build fallow pre-commit
-    {{ if quick != "true" { "just test && just test-browser" } else { "true" } }}
+    {{ if quick != "true" { "just test && just test-visibility && just test-browser" } else { "true" } }}
     @echo "All pre-commit checks passed!"
 
 # Deprecated alias for `verify`

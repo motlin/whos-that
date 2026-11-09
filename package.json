@@ -19,6 +19,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "node node_modules/vitest/dist/cli.js",
 		"test:ui": "node node_modules/vitest/dist/cli.js --ui",
+		"test:visibility": "node node_modules/vitest/dist/cli.js run --config vitest.visibility.config.ts",
 		"test:browser": "vp build && playwright test",
 		"deploy": "wrangler deploy --domain whos-that.motlin.com",
 		"prepare": "VITE_GIT_HOOKS=0 vp config"
@@ -26,6 +27,7 @@
 	"devDependencies":
 	{
 		"@playwright/test": "1.64.1",
+		"@resvg/resvg-js": "^2.6.2",
 		"@types/node": "^26.6.6",
 		"fallow": "^3.33.1",
 		"markdownlint-cli2": "^0.24.0",

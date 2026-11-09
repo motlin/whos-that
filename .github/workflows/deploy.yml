@@ -27,6 +27,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - run: just check
       - run: just test
+      - run: just test-visibility
       - run: just install
       - run: pnpm exec playwright install --with-deps chromium
       - run: just test-browser
