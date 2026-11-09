@@ -88,6 +88,14 @@ export default defineConfig(
 			ignorePatterns: ["dist", "build", "storybook-static", ".llm/**", "vitest.shims.d.ts", "test-results/**"],
 			overrides: [
 				{
+					files: ["public/**/*.{ts,tsx}"],
+					globals:
+					{
+						ServiceWorkerGlobalScope: "readonly",
+						ExtendableEvent: "readonly",
+					},
+				},
+				{
 					files: ["vite.config.ts", "vitest.config.ts"],
 					globals:
 					{

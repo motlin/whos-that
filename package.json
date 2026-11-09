@@ -18,6 +18,7 @@
 		"fallow:ci": "fallow dead-code",
 		"typecheck": "tsc --noEmit",
 		"test": "node node_modules/vitest/dist/cli.js",
+		"test:ui": "node node_modules/vitest/dist/cli.js --ui",
 		"test:browser": "vp build && playwright test",
 		"deploy": "wrangler deploy --domain whos-that.motlin.com",
 		"prepare": "VITE_GIT_HOOKS=0 vp config"

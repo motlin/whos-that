@@ -43,7 +43,7 @@ The artifact's `award(frac)` gives `100 + 10*(L-1) + Math.round(100*frac)` point
 | `just build`        | Writes `dist/`                                                                  |
 | `just deploy`       | Applies the migrations to the production D1 and deploys to whos-that.motlin.com |
 
-Tool versions are pinned in `.mise/config.toml`. The tooling follows cublitz.
+Tool versions are pinned in `.mise/config.toml`. The toolchain is synced from `~/projects/typescript-template`, and differs from it on purpose in three ways, as cublitz does. Formatting uses oxfmt-next-line, configured in `.oxfmtrc.json`, with `check.fmt: false` in `vite.config.ts`. The Storybook scripts, dependencies and lint overrides are gone, because the game has no stories. The `install` recipe does not format a `CLAUDE.md`, because there is none.
 
 ## Tests
 
