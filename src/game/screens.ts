@@ -1,6 +1,6 @@
 import {levelPoints, type ModeId, type ScoreEntry} from "../shared/scores.ts";
 import {BUILD_ALL, BUILD_EASY, buildCount, buildMem, buildOpts, cfg, PLAIN, stage} from "./difficulty.ts";
-import {cropBox, FACE_ASPECT, faceSVG} from "./draw.ts";
+import {cropBox, FACE_ASPECT, faceSVG, featureBox} from "./draw.ts";
 import {diffKeys, type Face, FEATURES, type FeatureKey, HATC, KEYS, makeDecoy, randomFace, visKey} from "./faces.ts";
 import {MODES, modeOf} from "./modes.ts";
 import {SFX} from "./sound.ts";
@@ -476,98 +476,86 @@ interface Category
 {
 	id: string;
 	name: string;
-	icon: string;
+	// Mirrored features (ears, earrings) show one side, so the picture is big enough to read.
+	oneSide?: boolean;
 	keys: FeatureKey[];
 }
 const CATS: Category[] = [
 	{
 		id: "hat",
 		name: "Hat",
-		icon: "🎩",
 		keys: ["hat", "hatColor"],
 	},
 	{
 		id: "hair",
 		name: "Hair",
-		icon: "💇",
 		keys: ["hairStyle", "hairColor"],
 	},
 	{
 		id: "brows",
 		name: "Eyebrows",
-		icon: "🤨",
 		keys: ["eyebrows"],
 	},
 	{
 		id: "eyes",
 		name: "Eyes",
-		icon: "👁️",
 		keys: ["eyes", "eyeColor"],
 	},
 	{
 		id: "glasses",
 		name: "Glasses",
-		icon: "👓",
 		keys: ["glasses"],
 	},
 	{
 		id: "nose",
 		name: "Nose",
-		icon: "👃",
 		keys: ["nose"],
 	},
 	{
 		id: "mouth",
 		name: "Mouth",
-		icon: "👄",
 		keys: ["mouth"],
 	},
 	{
 		id: "ears",
 		name: "Ears",
-		icon: "👂",
 		keys: ["ears"],
+		oneSide: true,
 	},
 	{
 		id: "earrings",
 		name: "Earrings",
-		icon: "💎",
 		keys: ["earrings"],
+		oneSide: true,
 	},
 	{
 		id: "beard",
 		name: "Beard or mustache",
-		icon: "🧔",
 		keys: ["facialHair"],
 	},
 	{
 		id: "cheeks",
 		name: "Cheeks",
-		icon: "😊",
 		keys: ["cheeks"],
 	},
 	{
 		id: "neck",
 		name: "Neckwear",
-		icon: "🎀",
 		keys: ["neckwear"],
 	},
 	{
 		id: "shirt",
 		name: "Shirt",
-		icon: "👕",
 		keys: ["shirt"],
 	},
 	{
 		id: "shape",
 		name: "Face shape",
-		icon: "🥚",
 		keys: ["faceShape"],
 	},
 	{
 		id: "skin",
 		name: "Skin color",
-		icon: "🎨",
 		keys: ["skin"],
 	},
 ];
@@ -591,7 +579,17 @@ function spotRound(): void
 			later(() =>
 			{
 				show(
-					`${hud()}<h2 class="prompt">What changed?</h2><div class="memo spotwrap"><div class="facecard big" id="spotFace">${faceSVG(changed)}</div></div>${timerHTML()}<div class="cats" id="cats">${choices.map((ct, i) => `<button class="cat" data-i="${i}"><span>${ct.icon}</span><span>${ct.name}</span></button>`).join("")}</div>`,
+					`${hud()}<h2 class="prompt">What changed?</h2><div class="memo spotwrap"><div class="facecard big" id="spotFace">${faceSVG(changed)}</div></div>${timerHTML()}<div class="cats" id="cats">${choices
+						.map(
+							(ct, i) =>
+								`<button class="cat" data-i="${i}">${faceSVG(
+									changed,
+									{
+										vb: featureBox(changed, ct.keys, ct.oneSide),
+									},
+								)}<span>${ct.name}</span></button>`,
+						)
+						.join("")}</div>`,
 				);
 				let lock = false;
 				const t = timer(c.pick, $(".timer"), () =>

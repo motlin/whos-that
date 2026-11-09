@@ -32,3 +32,47 @@ test("a game starts at level 1 and shows the face to memorize", async ({page}) =
 	await expect(page.locator(".prompt")).toHaveText("Memorize this face!");
 	await expect(page.locator(".memo .facecard svg.face")).toHaveCount(1);
 });
+
+// An iPhone 17 Pro's viewport with Safari's toolbars showing.
+const PHONE =
+{
+	width: 402,
+	height: 740,
+};
+// Spot the Difference offers every category from level 23.
+const MOST_CHOICES = 15;
+
+test("on a phone, every spot-the-difference choice shows its feature and fits on screen", async ({page}) =>
+{
+	await page.setViewportSize(PHONE);
+	await page.goto("/");
+	await page.locator('.mode[data-mode="spot"]').click();
+	await page.locator("#ready").click();
+	await expect(page.locator("#cats .cat")).toHaveCount(4);
+	const fullFace = await page.locator("#spotFace svg.face").getAttribute("viewBox");
+	const crops = await page
+		.locator("#cats .cat svg.face")
+		.evaluateAll((svgs) => svgs.map((s) => s.getAttribute("viewBox")));
+	expect(crops.filter((viewBox) => viewBox === null || viewBox === fullFace)).toStrictEqual([]);
+	expect(crops.length).toBe(4);
+
+	const offScreen = await page.evaluate((most) =>
+	{
+		const cats = document.querySelector("#cats")!;
+		while (cats.children.length < most) cats.append(cats.children[0]!.cloneNode(true));
+		return {
+			scrolls: document.scrollingElement!.scrollHeight > innerHeight,
+			cut: [...cats.children].filter((c) =>
+			{
+				const r = c.getBoundingClientRect();
+				return r.bottom > innerHeight || r.right > innerWidth || r.left < 0;
+			}).length,
+		};
+	}, MOST_CHOICES);
+	expect(offScreen).toStrictEqual(
+		{
+			scrolls: false,
+			cut: 0,
+		},
+	);
+});

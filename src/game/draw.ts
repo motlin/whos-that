@@ -579,8 +579,12 @@ const CROPPED = new Set<FeatureKey>([
 ]);
 export function cropBox(f: Face, k: FeatureKey): string | null
 {
-	if (!CROPPED.has(k)) return null;
-	const rs = regions(f, k);
+	return CROPPED.has(k) ? featureBox(f, [k]) : null;
+}
+// A square viewBox around every region the features occupy, or only the first of each mirrored pair when oneSide is set.
+export function featureBox(f: Face, keys: readonly FeatureKey[], oneSide = false): string
+{
+	const rs = keys.flatMap((k) => (oneSide ? regions(f, k).slice(0, 1) : regions(f, k)));
 	let x0 = 1e9,
 		y0 = 1e9,
 		x1 = -1e9,

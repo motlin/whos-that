@@ -97,9 +97,12 @@ button{touch-action:manipulation}
 .brow .lv{font-size:16px;color:#777}
 .note{font-size:17px;color:#666;text-align:center;margin:8px 0 0}
 .empty{text-align:center;padding:16px;color:#777}
-.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;width:min(720px,100%);margin-top:12px}
-.cat{font:inherit;font-size:21px;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:16px 6px 16px 6px;padding:8px 10px;cursor:pointer;box-shadow:2px 3px 0 var(--ink);display:flex;align-items:center;gap:8px;justify-content:center}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;width:min(720px,100%);margin-top:10px}
+.cat{font:inherit;font-size:17px;line-height:1.1;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:16px 6px 16px 6px;padding:4px;cursor:pointer;box-shadow:2px 3px 0 var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-start}
+.cat svg{display:block;width:100%;height:auto}
 .cat:active{transform:translate(2px,3px);box-shadow:none}
 .cat.right{background:#c9f2d8;border-color:var(--good)}
 .spotwrap .facecard.big{width:min(70vw,38vh,330px)}
 .looking{font-family:'Gochi Hand';font-size:clamp(40px,9vw,70px)}
+/* On a phone, Spot the Difference fits the face, the timer and all fifteen choices on one screen. */
+@media (max-width:700px){#screen{padding-bottom:8px}.hud span{font-size:15px;padding:0 8px}.prompt{margin:2px 0 6px}.spotwrap .facecard.big{width:min(50vw,25vh)}.cats{grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}.cat{font-size:13px;padding:2px;border-width:2px;box-shadow:1px 2px 0 var(--ink)}}
