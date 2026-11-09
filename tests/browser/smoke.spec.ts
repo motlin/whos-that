@@ -76,3 +76,19 @@ test("on a phone, every spot-the-difference choice shows its feature and fits on
 		},
 	);
 });
+
+test("the Worker serves the preview card and the icons as static files", async ({request}) =>
+{
+	const types = await Promise.all(
+		["/og.png", "/favicon.svg", "/apple-touch-icon.png"].map(async (path) =>
+		{
+			const response = await request.get(path);
+			return [path, response.status(), response.headers()["content-type"]];
+		}),
+	);
+	expect(types).toStrictEqual([
+		["/og.png", 200, "image/png"],
+		["/favicon.svg", 200, "image/svg+xml"],
+		["/apple-touch-icon.png", 200, "image/png"],
+	]);
+});

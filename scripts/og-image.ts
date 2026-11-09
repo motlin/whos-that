@@ -1,0 +1,101 @@
+import {readFile} from "node:fs/promises";
+import {extname, join} from "node:path";
+import {chromium} from "@playwright/test";
+
+// Renders public/og.png, the 1200x630 image link previews show, from the built title screen itself: its logo, its
+// tagline and its hero face on the notebook paper, with the mode buttons, the high-score button and the corner buttons
+// hidden. The fonts come from Google Fonts, so this needs the network. Run it with `just og-image` after changing the
+// title screen.
+const OUT = "public/og.png";
+// The built page links its assets from the site root, so it loads under the real origin with each request answered from
+// dist/ rather than from file://.
+const ORIGIN = "https://whos-that.motlin.com";
+const TYPES: Record<string, string> =
+{
+	".html": "text/html",
+	".js": "text/javascript",
+	".css": "text/css",
+	".svg": "image/svg+xml",
+	".png": "image/png",
+};
+
+// Lays the title screen out sideways to fill the card: the logo and tagline on the left, the hero face on the right.
+const CARD_CSS = `
+	html, body { overflow: hidden; }
+	#home, #snd, #screen .modes, #screen .row { display: none !important; }
+	#screen { max-width: none; min-height: 0; height: 100vh; padding: 0 60px 0 110px; display: grid;
+		grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 50px; align-content: center; align-items: center; }
+	#screen .logo { grid-column: 1; grid-row: 1; align-self: end; font-size: 150px; text-shadow: 6px 6px 0 var(--sun); }
+	#screen .tag { grid-column: 1; grid-row: 2; align-self: start; font-size: 46px; margin: 28px 0 0 10px; }
+	#screen .hero { grid-column: 2; grid-row: 1 / span 2; width: 380px; padding: 12px; margin: 0; }
+`;
+
+// The hero face is random and changes every 1.5 seconds; a fixed seed picks the same face on every run.
+function seedRandom(): void
+{
+	let a = 5;
+	Math.random = (): number =>
+	{
+		a = (a + 0x6d2b79f5) >>> 0;
+		let t = a;
+		t = Math.imul(t ^ (t >>> 15), t | 1);
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+}
+
+const browser = await chromium.launch();
+try
+{
+	const page = await browser.newPage(
+		{
+			viewport:
+			{
+				width: 1200,
+				height: 630,
+			},
+		},
+	);
+	await page.addInitScript(seedRandom);
+	await page.route(`${ORIGIN}/**`, async (route) =>
+	{
+		const path = new URL(route.request().url()).pathname;
+		const file = join("dist", path === "/" ? "index.html" : path);
+		await route.fulfill(
+			{
+				body: await readFile(file),
+				contentType: TYPES[extname(file)] ?? "application/octet-stream",
+			},
+		);
+	});
+	await page.goto(
+		`${ORIGIN}/`,
+		{
+			waitUntil: "networkidle",
+		},
+	);
+	await page.locator("#heroFace svg.face").waitFor();
+	await page.addStyleTag(
+		{
+			content: CARD_CSS,
+		},
+	);
+	const loaded = await page.evaluate(async () =>
+	{
+		const faces = await Promise.all(
+			['150px "Gochi Hand"', '46px "Patrick Hand"'].map(async (font) => document.fonts.load(font, "Who's That?")),
+		);
+		return faces.every((face) => face.length > 0);
+	});
+	if (!loaded) throw new Error("A Google font did not load, so the card would show a fallback font");
+	await page.screenshot(
+		{
+			path: OUT,
+		},
+	);
+	console.log(`wrote ${OUT}`);
+}
+finally
+{
+	await browser.close();
+}

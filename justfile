@@ -50,6 +50,15 @@ typecheck: install
 build: install
     vp run --cache build
 
+# Draw public/favicon.svg and scripts/icons/apple-touch-icon.svg from the game's face code, then render the touch icon PNG
+icons: install
+    node scripts/icons.ts
+    rsvg-convert -w 180 -h 180 scripts/icons/apple-touch-icon.svg -o public/apple-touch-icon.png
+
+# Render the link preview image public/og.png from the built title screen (needs the network for Google Fonts)
+og-image: build
+    node scripts/og-image.ts
+
 # Run the Playwright browser tests against a fresh build
 test-browser *args: build
     pnpm exec playwright test {{ args }}
