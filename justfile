@@ -50,10 +50,13 @@ typecheck: install
 build: install
     vp run --cache build
 
-# Draw public/favicon.svg and scripts/icons/apple-touch-icon.svg from the game's face code, then render the touch icon PNG
+# Draw public/favicon.svg and scripts/icons/*.svg from the game's face code, then render the app icons in public/icons/
 icons: install
     node scripts/icons.ts
-    rsvg-convert -w 180 -h 180 scripts/icons/apple-touch-icon.svg -o public/apple-touch-icon.png
+    rsvg-convert -w 192 -h 192 public/favicon.svg -o public/icons/icon-192.png
+    rsvg-convert -w 512 -h 512 public/favicon.svg -o public/icons/icon-512.png
+    rsvg-convert -w 512 -h 512 scripts/icons/icon-maskable.svg -o public/icons/icon-maskable-512.png
+    rsvg-convert -w 180 -h 180 scripts/icons/apple-touch-icon.svg -o public/icons/apple-touch-icon.png
 
 # Render the link preview image public/og.png from the built title screen (needs the network for Google Fonts)
 og-image: build

@@ -41,15 +41,20 @@ it("gives link previews a title, description and an absolute image URL, and link
 		`<meta name="twitter:title" content="Who's That? A face-memory game">`,
 		`<meta name="twitter:description" content="${DESCRIPTION}">`,
 		`<meta name="twitter:image" content="https://whos-that.motlin.com/og.png">`,
+		`<meta name="theme-color" content="#fffdf6">`,
+		`<meta name="mobile-web-app-capable" content="yes">`,
+		`<meta name="apple-mobile-web-app-capable" content="yes">`,
+		`<meta name="apple-mobile-web-app-status-bar-style" content="default">`,
+		`<meta name="apple-mobile-web-app-title" content="Who's That?">`,
 		`<link rel="icon" href="/favicon.svg" type="image/svg+xml">`,
-		`<link rel="apple-touch-icon" href="/apple-touch-icon.png">`,
+		`<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">`,
 	]);
 });
 
 it("ships the preview card at 1200x630 and the icons the page links", () =>
 {
 	expect(pngSize("public/og.png")).toStrictEqual([1200, 630]);
-	expect(pngSize("public/apple-touch-icon.png")).toStrictEqual([180, 180]);
+	expect(pngSize("public/icons/apple-touch-icon.png")).toStrictEqual([180, 180]);
 	const favicon = read("public/favicon.svg").toString("utf8");
 	expect(favicon.startsWith("<svg ")).toBe(true);
 	// index.html defines the game's #wob filter, which a standalone favicon cannot see.

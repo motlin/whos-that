@@ -10,6 +10,14 @@ The artifact's `Store` used the Claude artifact runtime (`window.claude.use('db'
 
 `src/shared/scores.ts` holds what the game and the Worker agree on: the four modes, the ranking, the score bound and the submission check. `src/worker/` is the Worker. It serves `/api/scores` and leaves every other path to the static assets in `dist/`.
 
+## Installing and playing offline
+
+The game installs from the browser as a standalone app and plays offline. `index.html` links `/manifest.webmanifest` and has `theme-color` and Safari's `apple-*` tags, and `src/pwa/register.ts` registers `/sw.js`. `src/pwa/manifest.ts` holds the manifest and the fixed files the worker keeps, and `src/pwa/worker.ts` its logic.
+
+`scripts/service-worker-build.ts` builds `src/pwa/sw.ts` to `dist/sw.js` and writes `dist/manifest.webmanifest`. It adds the build's hashed script and stylesheet to the files the worker keeps, and versions the worker's cache with a hash of everything it keeps, so each deploy that changes them is a new worker. A launch loads the page from the network when it can and from the cache when it cannot, the new worker takes over at once, and it deletes the old build's cache. `/api/` always goes to the network, and offline the board falls back to the device as it does whenever the API is down. `public/_headers` stops Cloudflare caching `sw.js` and the manifest, and gives the manifest its type. The icons in `public/icons/` are rendered by `just icons`: the plain icons from `public/favicon.svg`, and the maskable and touch icons from `scripts/icons/*.svg`, with the maskable face shrunk to fit the safe zone.
+
+`tests/unit/pwa/` checks the manifest, the icons, the head tags, the headers and the worker's caching against fake caches. `tests/browser/pwa.spec.ts` checks that Chromium reads the manifest without errors and finds the page installable, that the Worker serves the manifest and the worker with their types, that the worker takes control and caches this build, and that a reload offline still starts a game. An iPhone home screen install still needs a real device, and the Google Fonts files are not cached by the worker, so offline the game falls back to its system fonts unless the browser's own cache still holds them.
+
 ## API
 
 `GET /api/scores` returns `{classic, spot, build, lineup}`, each the top ten as `{n, s, l, t}` (name, score, level, time in epoch ms), sorted by score descending and then by time ascending.

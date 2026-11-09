@@ -1,4 +1,5 @@
 import {defineConfig} from "vite-plus";
+import {serviceWorker} from "./scripts/service-worker-build.ts";
 
 process.title = "whos-that";
 
@@ -243,6 +244,7 @@ export default defineConfig(
 				typeCheck: true,
 			},
 		},
+		plugins: [serviceWorker()],
 		server:
 		{
 			// `just worker` serves the API on wrangler's default port; without it the game keeps scores on this device.
