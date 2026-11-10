@@ -54,3 +54,7 @@ html[data-style="clay"]{--ink:#4a4370;--text:#4a4370;--muted:#7d77a3;--paper:#e6
 :where(html[data-style="clay"]) .timer .fill{border-radius:999px;background:linear-gradient(#9fe3ff,#5fb8f5)}
 :where(html[data-style="clay"]) .timer.low .fill{background:linear-gradient(#ffb1c4,#f0567a)}
 :where(html[data-style="clay"]) .mt{line-height:1.1}
+
+/* Nunito is wider than the notebook's hand lettering, so on a phone the fifteen spot-the-difference labels need a
+   lighter, tighter setting to stay on one line with room to spare. */
+@media (max-width:700px){:where(html[data-style="paper"],html[data-style="clay"]) .cat{font-size:10.5px;font-weight:600;letter-spacing:-.02em}}

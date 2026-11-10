@@ -49,7 +49,7 @@ afterEach(() =>
 	vi.unstubAllGlobals();
 });
 
-it("starts in the saved art style, and in the notebook sketch when nothing valid is saved", () =>
+it("starts in the saved art style, and in cut paper when nothing valid is saved", () =>
 {
 	stored["wt_style"] = "pixel";
 	initStyle();
@@ -65,7 +65,7 @@ it("starts in the saved art style, and in the notebook sketch when nothing valid
 	).toStrictEqual(
 		{
 			saved: ["pixel", "pixel"],
-			invalid: ["sketch", "sketch"],
+			invalid: ["paper", "paper"],
 			defs: [true, true],
 		},
 	);

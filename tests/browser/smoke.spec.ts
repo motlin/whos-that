@@ -22,14 +22,14 @@ test("settings switch the art style, restyle the page and keep the choice after 
 	await page.goto("/");
 	await page.locator("#settingsBtn").click();
 	await expect(page.locator(".stylecard .sn")).toHaveText([
-		"Notebook",
 		"Storybook",
 		"Cut Paper",
 		"Pixel Arcade",
 		"Modelling Clay",
+		"Notebook",
 	]);
 	await expect(page.locator(".stylecard svg.face")).toHaveCount(5);
-	await expect(page.locator('.stylecard[aria-pressed="true"]')).toHaveAttribute("data-style", "sketch");
+	await expect(page.locator('.stylecard[aria-pressed="true"]')).toHaveAttribute("data-style", "paper");
 	await page.locator('.stylecard[data-style="pixel"]').click();
 	await expect(page.locator('.stylecard[aria-pressed="true"]')).toHaveAttribute("data-style", "pixel");
 	await expect(page.locator("html")).toHaveAttribute("data-style", "pixel");
