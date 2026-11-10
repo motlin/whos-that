@@ -1,5 +1,6 @@
 import {writeFileSync} from "node:fs";
 import {faceSVG} from "../src/game/draw.ts";
+import {sketch} from "../src/game/styles/sketch.ts";
 import type {Face} from "../src/game/faces.ts";
 
 // Draws the icons from the game's own face code: one fixed, cheerful face, chosen feature by feature so every run
@@ -40,6 +41,7 @@ const face = faceSVG(
 	{
 		vb: VIEW,
 	},
+	sketch,
 )
 	.replace(' filter="url(#wob)"', "")
 	.replace('stroke-width="3"', 'stroke-width="6"');

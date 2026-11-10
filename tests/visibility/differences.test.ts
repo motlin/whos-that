@@ -1,6 +1,8 @@
 import {Resvg} from "@resvg/resvg-js";
 import {expect, it} from "vite-plus/test";
 import {faceSVG} from "../../src/game/draw.ts";
+import {DEFAULT_STYLE, styleOf} from "../../src/game/styles/index.ts";
+import type {StyleId} from "../../src/game/styles/style.ts";
 import
 {
 	CLOTH,
@@ -17,7 +19,9 @@ import
 	valid,
 } from "../../src/game/faces.ts";
 
-// A card-sized render, without the hand-drawn wobble so the same face always gives the same pixels.
+// The style under test: `STYLE=paper just test-visibility` checks one, and `just test-visibility-all` every one.
+const STYLE = styleOf((process.env["STYLE"] ?? DEFAULT_STYLE) as StyleId);
+// A card-sized render, without any style's filters so the same face always gives the same pixels.
 const WIDTH = 200;
 // A change is visible when it alters this many pixels, or the other features leave at least this share of what it alters on an unobstructed face.
 const MIN_PIXELS = 150;
@@ -57,7 +61,7 @@ const values = (k: FeatureKey): number[] =>
 
 function render(f: Face, background = "#fff"): Uint8Array
 {
-	const svg = faceSVG(f).replace(' filter="url(#wob)"', "");
+	const svg = faceSVG(f, {}, STYLE).replaceAll(/ filter="url\(#[\w-]+\)"/g, "");
 	return new Resvg(
 		svg,
 		{

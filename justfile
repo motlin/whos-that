@@ -42,6 +42,10 @@ test *args: install
 test-visibility *args: install
     pnpm run test:visibility {{ args }}
 
+# Run the visibility checks once for every art style
+test-visibility-all: install
+    for style in sketch storybook paper pixel clay; do STYLE=$style pnpm run test:visibility || exit 1; done
+
 # Type-check the project
 typecheck: install
     vp run typecheck
