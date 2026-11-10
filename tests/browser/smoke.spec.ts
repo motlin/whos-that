@@ -61,7 +61,7 @@ test("on a phone, every spot-the-difference choice shows its feature and fits on
 		const cats = document.querySelector("#cats")!;
 		while (cats.children.length < most) cats.append(cats.children[0]!.cloneNode(true));
 		return {
-			scrolls: document.scrollingElement!.scrollHeight > innerHeight,
+			overflow: Math.max(0, document.scrollingElement!.scrollHeight - innerHeight),
 			cut: [...cats.children].filter((c) =>
 			{
 				const r = c.getBoundingClientRect();
@@ -71,7 +71,7 @@ test("on a phone, every spot-the-difference choice shows its feature and fits on
 	}, MOST_CHOICES);
 	expect(offScreen).toStrictEqual(
 		{
-			scrolls: false,
+			overflow: 0,
 			cut: 0,
 		},
 	);
