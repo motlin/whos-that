@@ -228,8 +228,8 @@ function ears(f: Face, g: Geo, sk: string): string
 				ey2 = y + dy;
 			o +=
 				f.earrings === 1
-					? `<circle cx="${ex}" cy="${ey2 + 6}" r="6.5" fill="none" stroke="#d4a017" stroke-width="3.2"/>`
-					: `<circle cx="${ex}" cy="${ey2}" r="3.8" fill="#5fd0ff" stroke-width="1.6"/>`;
+					? `<circle cx="${ex}" cy="${ey2 + 7}" r="7.5" fill="none" stroke="#d4a017" stroke-width="3.6"/>`
+					: `<path d="M${ex} ${ey2 - 1} v4" fill="none" stroke-width="2"/><path d="M${ex} ${ey2 + 2} q-10 13 0 17 q10 -4 0 -17Z" fill="#35c4f0" stroke-width="1.8"/>`;
 		}
 	}
 	return `<g fill="${sk}">${o}</g>`;
@@ -241,24 +241,22 @@ function eye(st: number, x: number, y: number, ic: string, s: number, sk: string
 	switch (st)
 	{
 		case 0:
-			return base(10, 6, 3);
+			return base(10, 6.8, 3);
 		case 1:
-			return base(14, 8.5, 4);
+			return base(14, 9.5, 4.2);
 		case 2:
-			return base(7, 4.5, 2);
+			return base(7.5, 5.8, 2.4);
 		case 3:
-			return (
-				base(11, 6.5, 3) + `<path d="M${x - 11.8} ${y - 2} A12 12 0 0 1 ${x + 11.8} ${y - 2}Z" fill="${sk}"/>`
-			);
+			return base(11, 7, 3) + `<path d="M${x - 11.8} ${y - 2} A12 12 0 0 1 ${x + 11.8} ${y - 2}Z" fill="${sk}"/>`;
 		case 4:
-			return `<path d="M${x - 15} ${y} Q${x} ${y - 12} ${x + 15} ${y} Q${x} ${y + 12} ${x - 15} ${y}Z" fill="#fff"/><circle cx="${x}" cy="${y}" r="5.5" fill="${ic}" stroke-width="1.6"/><circle cx="${x}" cy="${y}" r="2.6" fill="#111" stroke="none"/><circle cx="${x - 2}" cy="${y - 2}" r="1.4" fill="#fff" stroke="none"/>`;
+			return `<path d="M${x - 15} ${y} Q${x} ${y - 12} ${x + 15} ${y} Q${x} ${y + 12} ${x - 15} ${y}Z" fill="#fff"/><circle cx="${x}" cy="${y}" r="6.3" fill="${ic}" stroke-width="1.6"/><circle cx="${x}" cy="${y}" r="2.8" fill="#111" stroke="none"/><circle cx="${x - 2}" cy="${y - 2}" r="1.4" fill="#fff" stroke="none"/>`;
 		case 5:
 			return (
-				base(10, 6, 3) +
-				`<path fill="none" stroke-width="2.5" d="M${x + s * 5} ${y - 9} l${s * 3} -6 M${x + s * 9} ${y - 6} l${s * 6} -4 M${x} ${y - 10} l${s * 1} -7"/>`
+				base(10, 6.8, 3) +
+				`<path fill="none" stroke-width="4" d="M${x - 10} ${y - 2} A10.2 10.2 0 0 1 ${x + 10} ${y - 2}"/><path fill="none" stroke-width="3" d="M${x + s * 4} ${y - 10} l${s * 4} -6 M${x + s * 8} ${y - 7} l${s * 8} -4 M${x + s * 10} ${y - 2} l${s * 9} 0 M${x - s * 2} ${y - 11} l0 -6"/>`
 			);
 		case 6:
-			return base(11, 6.5, 3, 4);
+			return base(11, 7, 3, 4);
 	}
 	return "";
 }
@@ -271,7 +269,8 @@ function eyes(f: Face, g: Geo): string
 function brows(f: Face, g: Geo, hc: string): string
 {
 	const {ey, ex} = g;
-	const y = Number(N1(ey - (f.eyes === 1 ? 22 : 18)));
+	// Glasses push the eyebrows up, so no frame ever sits on top of them.
+	const y = Number(N1(ey - (f.eyes === 1 ? 22 : 18) - (f.glasses ? 7 : 0)));
 	const one = (s: number): string =>
 	{
 		const x = 100 + s * ex,
@@ -281,14 +280,15 @@ function brows(f: Face, g: Geo, hc: string): string
 		switch (f.eyebrows)
 		{
 			case 0:
-			case 1:
 				return `M${xi} ${y + 1} Q${xm} ${y - 6} ${xo} ${y + 2}`;
+			case 1:
+				return `M${xi} ${y - 1} L${xo} ${y - 1}`;
 			case 2:
 				return `M${xo} ${y - 4} L${xi} ${y + 4}`;
 			case 3:
 				return `M${xo} ${y + 3} L${xi} ${y - 5}`;
 			case 5:
-				return `M${xi} ${y - 2} Q${xm} ${y - 13} ${xo} ${y - 1}`;
+				return s < 0 ? `M${xi} ${y - 5} Q${xm} ${y - 17} ${xo} ${y - 4}` : `M${xi} ${y + 3} L${xo} ${y + 1}`;
 		}
 		return "";
 	};
@@ -296,7 +296,7 @@ function brows(f: Face, g: Geo, hc: string): string
 		f.eyebrows === 4
 			? `M${N1(100 - ex - 13)} ${y + 1} Q${N1(100 - ex)} ${y - 6} 100 ${y} Q${N1(100 + ex)} ${y - 6} ${N1(100 + ex + 13)} ${y + 1}`
 			: one(-1) + " " + one(1);
-	const sw = f.eyebrows === 1 ? 9 : f.eyebrows === 5 ? 3.5 : f.eyebrows === 4 ? 7 : 5.5;
+	const sw = f.eyebrows === 1 ? 10.5 : f.eyebrows === 4 ? 7 : 5.5;
 	return `<path d="${d}" fill="none" stroke-width="${sw + 3}"/><path d="${d}" fill="none" stroke="${hc}" stroke-width="${sw}"/>`;
 }
 function nose(f: Face, g: Geo, sk: string): string
@@ -307,15 +307,15 @@ function nose(f: Face, g: Geo, sk: string): string
 		case 0:
 			return `<path fill="none" d="M95 ${y - 1} Q100 ${y + 7} 105 ${y - 1}"/>`;
 		case 1:
-			return `<path fill="none" d="M101 ${y - 16} L94 ${y + 4} L104 ${y + 4}"/>`;
+			return `<path fill="${shade(sk, -0.14)}" d="M100 ${y - 17} L91 ${y + 5} L109 ${y + 5}Z"/>`;
 		case 2:
-			return `<path fill="none" d="M100 ${y - 20} Q103 ${y - 2} 97 ${y + 5} Q101 ${y + 9} 106 ${y + 4}"/>`;
+			return `<path fill="none" stroke-width="3.6" d="M99 ${y - 24} Q108 ${y - 4} 95 ${y + 4} Q101 ${y + 11} 109 ${y + 3}"/>`;
 		case 3:
 			return `<circle cx="100" cy="${y}" r="10" fill="${shade(sk, -0.15)}"/>`;
 		case 4:
-			return `<path fill="${shade(sk, -0.06)}" d="M97 ${y - 18} Q115 ${y - 2} 106 ${y + 6} Q100 ${y + 8} 95 ${y + 4}"/>`;
+			return `<path fill="${shade(sk, 0.2)}" d="M97 ${y - 21} Q119 ${y - 2} 108 ${y + 7} Q100 ${y + 11} 93 ${y + 4}"/>`;
 		case 5:
-			return `<path fill="none" d="M87 ${y + 2} Q90 ${y - 7} 95 ${y + 1} Q100 ${y + 6} 105 ${y + 1} Q110 ${y - 7} 113 ${y + 2}"/>`;
+			return `<path fill="none" d="M83 ${y + 3} Q87 ${y - 9} 94 ${y + 1} Q100 ${y + 7} 106 ${y + 1} Q113 ${y - 9} 117 ${y + 3}"/><g fill="#3b2a20" stroke="none"><ellipse cx="91" cy="${y + 2}" rx="2.6" ry="3.2"/><ellipse cx="109" cy="${y + 2}" rx="2.6" ry="3.2"/></g>`;
 		case 6:
 			return `<ellipse cx="100" cy="${y}" rx="11" ry="8" fill="#f7a1b0"/><ellipse cx="96" cy="${y}" rx="2" ry="3" fill="#5a2a30" stroke="none"/><ellipse cx="104" cy="${y}" rx="2" ry="3" fill="#5a2a30" stroke="none"/>`;
 	}
@@ -327,21 +327,21 @@ function mouth(f: Face, g: Geo): string
 	switch (f.mouth)
 	{
 		case 0:
-			return `<path fill="none" d="M86 ${y} Q100 ${y + 13} 114 ${y}"/>`;
+			return `<path fill="none" stroke-width="4" d="M83 ${y - 2} Q100 ${y + 18} 117 ${y - 2}"/>`;
 		case 1:
 			return `<path fill="#fff" d="M84 ${y - 2} L116 ${y - 2} Q114 ${y + 18} 100 ${y + 18} Q86 ${y + 18} 84 ${y - 2}Z"/><path fill="none" stroke-width="2" d="M85 ${y + 5} L115 ${y + 5} M93 ${y - 2} L93 ${y + 16} M100 ${y - 2} L100 ${y + 18} M107 ${y - 2} L107 ${y + 16}"/>`;
 		case 2:
-			return `<path fill="none" d="M87 ${y + 9} Q100 ${y - 4} 113 ${y + 9}"/>`;
+			return `<path fill="none" stroke-width="4" d="M84 ${y + 13} Q100 ${y - 9} 116 ${y + 13}"/>`;
 		case 3:
 			return `<ellipse cx="100" cy="${y + 5}" rx="8" ry="10" fill="#7a2228"/>`;
 		case 4:
-			return `<path fill="none" d="M88 ${y + 4} L112 ${y + 4}"/>`;
+			return `<path fill="none" stroke-width="3.6" d="M82 ${y + 7} l6 -8 l6 8 l6 -8 l6 8 l6 -8 l6 8"/>`;
 		case 5:
 			return `<path fill="#ff7a8a" d="M95 ${y + 5} Q95 ${y + 20} 101 ${y + 20} Q107 ${y + 20} 107 ${y + 5}Z"/><path fill="none" d="M86 ${y} Q100 ${y + 12} 114 ${y}"/>`;
 		case 6:
-			return `<path fill="none" d="M87 ${y + 5} Q104 ${y + 7} 114 ${y - 4}"/>`;
+			return `<path fill="none" stroke-width="4" d="M85 ${y + 6} Q106 ${y + 12} 117 ${y - 7} M119 ${y - 13} q6 4 2 11"/>`;
 		case 7:
-			return `<path fill="none" d="M86 ${y} Q100 ${y + 9} 114 ${y}"/><path fill="#fff" stroke-width="2" d="M95 ${y + 4} h10 v9 h-10Z M100 ${y + 4} v9"/>`;
+			return `<path fill="none" d="M86 ${y} Q100 ${y + 9} 114 ${y}"/><path fill="#fff" stroke-width="2" d="M93 ${y + 4} h14 v11 h-14Z M100 ${y + 4} v11"/>`;
 	}
 	return "";
 }
@@ -388,29 +388,36 @@ function cheeks(f: Face, g: Geo, sk: string): string
 	switch (f.cheeks)
 	{
 		case 1:
-			return `<g fill="#ff8fa3" opacity=".6" stroke="none"><ellipse cx="${lx}" cy="${cy}" rx="11" ry="7"/><ellipse cx="${rx}" cy="${cy}" rx="11" ry="7"/></g>`;
+			return `<g fill="#ff8fa3" opacity=".6" stroke="none"><ellipse cx="${lx}" cy="${cy}" rx="12" ry="8"/><ellipse cx="${rx}" cy="${cy}" rx="12" ry="8"/></g>`;
 		case 2:
 		{
 			let s = "";
 			for (const x of [lx, rx])
 			{
 				for (const [a, c] of [
-					[-5, -3],
-					[3, -4],
-					[0, 2],
-					[6, 3],
-					[-4, 5],
+					[-8, -3],
+					[-2, -5],
+					[5, -3],
+					[-5, 2],
+					[1, 1],
+					[8, 3],
+					[-1, 6],
 				] as const)
-					s += `<circle cx="${x + a}" cy="${cy + c}" r="1.7"/>`;
+					s += `<circle cx="${x + a}" cy="${cy + c}" r="2.2"/>`;
 			}
 			return `<g fill="${shade(sk, -0.5)}" stroke="none">${s}</g>`;
 		}
 		case 3:
-			return `<circle cx="${rx - 2}" cy="${cy + 4}" r="3" fill="#3b2a20" stroke="none"/>`;
+		{
+			// Two stripes of face paint on each cheek.
+			const stripes = (x: number, s: number): string =>
+				`M${x - s * 10} ${cy - 3} l${s * 19} -5 M${x - s * 10} ${cy + 6} l${s * 19} -5`;
+			return `<path fill="none" stroke="#2748b8" stroke-width="5" d="${stripes(lx, -1)} ${stripes(rx, 1)}"/>`;
+		}
 		case 4:
 			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="#f3c999" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="#e2a96f" stroke="none"/></g>`;
 		case 5:
-			return `<path d="${star(rx, cy, 8.5, 3.8)}" fill="#ffd23f" stroke-width="2"/>`;
+			return `<path d="${star(rx, cy, 12, 5.4)}" fill="#ffd23f" stroke-width="2"/>`;
 	}
 	return "";
 }
@@ -451,25 +458,30 @@ function glasses(f: Face, g: Geo): string
 	{
 		case 1:
 			return (
-				`<g fill="none"><circle cx="${lx}" cy="${y}" r="15"/><circle cx="${rx}" cy="${y}" r="15"/></g>` +
-				arms(15)
+				`<g fill="none"><circle cx="${lx}" cy="${y}" r="18"/><circle cx="${rx}" cy="${y}" r="18"/></g>` +
+				arms(18)
 			);
 		case 2:
 			return (
-				`<g fill="none"><rect x="${lx - 16}" y="${y - 12}" width="32" height="24" rx="4"/><rect x="${rx - 16}" y="${y - 12}" width="32" height="24" rx="4"/></g>` +
-				arms(16)
+				`<g fill="none"><rect x="${lx - 19}" y="${y - 17}" width="38" height="34" rx="5"/><rect x="${rx - 19}" y="${y - 17}" width="38" height="34" rx="5"/></g>` +
+				arms(19)
 			);
 		case 3:
 		{
 			const lens = (x: number): string =>
-				`M${x - 18} ${y - 9} L${x + 16} ${y - 9} Q${x + 16} ${y + 14} ${x} ${y + 13} Q${x - 18} ${y + 12} ${x - 18} ${y - 9}Z`;
+				`M${x - 20} ${y - 18} L${x + 20} ${y - 18} Q${x + 21} ${y + 21} ${x} ${y + 20} Q${x - 21} ${y + 21} ${x - 20} ${y - 18}Z`;
 			// Thick frames with clear lenses: no tint ever hides the eyes or their color.
-			return `<path fill="none" stroke="#1d1d1d" stroke-width="5" d="${lens(lx)} ${lens(rx)}"/>` + arms(16);
+			return `<path fill="none" stroke="#1d1d1d" stroke-width="5" d="${lens(lx)} ${lens(rx)}"/>` + arms(20);
 		}
 		case 4:
-			return `<circle cx="${rx}" cy="${y}" r="15" fill="none" stroke="#c9a227" stroke-width="4"/><path fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="3 3" d="M${rx + 11} ${y + 11} Q${rx + 22} ${y + 40} ${rx + 8} ${y + 62}"/>`;
+			return `<circle cx="${rx}" cy="${y}" r="18" fill="none" stroke="#c9a227" stroke-width="4"/><path fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="3 3" d="M${rx + 13} ${y + 13} Q${rx + 22} ${y + 40} ${rx + 8} ${y + 62}"/>`;
 		case 5:
-			return `<g fill="none" stroke="#ff4fa0" stroke-width="4"><path d="${star(lx, y + 1, 22, 13)}"/><path d="${star(rx, y + 1, 22, 13)}"/></g><path fill="none" stroke="#ff4fa0" stroke-width="4" d="M${lx + 13} ${y - 2} Q100 ${y - 8} ${rx - 13} ${y - 2}"/>`;
+		{
+			// Cat-eye frames: the outer corners sweep up, and the lens stays wider than the largest eye.
+			const lens = (x: number, s: number): string =>
+				`M${x - s * 18} ${y - 12} Q${x} ${y - 21} ${x + s * 27} ${y - 24} Q${x + s * 23} ${y + 14} ${x + s * 3} ${y + 19} Q${x - s * 18} ${y + 18} ${x - s * 18} ${y - 12}Z`;
+			return `<path fill="none" stroke="#ff4fa0" stroke-width="4.5" d="${lens(lx, -1)} ${lens(rx, 1)} M${lx + 18} ${y - 4} Q100 ${y - 9} ${rx - 18} ${y - 4}"/>`;
+		}
 	}
 	return "";
 }
@@ -535,7 +547,7 @@ function regions(f: Face, k: FeatureKey): Region[]
 		case "glasses":
 			return [[100, ey, w * 0.85, 22]];
 		case "eyebrows":
-			return [[100, ey - 19, w * 0.8, 13]];
+			return [[100, ey - (f.glasses ? 26 : 19), w * 0.8, 13]];
 		case "nose":
 			return [[100, ny, 20, 20]];
 		case "mouth":

@@ -1,6 +1,6 @@
 import {range, rnd, shuffle} from "./util.ts";
 
-export const SKIN = ["#fde3c8", "#f5c79e", "#e0a878", "#c58552", "#9a5f37", "#6b4226"];
+export const SKIN = ["#ffe4ca", "#eab380", "#bd7c46", "#7e4c29", "#452816"];
 export const HAIRC = ["#2b2118", "#734a26", "#ecc65a", "#c9512b", "#a9a9a9", "#4a8fe0", "#ff7eb6"];
 export const EYEC = ["#6b3e1f", "#3a7bd5", "#3fa34d", "#8a8f98", "#9b4dca"];
 export const CLOTH = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#ff8c42", "#1abc9c"];
@@ -42,7 +42,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	skin:
 	{
-		n: 6,
+		n: 5,
 		label: "skin color",
 	},
 	hairStyle:

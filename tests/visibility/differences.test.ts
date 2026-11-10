@@ -1,7 +1,20 @@
 import {Resvg} from "@resvg/resvg-js";
 import {expect, it} from "vite-plus/test";
 import {faceSVG} from "../../src/game/draw.ts";
-import {diffKeys, type Face, FEATURES, type FeatureKey, KEYS, valid} from "../../src/game/faces.ts";
+import
+{
+	CLOTH,
+	diffKeys,
+	EYEC,
+	type Face,
+	FEATURES,
+	type FeatureKey,
+	HAIRC,
+	HATC,
+	KEYS,
+	SKIN,
+	valid,
+} from "../../src/game/faces.ts";
 
 // A card-sized render, without the hand-drawn wobble so the same face always gives the same pixels.
 const WIDTH = 200;
@@ -11,7 +24,19 @@ const MIN_SHARE = 0.5;
 // How far apart two pixels' colors must be, summed over red, green and blue, to count as changed.
 const MIN_COLOR_DISTANCE = 16;
 // How much of an eye color change's total color difference must show through glasses.
-const MIN_UNTINTED_SHARE = 0.95;
+const MIN_UNTINTED_SHARE = 0.999;
+// How many pixels any two values of one feature must differ by on a bare face, so no two options read as the same one.
+const MIN_DISTINCT_PIXELS = 200;
+// How far apart any two colors of one palette must be, as a CIE76 distance.
+const MIN_PALETTE_DISTANCE = 20;
+const PALETTES: Partial<Record<FeatureKey, readonly string[]>> =
+{
+	skin: SKIN,
+	hairColor: HAIRC,
+	eyeColor: EYEC,
+	shirt: CLOTH,
+	hatColor: HATC,
+};
 
 const BASE = Object.fromEntries(KEYS.map((k) => [k, 0])) as Face;
 const values = (k: FeatureKey): number[] =>
@@ -22,7 +47,7 @@ const values = (k: FeatureKey): number[] =>
 		(_, v) => v,
 	);
 
-function render(f: Face): Uint8Array
+function render(f: Face, background = "#fff"): Uint8Array
 {
 	const svg = faceSVG(f).replace(' filter="url(#wob)"', "");
 	return new Resvg(
@@ -33,7 +58,7 @@ function render(f: Face): Uint8Array
 				mode: "width",
 				value: WIDTH,
 			},
-			background: "#fff",
+			background,
 			font:
 			{
 				loadSystemFonts: false,
@@ -202,4 +227,94 @@ it("shows eye color through every pair of glasses untinted", () =>
 		.filter(([, share]) => share < MIN_UNTINTED_SHARE)
 		.map(([glasses, share]) => `glasses ${glasses}: ${share.toFixed(2)}`);
 	expect(tinted).toStrictEqual([]);
+});
+
+const labCurve = (t: number): number => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+
+function lab(hex: string): [number, number, number]
+{
+	const n = parseInt(hex.slice(1), 16);
+	const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((v) =>
+	{
+		const c = v / 255;
+		return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+	}) as [number, number, number];
+	const x = labCurve((r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047);
+	const y = labCurve(r * 0.2126 + g * 0.7152 + b * 0.0722);
+	const z = labCurve((r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883);
+	return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+
+// Two options of one feature that look alike make a round a guess, whatever else is on the face.
+it("draws every value of a feature unlike its other values", () =>
+{
+	const alike: string[] = [];
+	for (const k of KEYS)
+	{
+		const palette = PALETTES[k];
+		if (palette)
+		{
+			for (const [a, ca] of palette.entries())
+			{
+				for (const [b, cb] of [...palette.entries()].slice(a + 1))
+				{
+					const [la, lb] = [lab(ca), lab(cb)];
+					const distance = Math.hypot(la[0] - lb[0], la[1] - lb[1], la[2] - lb[2]);
+					if (distance < MIN_PALETTE_DISTANCE)
+						alike.push(`${k} ${a}↔${b}: color distance ${distance.toFixed(0)}`);
+				}
+			}
+			continue;
+		}
+		const pixels = values(k).map((v) =>
+			render(
+				{
+					...BASE,
+					[k]: v,
+				},
+			),
+		);
+		for (const [a, pa] of pixels.entries())
+		{
+			for (const [b, pb] of [...pixels.entries()].slice(a + 1))
+			{
+				const n = changedPixels(pa, pb);
+				if (n < MIN_DISTINCT_PIXELS) alike.push(`${k} ${a}↔${b}: ${n} pixels`);
+			}
+		}
+	}
+	expect(alike).toStrictEqual([]);
+});
+
+// On a grey card the only pure white a bare face draws is its eyes, and an eye color change marks the irises.
+it("keeps every pair of glasses clear of the eyes", () =>
+{
+	const GREY = "#808080";
+	const covered: string[] = [];
+	for (const eyes of values("eyes"))
+	{
+		const face = (glasses: number, eyeColor = 0): Face => (
+		{
+			...BASE,
+			skin: 2,
+			eyes,
+			eyeColor,
+			glasses,
+		});
+		const bare = render(face(0), GREY);
+		const recolored = render(face(0, 1), GREY);
+		for (const glasses of values("glasses").slice(1))
+		{
+			const worn = render(face(glasses), GREY);
+			let n = 0;
+			for (let i = 0; i < bare.length; i += 4)
+			{
+				const white = bare[i]! + bare[i + 1]! + bare[i + 2]!;
+				const eye = white === 765 || colorDistance(bare, recolored, i) > 0;
+				if (eye && colorDistance(bare, worn, i) > MIN_COLOR_DISTANCE) n++;
+			}
+			if (n > 0) covered.push(`glasses ${glasses} on eyes ${eyes}: ${n} pixels`);
+		}
+	}
+	expect(covered).toStrictEqual([]);
 });
