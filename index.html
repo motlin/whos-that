@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who's That?</title>
+<meta name="description" content="Memorize a face, then find it: pick it out of a lineup, spot what changed, or build it back piece by piece.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Who's That?">
+<meta property="og:title" content="Who's That? A face-memory game">
+<meta property="og:description" content="Memorize a face, then find it: pick it out of a lineup, spot what changed, or build it back piece by piece.">
+<meta property="og:url" content="https://whos-that.motlin.com/">
+<meta property="og:image" content="https://whos-that.motlin.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The words Who's That? in hand-drawn letters beside a sketch of a smiling bearded man in a red cap on lined notebook paper">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Who's That? A face-memory game">
+<meta name="twitter:description" content="Memorize a face, then find it: pick it out of a lineup, spot what changed, or build it back piece by piece.">
+<meta name="twitter:image" content="https://whos-that.motlin.com/og.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#fffdf6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Who's That?">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Patrick+Hand&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/styles/game.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <filter id="wob" filterUnits="userSpaceOnUse" x="-40" y="-80" width="280" height="360">
+   <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7" result="n"/>
+   <feDisplacementMap in="SourceGraphic" in2="n" scale="4.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+ </defs>
+</svg>
+<button class="btn corner" id="home" title="Menu">🏠</button>
+<button class="btn corner" id="snd" title="Sound">🔊</button>
+<div id="screen"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
