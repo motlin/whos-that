@@ -530,7 +530,7 @@ const CATS: Category[] = [
 	},
 	{
 		id: "beard",
-		name: "Beard or mustache",
+		name: "Facial hair",
 		keys: ["facialHair"],
 	},
 	{

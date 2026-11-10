@@ -60,3 +60,10 @@ it("ships the preview card at 1200x630 and the icons the page links", () =>
 	// index.html defines the game's #wob filter, which a standalone favicon cannot see.
 	expect(favicon.includes("url(#wob)")).toBe(false);
 });
+
+it("sizes the layout by the small viewport, so Safari's toolbars never cover it", () =>
+{
+	const css = read("src/styles/game.css").toString("utf8");
+	const units = new Set([...css.matchAll(/\d(d?[sld]?vh)\b/g)].map(([, unit]) => unit));
+	expect([...units]).toStrictEqual(["svh"]);
+});

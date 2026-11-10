@@ -1,16 +1,9 @@
-import {expect, test} from "@playwright/test";
+import {expect, type Page, test} from "@playwright/test";
+import {serveFonts} from "./harness/fonts.ts";
 
 test.beforeEach(async ({page}) =>
 {
-	// The fonts come from Google; an empty stylesheet keeps the test off the network.
-	await page.route("https://fonts.googleapis.com/**", async (route) =>
-		route.fulfill(
-			{
-				contentType: "text/css",
-				body: "",
-			},
-		),
-	);
+	await serveFonts(page);
 });
 
 test("the title screen shows the four modes and a face", async ({page}) =>
@@ -33,48 +26,136 @@ test("a game starts at level 1 and shows the face to memorize", async ({page}) =
 	await expect(page.locator(".memo .facecard svg.face")).toHaveCount(1);
 });
 
-// An iPhone 17 Pro's viewport with Safari's toolbars showing.
-const PHONE =
+// Phone viewports with Safari's toolbars showing.
+const PHONES =
 {
-	width: 402,
-	height: 740,
+	"iPhone 17 Pro":
+	{
+		width: 402,
+		height: 740,
+	},
+	"iPhone SE":
+	{
+		width: 375,
+		height: 548,
+	},
 };
 // Spot the Difference offers every category from level 23.
-const MOST_CHOICES = 15;
+const CATEGORIES = [
+	"Hat",
+	"Hair",
+	"Eyebrows",
+	"Eyes",
+	"Glasses",
+	"Nose",
+	"Mouth",
+	"Ears",
+	"Earrings",
+	"Facial hair",
+	"Cheeks",
+	"Neckwear",
+	"Shirt",
+	"Face shape",
+	"Skin color",
+];
+// The smallest face that still shows its features clearly.
+const SMALLEST_FACE = 110;
 
-test("on a phone, every spot-the-difference choice shows its feature and fits on screen", async ({page}) =>
+async function spotChoices(
+	page: Page,
+	viewport:
+	{
+		width: number;
+		height: number;
+	},
+): Promise<void>
 {
-	await page.setViewportSize(PHONE);
+	// A paused clock keeps the pick timer from ending the round while the test measures it.
+	await page.clock.install();
+	await page.clock.pauseAt(Date.now() + 1000);
+	await page.setViewportSize(viewport);
 	await page.goto("/");
 	await page.locator('.mode[data-mode="spot"]').click();
+	// The level splash, then the "Look closely" splash.
+	await page.clock.runFor(1600);
 	await page.locator("#ready").click();
+	await page.clock.runFor(1100);
 	await expect(page.locator("#cats .cat")).toHaveCount(4);
+	await page.evaluate(async () => document.fonts.ready);
+}
+
+// Fills the grid to all fifteen categories with their real labels, the way level 23 shows it.
+async function allCategories(page: Page): Promise<void>
+{
+	await page.evaluate((names) =>
+	{
+		const cats = document.querySelector("#cats")!;
+		const first = cats.children[0]!;
+		cats.replaceChildren(
+			...names.map((name) =>
+			{
+				const cat = first.cloneNode(true) as Element;
+				cat.querySelector("span")!.textContent = name;
+				return cat;
+			}),
+		);
+	}, CATEGORIES);
+}
+
+test("a spot-the-difference choice shows its feature, not the whole face", async ({page}) =>
+{
+	await spotChoices(page, PHONES["iPhone 17 Pro"]);
 	const fullFace = await page.locator("#spotFace svg.face").getAttribute("viewBox");
 	const crops = await page
 		.locator("#cats .cat svg.face")
 		.evaluateAll((svgs) => svgs.map((s) => s.getAttribute("viewBox")));
 	expect(crops.filter((viewBox) => viewBox === null || viewBox === fullFace)).toStrictEqual([]);
 	expect(crops.length).toBe(4);
+});
 
-	const offScreen = await page.evaluate((most) =>
+for (const [phone, viewport] of Object.entries(PHONES))
+{
+	test(`on an ${phone}, the face and all fifteen spot-the-difference choices fit on one screen`, async ({page}) =>
 	{
-		const cats = document.querySelector("#cats")!;
-		while (cats.children.length < most) cats.append(cats.children[0]!.cloneNode(true));
-		return {
-			overflow: Math.max(0, document.scrollingElement!.scrollHeight - innerHeight),
-			cut: [...cats.children].filter((c) =>
-			{
-				const r = c.getBoundingClientRect();
-				return r.bottom > innerHeight || r.right > innerWidth || r.left < 0;
-			}).length,
-		};
-	}, MOST_CHOICES);
-	expect(offScreen).toStrictEqual(
+		await spotChoices(page, viewport);
+		await allCategories(page);
+		const layout = await page.evaluate((smallest) =>
 		{
-			overflow: 0,
-			cut: 0,
+			const cats = [...document.querySelectorAll("#cats .cat")].map((c) => c.getBoundingClientRect());
+			const scroller = document.scrollingElement!;
+			return {
+				overflow: scroller.scrollHeight - scroller.clientHeight,
+				cut: cats.filter((r) => r.bottom > innerHeight || r.right > innerWidth || r.left < 0).length,
+				choiceHeights: new Set(cats.map((r) => Math.round(r.height))).size,
+				truncated: [...document.querySelectorAll<HTMLElement>("#cats .cat span")]
+					.filter((label) => label.scrollWidth > label.clientWidth)
+					.map((label) => label.textContent),
+				faceBigEnough: document.querySelector("#spotFace")!.getBoundingClientRect().width >= smallest,
+			};
+		}, SMALLEST_FACE);
+		expect(layout).toStrictEqual(
+			{
+				overflow: 0,
+				cut: 0,
+				choiceHeights: 1,
+				truncated: [],
+				faceBigEnough: true,
+			},
+		);
+	});
+}
+
+test("on a phone in landscape, the spot-the-difference face stays big enough to read", async ({page}) =>
+{
+	await spotChoices(
+		page,
+		{
+			width: 700,
+			height: 360,
 		},
 	);
+	const width = await page.locator("#spotFace").evaluate((face) => face.getBoundingClientRect().width);
+	expect(width).toBeGreaterThanOrEqual(SMALLEST_FACE);
 });
 
 test("the Worker serves the preview card and the icons as static files", async ({request}) =>

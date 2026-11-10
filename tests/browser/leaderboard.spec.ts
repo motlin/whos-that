@@ -1,15 +1,9 @@
 import {expect, test} from "@playwright/test";
+import {serveFonts} from "./harness/fonts.ts";
 
 test.beforeEach(async ({page}) =>
 {
-	await page.route("https://fonts.googleapis.com/**", async (route) =>
-		route.fulfill(
-			{
-				contentType: "text/css",
-				body: "",
-			},
-		),
-	);
+	await serveFonts(page);
 });
 
 test("the high scores screen renders the shared board from the API", async ({page}) =>
