@@ -143,7 +143,14 @@ test("kept files come from the cache, and anything else goes to the network", as
 	const fromCache = await Promise.all(
 		["/icons/icon-192.png", "/assets/index-abc123.js"].map(async (path) =>
 			text(
-				await respond(new Request(ORIGIN + path), ORIGIN, caches as unknown as CacheStorage, "v1", FILES, offline),
+				await respond(
+					new Request(ORIGIN + path),
+					ORIGIN,
+					caches as unknown as CacheStorage,
+					"v1",
+					FILES,
+					offline,
+				),
 			),
 		),
 	);

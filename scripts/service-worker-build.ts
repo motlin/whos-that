@@ -56,8 +56,8 @@ export function serviceWorker(): Plugin
 				.map(([, file]) => file);
 			if (assets.length === 0) throw new Error("the page has no script or stylesheet in assets/");
 			const manifest = `${JSON.stringify(MANIFEST, null, "\t")}\n`;
-			const publicFiles = PRECACHE_URLS.filter((url) => url !== "/" && url !== "/manifest.webmanifest").map((url) =>
-				readFileSync(`public${url}`),
+			const publicFiles = PRECACHE_URLS.filter((url) => url !== "/" && url !== "/manifest.webmanifest").map(
+				(url) => readFileSync(`public${url}`),
 			);
 			const version = buildVersion([
 				String(page.source),
@@ -66,7 +66,8 @@ export function serviceWorker(): Plugin
 				...publicFiles,
 			]);
 			for (const placeholder of [VERSION, ASSETS])
-				if (!worker.code.includes(placeholder)) throw new Error(`${SW_FILE} lost its ${placeholder} placeholder`);
+				if (!worker.code.includes(placeholder))
+					throw new Error(`${SW_FILE} lost its ${placeholder} placeholder`);
 			worker.code = worker.code
 				.replaceAll(VERSION, version)
 				.replaceAll(ASSETS, assets.map((file) => `/${file.fileName}`).join(","));
