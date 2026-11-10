@@ -131,6 +131,18 @@ function hairBack(f: Face, g: Geo, hc: string): string
 			return `<ellipse ${st} cx="${R + 17}" cy="${t + 64}" rx="16" ry="40" transform="rotate(22 ${R + 17} ${t + 64})"/><circle fill="#ff4d6d" cx="${R + 4}" cy="${t + 32}" r="6.5"/>`;
 		case 7:
 			return `<circle ${st} cx="${L + 4}" cy="${t + 2}" r="23"/><circle ${st} cx="${R - 4}" cy="${t + 2}" r="23"/>`;
+		case 11:
+		{
+			// Two braids hang beside the neck, each a chain of knots with a tie at the end.
+			let p = "";
+			for (const x of [L - 9, R + 9])
+			{
+				for (let i = 0; i < 5; i++)
+					p += `<ellipse ${st} cx="${x + (i % 2 ? 2 : -2)}" cy="${N1(ey + 28 + i * 15)}" rx="10" ry="10.5"/>`;
+				p += `<circle fill="#ff4d6d" cx="${x}" cy="${N1(ey + 102)}" r="5.5"/>`;
+			}
+			return p;
+		}
 	}
 	return "";
 }
@@ -194,6 +206,17 @@ function hairFront(f: Face, g: Geo, hc: string): string
 				`M${x - s * 4} ${ey + 2} C${x - s * 12} ${t + 30} ${x + s * 2} ${t + 10} ${x + s * 17} ${t + 15} Q${x + s * 8} ${t + 40} ${x + s * 9} ${ey + 2}Z`;
 			return `<path ${st} d="${side(L, 1)} ${side(R, -1)}"/><path d="M${N1(100 - w * 0.3)} ${t + 14} q12 -8 24 -5" stroke="#fff" stroke-width="4" fill="none" opacity=".85"/>`;
 		}
+		case 10:
+			// A side part: the hair piles high on one side and sweeps down across the forehead.
+			return `<path ${st} d="M${L - 3} ${ey - 8} C${L - 6} ${t - 14} ${L + 18} ${t - 22} ${L + 24} ${t - 8} C${L + 40} ${t - 44} ${R + 16} ${t - 40} ${R + 3} ${ey - 8} Q${R - 2} ${fb + 6} ${R - 14} ${fb + 6} Q100 ${fb - 2} ${L + 24} ${t + 8} Q${L + 10} ${fb - 6} ${L - 3} ${ey - 8}Z"/><path fill="none" d="M${L + 24} ${t + 8} L${L + 24} ${t - 8}"/>`;
+		case 11:
+			return `<path ${st} d="${cap} Q${R - 4} ${fb} 106 ${fb - 6} L100 ${t + 6} L94 ${fb - 6} Q${L + 4} ${fb} ${L - 3} ${ey - 8}Z"/>`;
+		case 12:
+			// A flat-top: straight sides and a level top.
+			return `<path ${st} d="M${L - 3} ${ey - 8} L${L - 6} ${t - 24} L${R + 6} ${t - 24} L${R + 3} ${ey - 8} Q${R - 4} ${fb + 2} 100 ${fb - 4} Q${L + 4} ${fb + 2} ${L - 3} ${ey - 8}Z"/>`;
+		case 13:
+			// A bowl cut: a round cap with a straight fringe just above the eyebrows.
+			return `<path ${st} d="M${L - 5} ${ey - 2} C${L - 12} ${t - 34} ${R + 12} ${t - 34} ${R + 5} ${ey - 2} L${R - 5} ${ey - 2} L${R - 6} ${fb + 5} L${L + 6} ${fb + 5} L${L + 5} ${ey - 2}Z"/><path d="M${N1(100 - w * 0.5)} ${t + 2} q${N1(w * 0.5)} -14 ${N1(w)} 0" stroke="#fff" stroke-width="4" fill="none" opacity=".6"/>`;
 	}
 	return "";
 }
@@ -379,6 +402,27 @@ function beardBack(f: Face, g: Geo, hc: string, sk: string): string
 			low = Math.min(y + 34, b + 5);
 		return `<path fill="${hc}" d="M79 ${y - 8} Q100 ${y - 19} 121 ${y - 8} L122 ${y + 17} Q100 ${low + 4} 78 ${y + 17}Z"/><ellipse fill="${sk}" cx="100" cy="${y + 6}" rx="15" ry="10"/>`;
 	}
+	if (f.facialHair === 8)
+	{
+		// Mutton chops: sideburns that run under the cheeks and meet in a mustache, with the chin bare.
+		const y = Number(N1(my)),
+			n = Number(N1(ny));
+		const chop = (x: number, s: number): string =>
+			`M${x - s * 3} ${N1(ey - 18)} L${x + s * 13} ${N1(ey - 18)} L${x + s * 13} ${n + 18} Q${x + s * 16} ${n + 27} ${x + s * 30} ${n + 26} L${100 - s * 13} ${y - 9} Q${100 - s * 6} ${y - 13} 100 ${y - 8} L100 ${y - 3} Q${100 - s * 16} ${y - 1} ${x + s * 30} ${y + 11} Q${x + s * 10} ${y + 12} ${x + s * 3} ${n + 16}Z`;
+		return `<path fill="${hc}" d="${chop(L, 1)} ${chop(R, -1)}"/>`;
+	}
+	if (f.facialHair === 9)
+	{
+		// A chin strap: one thin line of beard along the jaw, ear to ear.
+		const d = `M${L + 3} ${N1(ny + 4)} Q${L + 5} ${b - 7} 100 ${b - 3} Q${R - 5} ${b - 7} ${R - 3} ${N1(ny + 4)}`;
+		return `<path d="${d}" fill="none" stroke-width="11"/><path d="${d}" fill="none" stroke="${hc}" stroke-width="7.5"/>`;
+	}
+	if (f.facialHair === 10)
+	{
+		// A long chin beard that hangs to a point below the chin.
+		const y = Number(N1(my));
+		return `<path fill="${hc}" d="M81 ${y + 9} Q100 ${y + 15} 119 ${y + 9} L113 ${b + 2} L100 ${b + 26} L87 ${b + 2}Z"/>`;
+	}
 	if (f.facialHair === 5)
 	{
 		let s = "";
@@ -442,6 +486,43 @@ function cheeks(f: Face, g: Geo, sk: string): string
 			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="#f3c999" stroke="${INK}" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="#e2a96f" stroke="none"/></g>`;
 		case 5:
 			return `<path d="${star(rx, cy, 12, 5.4)}" fill="#ffd23f" stroke="${INK}" stroke-width="2"/>`;
+	}
+	return "";
+}
+// Every pattern spreads across the whole shirt, so neckwear never covers all of it.
+function shirtPattern(f: Face): string
+{
+	const c = CLOTH[f.shirt]!;
+	switch (f.shirtStyle)
+	{
+		case 1:
+			return `<path fill="none" stroke="${shade(c, -0.45)}" stroke-width="4" d="M20 237 H180 M16 247 H184"/>`;
+		case 2:
+		{
+			let s = "";
+			for (const [x, y] of [
+				[30, 244],
+				[50, 232],
+				[68, 246],
+				[84, 237],
+				[116, 237],
+				[132, 246],
+				[150, 232],
+				[170, 244],
+			] as const)
+				s += `<circle cx="${x}" cy="${y}" r="3.6"/>`;
+			return `<g fill="#fff" stroke-width="1.5">${s}</g>`;
+		}
+		case 3:
+			return `<g fill="${shade(c, -0.35)}"><path d="M12 254 Q16 226 60 219 L46 254Z"/><path d="M188 254 Q184 226 140 219 L154 254Z"/></g>`;
+		case 4:
+			return `<g fill="#3b3b45"><path d="M65 222 L60 254 L72 254 L76 226Z"/><path d="M135 222 L140 254 L128 254 L124 226Z"/></g>`;
+		case 5:
+		{
+			const d =
+				"M16 247 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10";
+			return `<path fill="none" stroke-width="8.5" d="${d}"/><path fill="none" stroke="#fff" stroke-width="5" d="${d}"/>`;
+		}
 	}
 	return "";
 }
@@ -523,6 +604,8 @@ const LIFT: Record<number, number> =
 	8: 8,
 	2: 4,
 	3: 4,
+	12: 8,
+	13: 4,
 };
 function hat(f: Face, g: Geo): string
 {
@@ -606,7 +689,8 @@ function regions(f: Face, k: FeatureKey): Region[]
 		case "mouth":
 			return [[100, my + 5, 28, 17]];
 		case "facialHair":
-			return f.facialHair === 6 ? [[100, (ey + b) / 2, w + 8, (b - ey) / 2 + 12]] : [[100, my + 6, w * 0.85, 32]];
+			if (f.facialHair === 6 || f.facialHair === 8) return [[100, (ey + b) / 2, w + 8, (b - ey) / 2 + 12]];
+			return f.facialHair === 10 ? [[100, my + 18, w * 0.85, 44]] : [[100, my + 6, w * 0.85, 32]];
 		case "ears":
 		case "earrings":
 			return [
@@ -621,6 +705,7 @@ function regions(f: Face, k: FeatureKey): Region[]
 		case "neckwear":
 			return [[100, 230, 36, 20]];
 		case "shirt":
+		case "shirtStyle":
 			return [[100, 240, 86, 16]];
 		case "faceShape":
 		case "skin":
@@ -686,6 +771,7 @@ export function faceSVG(f: Face, o: FaceOptions = {}): string
 	let s = hairBack(f, g, dye);
 	s += `<path d="M86 ${g.b - 16} L86 228 L114 228 L114 ${g.b - 16}Z" fill="${sk}"/>`;
 	s += `<path d="M12 254 Q16 226 60 219 Q80 230 100 230 Q120 230 140 219 Q184 226 188 254Z" fill="${CLOTH[f.shirt]}"/>`;
+	s += shirtPattern(f);
 	s +=
 		neckwear(f) +
 		ears(f, g, sk) +

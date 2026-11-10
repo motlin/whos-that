@@ -25,6 +25,7 @@ const FACE: Face =
 	earrings: 0,
 	neckwear: 0,
 	shirt: 0,
+	shirtStyle: 0,
 };
 
 // The head and shoulders, square, so the face fills the icon.

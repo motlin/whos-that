@@ -546,7 +546,7 @@ const CATS: Category[] = [
 	{
 		id: "shirt",
 		name: "Shirt",
-		keys: ["shirt"],
+		keys: ["shirt", "shirtStyle"],
 	},
 	{
 		id: "shape",

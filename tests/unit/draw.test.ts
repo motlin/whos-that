@@ -13,6 +13,7 @@ it("crops a face to any group of features, including the ones build mode shows w
 			earrings: featureBox(FACE, ["earrings"]),
 			oneEarring: featureBox(FACE, ["earrings"], true),
 			shirt: featureBox(FACE, ["shirt"]),
+			shirtStyle: featureBox(FACE, ["shirtStyle"]),
 			skin: featureBox(FACE, ["skin"]),
 		},
 	).toStrictEqual(
@@ -22,6 +23,7 @@ it("crops a face to any group of features, including the ones build mode shows w
 			earrings: "9.0 32.8 182.0 182.0",
 			oneEarring: "0.0 87.8 72.0 72.0",
 			shirt: "6.0 146.0 188.0 188.0",
+			shirtStyle: "6.0 146.0 188.0 188.0",
 			skin: "4.0 24.0 192.0 192.0",
 		},
 	);

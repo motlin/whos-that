@@ -10,6 +10,7 @@ const POOLS: FeatureKey[][] = [
 		"hairDye",
 		"facialHair",
 		"shirt",
+		"shirtStyle",
 		"neckwear",
 		"mouth",
 		"nose",
@@ -30,6 +31,7 @@ const POOLS: FeatureKey[][] = [
 		"skin",
 		"hatColor",
 		"neckwear",
+		"shirtStyle",
 		"glasses",
 		"hairStyle",
 	],
@@ -77,6 +79,7 @@ export const BUILD_ALL: FeatureKey[] = [
 	"earrings",
 	"neckwear",
 	"shirt",
+	"shirtStyle",
 ];
 export const BUILD_EASY: FeatureKey[] = [
 	"hairStyle",
@@ -112,6 +115,7 @@ export const PLAIN: Face =
 	earrings: 0,
 	neckwear: 0,
 	shirt: 1,
+	shirtStyle: 0,
 };
 export const buildCount = (L: number): number => Math.min(BUILD_ALL.length, 2 + L);
 const buildFullAt = BUILD_ALL.length - 2;

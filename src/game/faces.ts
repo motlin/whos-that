@@ -28,7 +28,8 @@ export type FeatureKey =
 	| "cheeks"
 	| "earrings"
 	| "neckwear"
-	| "shirt";
+	| "shirt"
+	| "shirtStyle";
 export type Face = Record<FeatureKey, number>;
 interface Feature
 {
@@ -51,7 +52,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	hairStyle:
 	{
-		n: 10,
+		n: 14,
 		label: "hair style",
 	},
 	hairColor:
@@ -97,9 +98,9 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	facialHair:
 	{
-		n: 8,
+		n: 11,
 		label: "beard or mustache",
-		w: [10, 2, 1.5, 2, 1.5, 1.5, 1.5, 1.5],
+		w: [10, 2, 1.5, 2, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
 	},
 	glasses:
 	{
@@ -140,6 +141,12 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	{
 		n: 7,
 		label: "shirt color",
+	},
+	shirtStyle:
+	{
+		n: 6,
+		label: "shirt pattern",
+		w: [3, 1, 1, 1, 1, 1],
 	},
 };
 export const KEYS = Object.keys(FEATURES) as FeatureKey[];
