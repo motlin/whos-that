@@ -1,8 +1,9 @@
 import {CLOTH, DYEC, EYEC, type Face, type FeatureKey, HAIRC, HATC, SKIN} from "./faces.ts";
 
 const INK = "#2a2522";
-// Ink disappears on the two darkest skins, so whatever is drawn on the face there uses this light line instead.
-const LIGHT = "#f3d9bd";
+// Ink disappears on the two darkest skins, so lines drawn on the skin there use a warm tone a few shades lighter than
+// the skin. The eyes keep their ink outline on every skin: the whites already stand out.
+const FACE_LINE = [INK, INK, INK, "#e8bd92", "#c9905f"];
 const darkSkin = (f: Face): boolean => f.skin >= 3;
 const SHAPES = [
 	{
@@ -222,6 +223,7 @@ function hairFront(f: Face, g: Geo, hc: string): string
 }
 function ears(f: Face, g: Geo, sk: string): string
 {
+	const line = FACE_LINE[f.skin]!;
 	const {w, ey} = g;
 	const y = ey + 10;
 	const EB = [
@@ -237,10 +239,10 @@ function ears(f: Face, g: Geo, sk: string): string
 		switch (f.ears)
 		{
 			case 0:
-				o += `<ellipse cx="${x + s * 5}" cy="${y}" rx="10" ry="14"/><path fill="none" stroke-width="2" d="M${x + s * 7} ${y - 6} q${-s * 5} 6 0 12"/>`;
+				o += `<ellipse cx="${x + s * 5}" cy="${y}" rx="10" ry="14"/><path fill="none" stroke="${line}" stroke-width="2" d="M${x + s * 7} ${y - 6} q${-s * 5} 6 0 12"/>`;
 				break;
 			case 1:
-				o += `<ellipse cx="${x + s * 9}" cy="${y}" rx="15" ry="21"/><path fill="none" stroke-width="2" d="M${x + s * 12} ${y - 10} q${-s * 8} 10 0 20"/>`;
+				o += `<ellipse cx="${x + s * 9}" cy="${y}" rx="15" ry="21"/><path fill="none" stroke="${line}" stroke-width="2" d="M${x + s * 12} ${y - 10} q${-s * 8} 10 0 20"/>`;
 				break;
 			case 2:
 				o += `<path d="M${x} ${y - 10} Q${x + s * 14} ${y - 18} ${x + s * 24} ${y - 30} Q${x + s * 18} ${y - 4} ${x + s * 8} ${y + 14} Q${x + s * 2} ${y + 16} ${x} ${y + 10}Z"/>`;
@@ -264,7 +266,7 @@ function ears(f: Face, g: Geo, sk: string): string
 	}
 	return `<g fill="${sk}">${o}</g>`;
 }
-function eye(st: number, x: number, y: number, ic: string, s: number, sk: string): string
+function eye(st: number, x: number, y: number, ic: string, s: number, sk: string, line: string): string
 {
 	const base = (r: number, ir: number, pr: number, dx = 0): string =>
 		`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/><circle cx="${x + dx}" cy="${y + 1}" r="${ir}" fill="${ic}" stroke-width="1.8"/><circle cx="${x + dx}" cy="${y + 1}" r="${pr}" fill="#111" stroke="none"/><circle cx="${N1(x + dx - ir * 0.38)}" cy="${N1(y - ir * 0.3)}" r="${N1(Math.max(1.3, ir * 0.26))}" fill="#fff" stroke="none"/>`;
@@ -281,7 +283,7 @@ function eye(st: number, x: number, y: number, ic: string, s: number, sk: string
 		case 4:
 			return (
 				base(10, 6.8, 3) +
-				`<path fill="none" stroke-width="4" d="M${x - 10} ${y - 2} A10.2 10.2 0 0 1 ${x + 10} ${y - 2}"/><path fill="none" stroke-width="3" d="M${x + s * 4} ${y - 10} l${s * 4} -6 M${x + s * 8} ${y - 7} l${s * 8} -4 M${x + s * 10} ${y - 2} l${s * 9} 0 M${x - s * 2} ${y - 11} l0 -6"/>`
+				`<path fill="none" stroke-width="4" d="M${x - 10} ${y - 2} A10.2 10.2 0 0 1 ${x + 10} ${y - 2}"/><path fill="none" stroke="${line}" stroke-width="3" d="M${x + s * 4} ${y - 10} l${s * 4} -6 M${x + s * 8} ${y - 7} l${s * 8} -4 M${x + s * 10} ${y - 2} l${s * 9} 0 M${x - s * 2} ${y - 11} l0 -6"/>`
 			);
 		case 5:
 			return base(11, 7, 3, 4);
@@ -291,7 +293,8 @@ function eye(st: number, x: number, y: number, ic: string, s: number, sk: string
 function eyes(f: Face, g: Geo): string
 {
 	let o = "";
-	for (const s of [-1, 1]) o += eye(f.eyes, Number(N1(100 + s * g.ex)), g.ey, EYEC[f.eyeColor]!, s, SKIN[f.skin]!);
+	for (const s of [-1, 1])
+		o += eye(f.eyes, Number(N1(100 + s * g.ex)), g.ey, EYEC[f.eyeColor]!, s, SKIN[f.skin]!, FACE_LINE[f.skin]!);
 	return o;
 }
 function brows(f: Face, g: Geo, hc: string): string
@@ -760,6 +763,14 @@ export interface FaceOptions
 	vb?: string | null;
 }
 
+// Where the chin crosses the neck there is skin on both sides of the outline, so on the darkest skins that stretch is
+// redrawn in the face line.
+function jawLine(f: Face, g: Geo): string
+{
+	if (!darkSkin(f)) return "";
+	return `<clipPath id="jaw"><rect x="87.5" y="150" width="25" height="80"/></clipPath><g clip-path="url(#jaw)" fill="none" stroke="${FACE_LINE[f.skin]}">${headShape(f, g)}</g>`;
+}
+
 export function faceSVG(f: Face, o: FaceOptions = {}): string
 {
 	const g = geo(f),
@@ -767,7 +778,7 @@ export function faceSVG(f: Face, o: FaceOptions = {}): string
 		hc = HAIRC[f.hairColor]!,
 		// Dye colors the hair on the head; eyebrows and facial hair keep the natural color.
 		dye = f.hairDye ? DYEC[f.hairDye]! : hc;
-	const onFace = (inner: string): string => (darkSkin(f) ? `<g stroke="${LIGHT}">${inner}</g>` : inner);
+	const onFace = (inner: string): string => (darkSkin(f) ? `<g stroke="${FACE_LINE[f.skin]}">${inner}</g>` : inner);
 	let s = hairBack(f, g, dye);
 	s += `<path d="M86 ${g.b - 16} L86 228 L114 228 L114 ${g.b - 16}Z" fill="${sk}"/>`;
 	s += `<path d="M12 254 Q16 226 60 219 Q80 230 100 230 Q120 230 140 219 Q184 226 188 254Z" fill="${CLOTH[f.shirt]}"/>`;
@@ -776,9 +787,11 @@ export function faceSVG(f: Face, o: FaceOptions = {}): string
 		neckwear(f) +
 		ears(f, g, sk) +
 		`<g fill="${sk}">${headShape(f, g)}</g>` +
+		jawLine(f, g) +
 		onFace(cheeks(f, g, sk) + beardBack(f, g, hc, sk)) +
 		hairFront(f, g, dye) +
-		onFace(eyes(f, g) + brows(f, g, hc) + nose(f, g, sk) + mouth(f, g) + mustache(f, g, hc) + glasses(f, g)) +
+		eyes(f, g) +
+		onFace(brows(f, g, hc) + nose(f, g, sk) + mouth(f, g) + mustache(f, g, hc) + glasses(f, g)) +
 		hat(f, g);
 	let hl = "";
 	if (o.hl)
