@@ -5,6 +5,7 @@ import
 {
 	CLOTH,
 	diffKeys,
+	DYEC,
 	EYEC,
 	type Face,
 	FEATURES,
@@ -27,12 +28,16 @@ const MIN_COLOR_DISTANCE = 16;
 const MIN_UNTINTED_SHARE = 0.999;
 // How many pixels any two values of one feature must differ by on a bare face, so no two options read as the same one.
 const MIN_DISTINCT_PIXELS = 200;
+// Noses and mouths are drawn as fine lines on purpose, so they are held to a lower count.
+const MIN_FINE_LINE_PIXELS = 100;
+const FINE_LINES = new Set<FeatureKey>(["nose", "mouth"]);
 // How far apart any two colors of one palette must be, as a CIE76 distance.
 const MIN_PALETTE_DISTANCE = 20;
 const PALETTES: Partial<Record<FeatureKey, readonly string[]>> =
 {
 	skin: SKIN,
 	hairColor: HAIRC,
+	hairDye: DYEC.slice(1),
 	eyeColor: EYEC,
 	shirt: CLOTH,
 	hatColor: HATC,
@@ -180,7 +185,7 @@ it("draws every difference the game counts so that it can be seen", () =>
 	).toStrictEqual(
 		{
 			hidden: [],
-			uncounted: new Set(["hatColor"]),
+			uncounted: new Set(["hairDye", "hatColor"]),
 		},
 	);
 });
@@ -279,7 +284,8 @@ it("draws every value of a feature unlike its other values", () =>
 			for (const [b, pb] of [...pixels.entries()].slice(a + 1))
 			{
 				const n = changedPixels(pa, pb);
-				if (n < MIN_DISTINCT_PIXELS) alike.push(`${k} ${a}↔${b}: ${n} pixels`);
+				if (n < (FINE_LINES.has(k) ? MIN_FINE_LINE_PIXELS : MIN_DISTINCT_PIXELS))
+					alike.push(`${k} ${a}↔${b}: ${n} pixels`);
 			}
 		}
 	}

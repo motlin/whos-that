@@ -1,12 +1,13 @@
 import type {Face, FeatureKey} from "./faces.ts";
 
 const POOLS: FeatureKey[][] = [
-	["hat", "glasses", "hairStyle", "hairColor", "facialHair", "shirt", "neckwear"],
+	["hat", "glasses", "hairStyle", "hairColor", "hairDye", "facialHair", "shirt", "neckwear"],
 	[
 		"hat",
 		"glasses",
 		"hairStyle",
 		"hairColor",
+		"hairDye",
 		"facialHair",
 		"shirt",
 		"neckwear",
@@ -62,6 +63,7 @@ export const BUILD_ALL: FeatureKey[] = [
 	"skin",
 	"hairStyle",
 	"hairColor",
+	"hairDye",
 	"eyebrows",
 	"eyes",
 	"eyeColor",
@@ -93,8 +95,9 @@ export const PLAIN: Face =
 {
 	faceShape: 0,
 	skin: 1,
-	hairStyle: 1,
+	hairStyle: 8,
 	hairColor: 1,
+	hairDye: 0,
 	eyebrows: 0,
 	eyes: 0,
 	eyeColor: 0,

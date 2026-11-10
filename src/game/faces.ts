@@ -1,7 +1,10 @@
 import {range, rnd, shuffle} from "./util.ts";
 
 export const SKIN = ["#ffe4ca", "#eab380", "#bd7c46", "#7e4c29", "#452816"];
-export const HAIRC = ["#2b2118", "#734a26", "#ecc65a", "#c9512b", "#a9a9a9", "#4a8fe0", "#ff7eb6"];
+// Natural colors, for the hair, eyebrows and facial hair.
+export const HAIRC = ["#2b2118", "#734a26", "#ecc65a", "#c9512b", "#a9a9a9"];
+// Dye colors the hair on the head only. The first entry is no dye.
+export const DYEC = ["", "#4a8fe0", "#ff7eb6", "#35b56a", "#8e5be0"];
 export const EYEC = ["#6b3e1f", "#3a7bd5", "#3fa34d", "#8a8f98", "#9b4dca"];
 export const CLOTH = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#ff8c42", "#1abc9c"];
 export const HATC = ["#e74c3c", "#3498db", "#2ecc71", "#9b59b6", "#ff8c42", "#f06292"];
@@ -11,6 +14,7 @@ export type FeatureKey =
 	| "skin"
 	| "hairStyle"
 	| "hairColor"
+	| "hairDye"
 	| "eyebrows"
 	| "eyes"
 	| "eyeColor"
@@ -47,13 +51,19 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	hairStyle:
 	{
-		n: 10,
+		n: 9,
 		label: "hair style",
 	},
 	hairColor:
 	{
-		n: 7,
+		n: 5,
 		label: "hair color",
+	},
+	hairDye:
+	{
+		n: 5,
+		label: "hair dye",
+		w: [6, 1, 1, 1, 1],
 	},
 	eyebrows:
 	{
@@ -62,7 +72,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	eyes:
 	{
-		n: 7,
+		n: 6,
 		label: "eyes",
 	},
 	eyeColor:
@@ -82,14 +92,14 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	ears:
 	{
-		n: 5,
+		n: 4,
 		label: "ears",
 	},
 	facialHair:
 	{
-		n: 6,
+		n: 8,
 		label: "beard or mustache",
-		w: [10, 2, 1, 2, 1.5, 1.5],
+		w: [10, 2, 1.5, 2, 1.5, 1.5, 1.5, 1.5],
 	},
 	glasses:
 	{
@@ -99,9 +109,9 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	hat:
 	{
-		n: 8,
+		n: 11,
 		label: "hat",
-		w: [12, 1.5, 1.5, 1, 1, 1, 1, 1],
+		w: [12, 1.5, 1.5, 1, 1, 1, 1, 1, 1, 1, 1],
 	},
 	hatColor:
 	{
@@ -133,17 +143,18 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 };
 export const KEYS = Object.keys(FEATURES) as FeatureKey[];
-const HAT_COLORED = new Set([1, 2, 3, 5, 6, 7]);
+const HAT_COLORED = new Set([1, 2, 3, 5, 6, 7, 8, 9, 10]);
 
 function visible(f: Face, k: FeatureKey): boolean
 {
 	if (k === "hatColor" && !HAT_COLORED.has(f.hat)) return false;
+	if (k === "hairDye" && f.hairStyle === 0) return false;
 	return true;
 }
 
 export function valid(f: Face): boolean
 {
-	return !(f.hat && f.hairStyle === 7);
+	return !(f.hat && f.hairStyle === 6);
 }
 
 function randFeat(k: FeatureKey): number

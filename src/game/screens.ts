@@ -489,7 +489,7 @@ const CATS: Category[] = [
 	{
 		id: "hair",
 		name: "Hair",
-		keys: ["hairStyle", "hairColor"],
+		keys: ["hairStyle", "hairColor", "hairDye"],
 	},
 	{
 		id: "brows",
@@ -675,7 +675,6 @@ function buildRound(): void
 	let keys = pool.slice(0, count);
 	if (keys.length < count) keys = keys.concat(shuffle(BUILD_ALL.filter((k) => !keys.includes(k)))).slice(0, count);
 	keys.sort((a, b) => KEYS.indexOf(a) - KEYS.indexOf(b));
-	const eyesIn = keys.includes("eyes") || keys.includes("eyeColor");
 	const plain: Face =
 	{
 		...PLAIN,
@@ -686,9 +685,7 @@ function buildRound(): void
 		...plain,
 	};
 	const allowed = (k: FeatureKey): number[] =>
-		range(FEATURES[k].n).filter(
-			(v) => !(k === "hairStyle" && v === 7 && keys.includes("hat")) && !(k === "glasses" && v === 3 && eyesIn),
-		);
+		range(FEATURES[k].n).filter((v) => !(k === "hairStyle" && v === 6 && keys.includes("hat")));
 	for (const k of keys) face[k] = pick(allowed(k).filter((v) => v !== plain[k]));
 	const options = {} as Record<FeatureKey, number[]>,
 		cur: Face =

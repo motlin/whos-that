@@ -8,8 +8,9 @@ const FACE: Face =
 {
 	faceShape: 1, // round
 	skin: 1,
-	hairStyle: 1,
+	hairStyle: 8,
 	hairColor: 1, // brown
+	hairDye: 0,
 	eyebrows: 0,
 	eyes: 0,
 	eyeColor: 1,

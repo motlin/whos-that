@@ -1,4 +1,4 @@
-import {CLOTH, EYEC, type Face, type FeatureKey, HAIRC, HATC, SKIN} from "./faces.ts";
+import {CLOTH, DYEC, EYEC, type Face, type FeatureKey, HAIRC, HATC, SKIN} from "./faces.ts";
 
 const INK = "#2a2522";
 const SHAPES = [
@@ -8,9 +8,9 @@ const SHAPES = [
 		b: 196,
 	},
 	{
-		w: 68,
-		t: 50,
-		b: 190,
+		w: 71,
+		t: 60,
+		b: 188,
 	},
 	{
 		w: 62,
@@ -18,9 +18,9 @@ const SHAPES = [
 		b: 194,
 	},
 	{
-		w: 52,
-		t: 36,
-		b: 204,
+		w: 49,
+		t: 30,
+		b: 206,
 	},
 	{
 		w: 62,
@@ -108,11 +108,11 @@ function hairBack(f: Face, g: Geo, hc: string): string
 	const st = `fill="${hc}"`;
 	switch (f.hairStyle)
 	{
-		case 3:
+		case 2:
 			return `<rect ${st} x="${L - 12}" y="${t - 8}" width="${2 * w + 24}" height="${ey + 48 - t}" rx="34"/>`;
-		case 4:
+		case 3:
 			return `<path ${st} d="M${L - 14} ${t + 34} Q${L - 16} ${t - 12} 100 ${t - 12} Q${R + 16} ${t - 12} ${R + 14} ${t + 34} L${R + 22} 236 Q100 246 ${L - 22} 236Z"/>`;
-		case 5:
+		case 4:
 		{
 			const cy = t + 34,
 				r = w + 20;
@@ -124,10 +124,10 @@ function hairBack(f: Face, g: Geo, hc: string): string
 			}
 			return p;
 		}
-		case 6:
-			return `<ellipse ${st} cx="${R + 14}" cy="${t + 58}" rx="14" ry="32" transform="rotate(22 ${R + 14} ${t + 58})"/><circle fill="#ff4d6d" cx="${R + 4}" cy="${t + 32}" r="6"/>`;
-		case 8:
-			return `<circle ${st} cx="${L - 14}" cy="${ey + 4}" r="18"/><circle ${st} cx="${R + 14}" cy="${ey + 4}" r="18"/><circle fill="#ff4d6d" cx="${L}" cy="${ey - 4}" r="5.5"/><circle fill="#ff4d6d" cx="${R}" cy="${ey - 4}" r="5.5"/>`;
+		case 5:
+			return `<ellipse ${st} cx="${R + 17}" cy="${t + 64}" rx="16" ry="40" transform="rotate(22 ${R + 17} ${t + 64})"/><circle fill="#ff4d6d" cx="${R + 4}" cy="${t + 32}" r="6.5"/>`;
+		case 7:
+			return `<circle ${st} cx="${L + 4}" cy="${t + 2}" r="23"/><circle ${st} cx="${R - 4}" cy="${t + 2}" r="23"/>`;
 	}
 	return "";
 }
@@ -145,10 +145,9 @@ function hairFront(f: Face, g: Geo, hc: string): string
 	{
 		case 0:
 			return `<path d="M${N1(100 - w * 0.45)} ${t + 16} q12 -8 24 -5" stroke="#fff" stroke-width="4" fill="none" opacity=".85"/>`;
-		case 1:
-		case 6:
+		case 5:
 			return `<path ${st} d="${cap} Q${R - 2} ${fb + 2} ${R - 14} ${fb} Q100 ${fb - 16} ${L + 14} ${fb} Q${L + 2} ${fb + 2} ${L - 3} ${ey - 8}Z"/>`;
-		case 2:
+		case 1:
 		{
 			const pts: (string | number)[][] = [[L - 3, ey - 12]];
 			const N = 12;
@@ -164,17 +163,17 @@ function hairFront(f: Face, g: Geo, hc: string): string
 			}
 			return `<path ${st} d="M${pts.map((p) => p.join(" ")).join(" L")}Z"/>`;
 		}
-		case 3:
+		case 2:
 			return `<path ${st} d="M${L - 4} ${ey - 4} C${L - 8} ${t - 30} ${R + 8} ${t - 30} ${R + 4} ${ey - 4} L${R - 6} ${ey - 6} L${R - 8} ${fb} L${L + 8} ${fb} L${L + 6} ${ey - 6}Z"/>`;
-		case 4:
+		case 3:
 			return `<path ${st} d="M${L - 4} ${ey + 6} C${L - 8} ${t - 30} ${R + 8} ${t - 30} ${R + 4} ${ey + 6} Q${R - 4} ${fb} ${R - 20} ${fb - 2} Q100 ${fb - 6} 84 ${t + 10} Q${L + 12} ${fb + 4} ${L + 5} ${ey + 6}Z"/>`;
-		case 5:
+		case 4:
 			return `<path ${st} d="M${L - 2} ${ey - 10} C${L - 6} ${t - 28} ${R + 6} ${t - 28} ${R + 2} ${ey - 10} Q${R - 6} ${fb} 100 ${fb - 8} Q${L + 6} ${fb} ${L - 2} ${ey - 10}Z"/>`;
-		case 7:
+		case 6:
 			return `<path ${st} d="M88 ${t + 26} L85 ${t - 6} L92 ${t - 22} L96 ${t - 13} L100 ${t - 38} L104 ${t - 13} L108 ${t - 22} L115 ${t - 6} L112 ${t + 26}Z"/>`;
-		case 8:
+		case 7:
 			return `<path ${st} d="${cap} Q${R - 4} ${fb} 106 ${fb - 6} L100 ${t + 6} L94 ${fb - 6} Q${L + 4} ${fb} ${L - 3} ${ey - 8}Z"/>`;
-		case 9:
+		case 8:
 		{
 			let p = `<path ${st} d="M${L - 2} ${ey - 10} C${L - 6} ${t - 28} ${R + 6} ${t - 28} ${R + 2} ${ey - 10} Q${R - 6} ${fb} 100 ${fb - 6} Q${L + 6} ${fb} ${L - 2} ${ey - 10}Z"/>`;
 			// The curls stop above the ears, so ears and earrings stay in sight.
@@ -195,7 +194,6 @@ function ears(f: Face, g: Geo, sk: string): string
 	const EB = [
 		[5, 14],
 		[9, 21],
-		[3, 9],
 		[8, 14],
 		[14, 9],
 	];
@@ -212,12 +210,9 @@ function ears(f: Face, g: Geo, sk: string): string
 				o += `<ellipse cx="${x + s * 9}" cy="${y}" rx="15" ry="21"/><path fill="none" stroke-width="2" d="M${x + s * 12} ${y - 10} q${-s * 8} 10 0 20"/>`;
 				break;
 			case 2:
-				o += `<ellipse cx="${x + s * 3}" cy="${y}" rx="7" ry="9"/>`;
-				break;
-			case 3:
 				o += `<path d="M${x} ${y - 10} Q${x + s * 14} ${y - 18} ${x + s * 24} ${y - 30} Q${x + s * 18} ${y - 4} ${x + s * 8} ${y + 14} Q${x + s * 2} ${y + 16} ${x} ${y + 10}Z"/>`;
 				break;
-			case 4:
+			case 3:
 				o += `<ellipse cx="${x + s * 14}" cy="${y}" rx="16" ry="11" transform="rotate(${-s * 25} ${x + s * 14} ${y})"/>`;
 				break;
 		}
@@ -245,17 +240,15 @@ function eye(st: number, x: number, y: number, ic: string, s: number, sk: string
 		case 1:
 			return base(14, 9.5, 4.2);
 		case 2:
-			return base(7.5, 5.8, 2.4);
-		case 3:
 			return base(11, 7, 3) + `<path d="M${x - 11.8} ${y - 2} A12 12 0 0 1 ${x + 11.8} ${y - 2}Z" fill="${sk}"/>`;
-		case 4:
+		case 3:
 			return `<path d="M${x - 15} ${y} Q${x} ${y - 12} ${x + 15} ${y} Q${x} ${y + 12} ${x - 15} ${y}Z" fill="#fff"/><circle cx="${x}" cy="${y}" r="6.3" fill="${ic}" stroke-width="1.6"/><circle cx="${x}" cy="${y}" r="2.8" fill="#111" stroke="none"/><circle cx="${x - 2}" cy="${y - 2}" r="1.4" fill="#fff" stroke="none"/>`;
-		case 5:
+		case 4:
 			return (
 				base(10, 6.8, 3) +
 				`<path fill="none" stroke-width="4" d="M${x - 10} ${y - 2} A10.2 10.2 0 0 1 ${x + 10} ${y - 2}"/><path fill="none" stroke-width="3" d="M${x + s * 4} ${y - 10} l${s * 4} -6 M${x + s * 8} ${y - 7} l${s * 8} -4 M${x + s * 10} ${y - 2} l${s * 9} 0 M${x - s * 2} ${y - 11} l0 -6"/>`
 			);
-		case 6:
+		case 5:
 			return base(11, 7, 3, 4);
 	}
 	return "";
@@ -307,15 +300,16 @@ function nose(f: Face, g: Geo, sk: string): string
 		case 0:
 			return `<path fill="none" d="M95 ${y - 1} Q100 ${y + 7} 105 ${y - 1}"/>`;
 		case 1:
-			return `<path fill="${shade(sk, -0.14)}" d="M100 ${y - 17} L91 ${y + 5} L109 ${y + 5}Z"/>`;
+			return `<path fill="none" d="M101 ${y - 16} L94 ${y + 4} L104 ${y + 4}"/>`;
 		case 2:
-			return `<path fill="none" stroke-width="3.6" d="M99 ${y - 24} Q108 ${y - 4} 95 ${y + 4} Q101 ${y + 11} 109 ${y + 3}"/>`;
+			return `<path fill="none" d="M100 ${y - 20} Q103 ${y - 2} 97 ${y + 5} Q101 ${y + 9} 106 ${y + 4}"/>`;
 		case 3:
 			return `<circle cx="100" cy="${y}" r="10" fill="${shade(sk, -0.15)}"/>`;
 		case 4:
-			return `<path fill="${shade(sk, 0.2)}" d="M97 ${y - 21} Q119 ${y - 2} 108 ${y + 7} Q100 ${y + 11} 93 ${y + 4}"/>`;
+			// On the darkest skins a darker fill disappears, so the bulb is lighter there.
+			return `<path fill="${shade(sk, f.skin >= 3 ? 0.22 : -0.06)}" d="M97 ${y - 18} Q115 ${y - 2} 106 ${y + 6} Q100 ${y + 8} 95 ${y + 4}"/>`;
 		case 5:
-			return `<path fill="none" d="M83 ${y + 3} Q87 ${y - 9} 94 ${y + 1} Q100 ${y + 7} 106 ${y + 1} Q113 ${y - 9} 117 ${y + 3}"/><g fill="#3b2a20" stroke="none"><ellipse cx="91" cy="${y + 2}" rx="2.6" ry="3.2"/><ellipse cx="109" cy="${y + 2}" rx="2.6" ry="3.2"/></g>`;
+			return `<path fill="none" d="M87 ${y + 2} Q90 ${y - 7} 95 ${y + 1} Q100 ${y + 6} 105 ${y + 1} Q110 ${y - 7} 113 ${y + 2}"/>`;
 		case 6:
 			return `<ellipse cx="100" cy="${y}" rx="11" ry="8" fill="#f7a1b0"/><ellipse cx="96" cy="${y}" rx="2" ry="3" fill="#5a2a30" stroke="none"/><ellipse cx="104" cy="${y}" rx="2" ry="3" fill="#5a2a30" stroke="none"/>`;
 	}
@@ -327,27 +321,27 @@ function mouth(f: Face, g: Geo): string
 	switch (f.mouth)
 	{
 		case 0:
-			return `<path fill="none" stroke-width="4" d="M83 ${y - 2} Q100 ${y + 18} 117 ${y - 2}"/>`;
+			return `<path fill="none" d="M86 ${y} Q100 ${y + 13} 114 ${y}"/>`;
 		case 1:
 			return `<path fill="#fff" d="M84 ${y - 2} L116 ${y - 2} Q114 ${y + 18} 100 ${y + 18} Q86 ${y + 18} 84 ${y - 2}Z"/><path fill="none" stroke-width="2" d="M85 ${y + 5} L115 ${y + 5} M93 ${y - 2} L93 ${y + 16} M100 ${y - 2} L100 ${y + 18} M107 ${y - 2} L107 ${y + 16}"/>`;
 		case 2:
-			return `<path fill="none" stroke-width="4" d="M84 ${y + 13} Q100 ${y - 9} 116 ${y + 13}"/>`;
+			return `<path fill="none" d="M87 ${y + 9} Q100 ${y - 4} 113 ${y + 9}"/>`;
 		case 3:
 			return `<ellipse cx="100" cy="${y + 5}" rx="8" ry="10" fill="#7a2228"/>`;
 		case 4:
-			return `<path fill="none" stroke-width="3.6" d="M82 ${y + 7} l6 -8 l6 8 l6 -8 l6 8 l6 -8 l6 8"/>`;
+			return `<path fill="none" d="M88 ${y + 4} L112 ${y + 4}"/>`;
 		case 5:
 			return `<path fill="#ff7a8a" d="M95 ${y + 5} Q95 ${y + 20} 101 ${y + 20} Q107 ${y + 20} 107 ${y + 5}Z"/><path fill="none" d="M86 ${y} Q100 ${y + 12} 114 ${y}"/>`;
 		case 6:
-			return `<path fill="none" stroke-width="4" d="M85 ${y + 6} Q106 ${y + 12} 117 ${y - 7} M119 ${y - 13} q6 4 2 11"/>`;
+			return `<path fill="none" d="M87 ${y + 5} Q104 ${y + 7} 114 ${y - 4}"/>`;
 		case 7:
-			return `<path fill="none" d="M86 ${y} Q100 ${y + 9} 114 ${y}"/><path fill="#fff" stroke-width="2" d="M93 ${y + 4} h14 v11 h-14Z M100 ${y + 4} v11"/>`;
+			return `<path fill="none" d="M86 ${y} Q100 ${y + 9} 114 ${y}"/><path fill="#fff" stroke-width="2" d="M95 ${y + 4} h10 v9 h-10Z M100 ${y + 4} v9"/>`;
 	}
 	return "";
 }
 function beardBack(f: Face, g: Geo, hc: string, sk: string): string
 {
-	const {L, R, b, ny, my, w} = g;
+	const {L, R, b, ey, ny, my, w} = g;
 	// The full beard starts below the cheeks and leaves an opening, so cheeks and mouth show on any hair color.
 	if (f.facialHair === 3)
 		return `<path fill="${hc}" d="M${L + 3} ${N1(ny + 18)} Q${L + 2} ${b + 2} 100 ${b + 10} Q${R - 2} ${b + 2} ${R - 3} ${N1(ny + 18)} Q${R - 12} ${N1(ny + 22)} 122 ${N1(my - 6)} Q100 ${N1(my - 14)} 78 ${N1(my - 6)} Q${L + 12} ${N1(ny + 22)} ${L + 3} ${N1(ny + 18)}Z"/><ellipse fill="${sk}" cx="100" cy="${N1(my + 8)}" rx="21" ry="14"/>`;
@@ -355,6 +349,20 @@ function beardBack(f: Face, g: Geo, hc: string, sk: string): string
 	{
 		const y = Number(N1(my));
 		return `<path fill="${hc}" d="M90 ${y + 11} Q100 ${y + 7} 110 ${y + 11} L105 ${y + 28} Q100 ${y + 32} 95 ${y + 28}Z"/>`;
+	}
+	if (f.facialHair === 6)
+	{
+		// Sideburns run from the hairline to the jaw and stop short of the cheeks.
+		const side = (x: number, s: number): string =>
+			`M${x - s * 3} ${N1(ey - 8)} L${x + s * 13} ${N1(ey - 6)} L${x + s * 17} ${N1(ny + 14)} Q${x + s * 11} ${N1(ny + 27)} ${x + s * 4} ${N1(ny + 20)}Z`;
+		return `<path fill="${hc}" d="${side(L, 1)} ${side(R, -1)}"/>`;
+	}
+	if (f.facialHair === 7)
+	{
+		// A goatee circles the mouth: mustache, chin and the strips that join them.
+		const y = Number(N1(my)),
+			low = Math.min(y + 34, b + 5);
+		return `<path fill="${hc}" d="M79 ${y - 8} Q100 ${y - 19} 121 ${y - 8} L122 ${y + 17} Q100 ${low + 4} 78 ${y + 17}Z"/><ellipse fill="${sk}" cx="100" cy="${y + 6}" rx="15" ry="10"/>`;
 	}
 	if (f.facialHair === 5)
 	{
@@ -374,8 +382,9 @@ function mustache(f: Face, g: Geo, hc: string): string
 		return `<path fill="${hc}" d="M83 ${y - 3} Q90 ${y - 14} 100 ${y - 7} Q110 ${y - 14} 117 ${y - 3} Q108 ${y - 3} 100 ${y - 4} Q92 ${y - 3} 83 ${y - 3}Z"/>`;
 	if (f.facialHair === 2)
 	{
-		const d = `M100 ${y - 6} Q90 ${y - 13} 82 ${y - 6} Q76 ${y - 1} 79 ${y - 9} M100 ${y - 6} Q110 ${y - 13} 118 ${y - 6} Q124 ${y - 1} 121 ${y - 9}`;
-		return `<path d="${d}" fill="none" stroke-width="9"/><path d="${d}" fill="none" stroke="${hc}" stroke-width="5.5"/>`;
+		// A handlebar: wide, with both ends curled up.
+		const d = `M100 ${y - 7} Q88 ${y - 15} 78 ${y - 3} Q72 ${y + 6} 66 ${y - 3} M100 ${y - 7} Q112 ${y - 15} 122 ${y - 3} Q128 ${y + 6} 134 ${y - 3}`;
+		return `<path d="${d}" fill="none" stroke-width="11.5"/><path d="${d}" fill="none" stroke="${hc}" stroke-width="8"/>`;
 	}
 	return "";
 }
@@ -438,9 +447,9 @@ function neckwear(f: Face): string
 			return `<g fill="#fffaf0" stroke-width="1.5">${s}</g>`;
 		}
 		case 3:
-			return `<path fill="#f39c12" d="M76 214 Q100 228 124 214 L126 226 Q100 240 74 226Z"/><path fill="#f39c12" d="M104 230 L114 252 L98 252Z"/>`;
+			return `<path fill="#f39c12" d="M82 228 L74 253 L93 253 L95 231Z"/><path fill="none" stroke-width="2" d="M79 253 v-8 M84 253 v-8 M89 253 v-8"/><path fill="#f39c12" d="M77 206 Q100 217 123 206 L126 224 Q100 237 74 224Z"/><path fill="none" stroke="#c0392b" stroke-width="3" d="M88 211 l-2 17 M100 213 v19 M112 211 l2 17"/>`;
 		case 4:
-			return `<path fill="#8e44ad" d="M95 221 L105 221 L107 228 L111 250 L100 254 L89 250 L93 228Z"/>`;
+			return `<path fill="#fff" d="M100 223 L83 213 L79 229 L93 233Z M100 223 L117 213 L121 229 L107 233Z"/><path fill="#8e44ad" d="M96 232 L104 232 L111 254 L89 254Z"/><path fill="#8e44ad" d="M93 221 L107 221 L104 232 L96 232Z"/>`;
 	}
 	return "";
 }
@@ -468,10 +477,14 @@ function glasses(f: Face, g: Geo): string
 			);
 		case 3:
 		{
-			const lens = (x: number): string =>
-				`M${x - 20} ${y - 18} L${x + 20} ${y - 18} Q${x + 21} ${y + 21} ${x} ${y + 20} Q${x - 21} ${y + 21} ${x - 20} ${y - 18}Z`;
-			// Thick frames with clear lenses: no tint ever hides the eyes or their color.
-			return `<path fill="none" stroke="#1d1d1d" stroke-width="5" d="${lens(lx)} ${lens(rx)}"/>` + arms(20);
+			// Aviators: thin gold teardrop frames with a top bar, and clear lenses like every other pair.
+			const lens = (x: number, s: number): string =>
+				`M${x - s * 17} ${y - 18} L${x + s * 19} ${y - 19} Q${x + s * 26} ${y + 8} ${x + s * 5} ${y + 22} Q${x - s * 18} ${y + 23} ${x - s * 17} ${y - 18}Z`;
+			const d = `${lens(lx, -1)} ${lens(rx, 1)} M${lx + 17} ${y - 17} L${rx - 17} ${y - 17}`;
+			return (
+				`<path fill="none" stroke-width="6" d="${d}"/><path fill="none" stroke="#e6b422" stroke-width="2.6" d="${d}"/>` +
+				arms(18)
+			);
 		}
 		case 4:
 			return `<circle cx="${rx}" cy="${y}" r="18" fill="none" stroke="#c9a227" stroke-width="4"/><path fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="3 3" d="M${rx + 13} ${y + 13} Q${rx + 22} ${y + 40} ${rx + 8} ${y + 62}"/>`;
@@ -487,16 +500,16 @@ function glasses(f: Face, g: Geo): string
 }
 const LIFT: Record<number, number> =
 {
-	2: 10,
-	9: 8,
+	1: 10,
+	8: 8,
+	2: 4,
 	3: 4,
-	4: 4,
 };
 function hat(f: Face, g: Geo): string
 {
 	if (!f.hat) return "";
 	const {w, t, ey} = g;
-	const afro = f.hairStyle === 5;
+	const afro = f.hairStyle === 4;
 	const lift = LIFT[f.hairStyle] ?? 0;
 	const hy = afro ? t + 34 - (w + 20) + 30 : t + 16 - lift;
 	const hw = w + (afro ? 22 : 5);
@@ -524,6 +537,21 @@ function hat(f: Face, g: Geo): string
 			return `<path fill="${c}" d="M74 ${hy} L106 ${hy - 66} L130 ${hy + 2}Z"/><g fill="#fff" stroke="none"><circle cx="96" cy="${hy - 14}" r="3.5"/><circle cx="110" cy="${hy - 30}" r="3.5"/><circle cx="104" cy="${hy - 48}" r="3"/><circle cx="116" cy="${hy - 10}" r="3.5"/><circle cx="86" cy="${hy - 4}" r="3"/></g><circle fill="#fff" cx="106" cy="${hy - 68}" r="7"/>`;
 		case 7:
 			return `<path fill="${c}" d="${dome(50)}"/><path fill="#f1c40f" d="M92 ${hy} Q93 ${hy - 40} 100 ${hy - 52} Q107 ${hy - 40} 108 ${hy}Z"/><path d="M100 ${hy - 52} L100 ${hy - 64}" fill="none"/><ellipse fill="#f1c40f" cx="88" cy="${hy - 66}" rx="12" ry="4.5"/><ellipse fill="#f1c40f" cx="112" cy="${hy - 66}" rx="12" ry="4.5"/><circle fill="${c}" cx="100" cy="${hy - 66}" r="3.5"/>`;
+		case 8:
+			return `<ellipse fill="#9a7650" cx="100" cy="${hy}" rx="${hw + 20}" ry="8"/><path fill="#9a7650" d="M${N1(100 - hw * 0.78)} ${hy} Q${N1(100 - hw * 0.86)} ${hy - 42} ${N1(100 - hw * 0.38)} ${hy - 48} Q100 ${hy - 36} ${N1(100 + hw * 0.38)} ${hy - 48} Q${N1(100 + hw * 0.86)} ${hy - 42} ${N1(100 + hw * 0.78)} ${hy}Z"/><path fill="${c}" d="M${N1(100 - hw * 0.8)} ${hy - 15} L${N1(100 + hw * 0.8)} ${hy - 15} L${N1(100 + hw * 0.78)} ${hy - 3} L${N1(100 - hw * 0.78)} ${hy - 3}Z"/>`;
+		case 9:
+			return `<path fill="${c}" d="M${100 - hw - 10} ${hy - 8} Q${100 - hw - 6} ${hy - 48} 104 ${hy - 45} Q${100 + hw + 24} ${hy - 42} ${100 + hw + 13} ${hy - 6} Q100 ${hy + 4} ${100 - hw - 10} ${hy - 8}Z"/><path fill="${shade(c, -0.2)}" d="M${100 - hw + 2} ${hy - 6} Q100 ${hy + 6} ${100 + hw - 2} ${hy - 4} L${100 + hw - 2} ${hy + 3} Q100 ${hy + 13} ${100 - hw + 2} ${hy + 1}Z"/><path fill="none" d="M105 ${hy - 45} l4 -11"/>`;
+		case 10:
+		{
+			const band = `M${100 - w - 2} ${N1(ey - 4)} C${100 - w - 6} ${t - 24} ${100 + w + 6} ${t - 24} ${100 + w + 2} ${N1(ey - 4)}`;
+			const by = t + 6 - (afro ? 20 : lift);
+			const ear = (s: number): string =>
+			{
+				const x = Number(N1(100 + s * w * 0.55));
+				return `<path fill="${c}" d="M${x - 16} ${by + 5} L${x + s * 5} ${by - 34} L${x + 16} ${by + 5}Z"/><path fill="#ffb3c7" stroke-width="2" d="M${x - 8} ${by + 1} L${x + s * 4} ${by - 21} L${x + 9} ${by + 1}Z"/>`;
+			};
+			return `${ear(-1)}${ear(1)}<path d="${band}" fill="none" stroke-width="10"/><path d="${band}" fill="none" stroke="${c}" stroke-width="6"/>`;
+		}
 	}
 	return "";
 }
@@ -536,6 +564,7 @@ function regions(f: Face, k: FeatureKey): Region[]
 		case "hatColor":
 			return [[100, t - 14, w + 26, 42]];
 		case "hairStyle":
+		case "hairDye":
 			return [[100, t + 26, w + 28, 56]];
 		case "hairColor":
 			return [
@@ -553,7 +582,7 @@ function regions(f: Face, k: FeatureKey): Region[]
 		case "mouth":
 			return [[100, my + 5, 28, 17]];
 		case "facialHair":
-			return [[100, my + 6, w * 0.85, 32]];
+			return f.facialHair === 6 ? [[100, (ey + b) / 2, w + 8, (b - ey) / 2 + 12]] : [[100, my + 6, w * 0.85, 32]];
 		case "ears":
 		case "earrings":
 			return [
@@ -626,8 +655,10 @@ export function faceSVG(f: Face, o: FaceOptions = {}): string
 {
 	const g = geo(f),
 		sk = SKIN[f.skin]!,
-		hc = HAIRC[f.hairColor]!;
-	let s = hairBack(f, g, hc);
+		hc = HAIRC[f.hairColor]!,
+		// Dye colors the hair on the head; eyebrows and facial hair keep the natural color.
+		dye = f.hairDye ? DYEC[f.hairDye]! : hc;
+	let s = hairBack(f, g, dye);
 	s += `<path d="M86 ${g.b - 16} L86 228 L114 228 L114 ${g.b - 16}Z" fill="${sk}"/>`;
 	s += `<path d="M12 254 Q16 226 60 219 Q80 230 100 230 Q120 230 140 219 Q184 226 188 254Z" fill="${CLOTH[f.shirt]}"/>`;
 	s +=
@@ -636,7 +667,7 @@ export function faceSVG(f: Face, o: FaceOptions = {}): string
 		`<g fill="${sk}">${headShape(f, g)}</g>` +
 		cheeks(f, g, sk) +
 		beardBack(f, g, hc, sk) +
-		hairFront(f, g, hc) +
+		hairFront(f, g, dye) +
 		eyes(f, g) +
 		brows(f, g, hc) +
 		nose(f, g, sk) +
