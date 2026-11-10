@@ -61,6 +61,8 @@ const PHONES =
 		height: 548,
 	},
 };
+// Room, in pixels, each spot-the-difference label must leave beside its text.
+const LABEL_SPARE = 12;
 // Spot the Difference offers every category from level 23.
 const CATEGORIES = [
 	"Hat",
@@ -140,20 +142,38 @@ for (const [phone, viewport] of Object.entries(PHONES))
 	{
 		await spotChoices(page, viewport);
 		await allCategories(page);
-		const layout = await page.evaluate((smallest) =>
-		{
-			const cats = [...document.querySelectorAll("#cats .cat")].map((c) => c.getBoundingClientRect());
-			const scroller = document.scrollingElement!;
-			return {
-				overflow: scroller.scrollHeight - scroller.clientHeight,
-				cut: cats.filter((r) => r.bottom > innerHeight || r.right > innerWidth || r.left < 0).length,
-				choiceHeights: new Set(cats.map((r) => Math.round(r.height))).size,
-				truncated: [...document.querySelectorAll<HTMLElement>("#cats .cat span")]
-					.filter((label) => label.scrollWidth > label.clientWidth)
-					.map((label) => label.textContent),
-				faceBigEnough: document.querySelector("#spotFace")!.getBoundingClientRect().width >= smallest,
-			};
-		}, SMALLEST_FACE);
+		const layout = await page.evaluate(
+			({smallest, spare}) =>
+			{
+				const cats = [...document.querySelectorAll("#cats .cat")].map((c) => c.getBoundingClientRect());
+				const scroller = document.scrollingElement!;
+				return {
+					overflow: scroller.scrollHeight - scroller.clientHeight,
+					cut: cats.filter((r) => r.bottom > innerHeight || r.right > innerWidth || r.left < 0).length,
+					choiceHeights: new Set(cats.map((r) => Math.round(r.height))).size,
+					// Text renders a little wider on Linux than on a Mac, so each label must fit with room to spare.
+					truncated: [...document.querySelectorAll<HTMLElement>("#cats .cat span")]
+						.filter((label) =>
+						{
+							// The label shrinks to its text, so the room is the choice's content box.
+							const choice = getComputedStyle(label.parentElement!);
+							const room =
+								label.parentElement!.clientWidth -
+								parseFloat(choice.paddingLeft) -
+								parseFloat(choice.paddingRight);
+							const text = document.createRange();
+							text.selectNodeContents(label);
+							return text.getBoundingClientRect().width + spare > room;
+						})
+						.map((label) => label.textContent),
+					faceBigEnough: document.querySelector("#spotFace")!.getBoundingClientRect().width >= smallest,
+				};
+			},
+			{
+				smallest: SMALLEST_FACE,
+				spare: LABEL_SPARE,
+			},
+		);
 		expect(layout).toStrictEqual(
 			{
 				overflow: 0,
