@@ -1,13 +1,13 @@
-:root{color-scheme:light;--ink:#2a2522;--paper:#fffdf6;--line:#dfe8f5;--good:#2fb36b;--bad:#e5484d;--sun:#ffe066}
+:root{color-scheme:light;--ink:#2a2522;--text:#2a2522;--muted:#666;--paper:#fffdf6;--card:#fff;--line:#dfe8f5;--good:#2fb36b;--bad:#e5484d;--sun:#ffe066;--display:'Gochi Hand',cursive;--body:'Patrick Hand',system-ui,sans-serif;--r-btn:255px 15px 225px 15px/15px 225px 15px 255px;--r-big:255px 15px 225px 15px/15px 225px 15px 255px;--r-card:20px 7px 22px 8px/8px 22px 7px 20px;--r-chip:14px 5px 14px 5px;--r-small:12px 4px 12px 4px;--r-cat:16px 6px 16px 6px}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
-body{font-family:'Patrick Hand',system-ui,sans-serif;color:var(--ink);font-size:20px;background-color:var(--paper);
+body{font-family:var(--body);color:var(--text);font-size:20px;background-color:var(--paper);
  background-image:linear-gradient(90deg,transparent 38px,#f4bcbc 38px,#f4bcbc 40px,transparent 40px),linear-gradient(var(--line) 1.5px,transparent 1.5px);
  background-size:100% 100%,100% 30px;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
 button{touch-action:manipulation}
 #screen{max-width:1100px;margin:0 auto;padding:62px 14px 28px;min-height:100svh;display:flex;flex-direction:column;align-items:center}
-.sketch{background:#fff;border:3px solid var(--ink);border-radius:255px 15px 225px 15px/15px 225px 15px 255px;box-shadow:3px 4px 0 rgba(0,0,0,.14)}
-.btn{font:inherit;font-size:22px;color:var(--ink);padding:9px 22px;background:#fff;border:3px solid var(--ink);border-radius:255px 15px 225px 15px/15px 225px 15px 255px;cursor:pointer;box-shadow:2px 3px 0 var(--ink);transition:transform .08s}
+.sketch{background:var(--card);color:var(--ink);border:3px solid var(--ink);border-radius:var(--r-big);box-shadow:3px 4px 0 rgba(0,0,0,.14)}
+.btn{font:inherit;font-size:22px;color:var(--ink);padding:9px 22px;background:var(--card);border:3px solid var(--ink);border-radius:var(--r-btn);cursor:pointer;box-shadow:2px 3px 0 var(--ink);transition:transform .08s}
 .btn:active{transform:translate(2px,3px);box-shadow:0 0 0 var(--ink)}
 .btn.primary{background:var(--sun)}
 .btn:disabled{opacity:.45;cursor:default}
@@ -15,7 +15,7 @@ button{touch-action:manipulation}
 .corner{position:fixed;top:10px;z-index:30;width:48px;height:48px;padding:0;font-size:24px;display:flex;align-items:center;justify-content:center}
 #snd{right:10px}#home{left:10px}
 #home.hide{display:none}
-.logo{font-family:'Gochi Hand',cursive;font-size:clamp(56px,12vw,104px);margin:0;line-height:1;transform:rotate(-3deg);text-shadow:4px 4px 0 var(--sun)}
+.logo{font-family:var(--display);font-size:clamp(56px,12vw,104px);margin:0;line-height:1;transform:rotate(-3deg);text-shadow:4px 4px 0 var(--sun)}
 .tag{font-size:24px;margin:6px 0 18px}
 .hero{width:160px;padding:6px;margin-top:10px;transform:rotate(2deg)}
 .hero svg{display:block;width:100%;height:auto}
@@ -26,18 +26,18 @@ button{touch-action:manipulation}
 .mode:nth-child(2){background:#e1f0ff;transform:rotate(1deg)}
 .mode:nth-child(3){background:#e4f8e4;transform:rotate(-.8deg)}
 .mode:nth-child(4){background:#f2e7ff;transform:rotate(1.2deg)}
-.mi{font-size:38px}.mt{font-family:'Gochi Hand',cursive;font-size:30px}.md{font-size:18px;line-height:1.2}
+.mi{font-size:38px}.mt{font-family:var(--display);font-size:30px}.md{font-size:18px;line-height:1.2}
 .hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:2px}
-.hud span{background:#fff;border:2px solid var(--ink);border-radius:14px 5px 14px 5px;padding:1px 12px;font-size:19px}
-.prompt{font-family:'Gochi Hand',cursive;font-size:clamp(30px,5.4vw,44px);margin:6px 0 10px;text-align:center;line-height:1.1}
+.hud span{background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:var(--r-chip);padding:1px 12px;font-size:19px}
+.prompt{font-family:var(--display);font-size:clamp(30px,5.4vw,44px);margin:6px 0 10px;text-align:center;line-height:1.1}
 .prompt.bad{color:var(--bad)}
-.facecard{background:#fff;border:3px solid var(--ink);border-radius:20px 7px 22px 8px/8px 22px 7px 20px;padding:4px;position:relative;font:inherit;color:inherit;margin:0}
+.facecard{background:var(--card);border:3px solid var(--ink);border-radius:var(--r-card);padding:4px;position:relative;font:inherit;color:var(--ink);margin:0}
 .facecard svg{display:block;width:100%;height:auto}
 .facecard.big{width:min(78vw,46svh,360px)}
 .memo{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
 .memo-2 .facecard.big{width:min(43vw,40svh,320px)}
 .memo-3 .facecard.big{width:min(30vw,36svh,290px)}
-.badge{position:absolute;top:-12px;left:-12px;width:36px;height:36px;border-radius:50%;background:var(--sun);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Gochi Hand';font-size:24px;z-index:2}
+.badge{position:absolute;top:-12px;left:-12px;width:36px;height:36px;border-radius:50%;background:var(--sun);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:24px;z-index:2}
 .grid{display:grid;gap:12px;justify-content:center;width:100%}
 .pick{cursor:pointer;transition:transform .12s,box-shadow .12s;box-shadow:2px 3px 0 rgba(0,0,0,.18)}
 .pick:hover{transform:rotate(-1.5deg) scale(1.03)}
@@ -45,10 +45,10 @@ button{touch-action:manipulation}
 .pick.right,.pick.found{border-color:var(--good);box-shadow:0 0 0 5px var(--good)}
 .pick.found::after{content:'✓';position:absolute;top:-14px;right:-10px;background:var(--good);color:#fff;width:38px;height:38px;border-radius:50%;font-size:26px;display:flex;align-items:center;justify-content:center;border:3px solid var(--ink)}
 .tapme{cursor:crosshair}
-.timer{width:min(520px,90%);height:24px;border:3px solid var(--ink);border-radius:12px 4px 12px 4px;margin:14px auto 4px;position:relative;background:#fff;overflow:hidden}
+.timer{width:min(520px,90%);height:24px;border:3px solid var(--ink);border-radius:var(--r-small);margin:14px auto 4px;position:relative;background:var(--card);overflow:hidden}
 .timer .fill{height:100%;width:100%;background:repeating-linear-gradient(-45deg,#8fd0ff 0 8px,#62b2f2 8px 16px)}
 .timer.low .fill{background:repeating-linear-gradient(-45deg,#ff9a9a 0 8px,#ff6b6b 8px 16px)}
-.timer .num{position:absolute;inset:0;text-align:center;line-height:18px;font-size:19px;font-weight:bold}
+.timer .num{color:var(--ink);position:absolute;inset:0;text-align:center;line-height:18px;font-size:19px;font-weight:bold}
 .hl{fill:none;stroke:var(--bad);stroke-width:4.5;stroke-dasharray:10 6;animation:pulse .8s ease-in-out infinite alternate}
 .hl.good{stroke:var(--good)}
 .xmark path{stroke:var(--bad);stroke-width:6;stroke-linecap:round;fill:none}
@@ -60,50 +60,57 @@ button{touch-action:manipulation}
 .facecard.wrong{border-color:var(--bad);box-shadow:0 0 0 4px var(--bad)}
 .diffs{font-size:22px;margin:12px 0 4px;text-align:center}
 .final{padding:14px 26px;margin-top:10px;text-align:center;width:min(520px,100%)}
-.bigscore{font-family:'Gochi Hand';font-size:64px;line-height:1}
+.bigscore{font-family:var(--display);font-size:64px;line-height:1}
 .hs-area{margin-top:10px;min-height:30px}
-.newhs{font-family:'Gochi Hand';font-size:30px;color:#d4840a}
+.newhs{font-family:var(--display);font-size:30px;color:#d4840a}
 .nameRow{display:flex;gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap}
-.nameRow input{font:inherit;font-size:24px;padding:6px 12px;border:3px solid var(--ink);border-radius:12px 4px 12px 4px;width:200px;background:#fffef2;color:#2a2522;-webkit-text-fill-color:#2a2522;caret-color:#2a2522}
+.nameRow input{font:inherit;font-size:24px;padding:6px 12px;border:3px solid var(--ink);border-radius:var(--r-small);width:200px;background:#fffef2;color:#2a2522;-webkit-text-fill-color:#2a2522;caret-color:#2a2522}
 .nameRow input::placeholder{color:#9a948c;-webkit-text-fill-color:#9a948c}
 .build{display:flex;gap:18px;align-items:flex-start;justify-content:center;flex-wrap:wrap;width:100%}
 .build .facecard.big{width:min(60vw,36svh,320px)}
 @media (max-width:700px){.build .facecard.big{width:min(46vw,27svh)}.bopts{gap:7px}.blabel{font-size:26px}}
 .bpanel{flex:1 1 320px;max-width:540px;display:flex;flex-direction:column;gap:10px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{font:inherit;font-size:17px;padding:3px 10px;border:2px solid var(--ink);border-radius:12px 4px 12px 4px;background:#fff;cursor:pointer;color:var(--ink)}
+.chip{font:inherit;font-size:17px;padding:3px 10px;border:2px solid var(--ink);border-radius:var(--r-small);background:var(--card);cursor:pointer;color:var(--ink)}
 .chip.on{background:var(--sun)}
 .chip.done{border-color:var(--good)}
-.blabel{font-family:'Gochi Hand';font-size:30px;text-align:center}
+.blabel{font-family:var(--display);font-size:30px;text-align:center}
 .bopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .opt{aspect-ratio:1;cursor:pointer;padding:3px}
 .opt svg{width:100%;height:100%}
 .opt.sel{border-color:#d4a017;box-shadow:0 0 0 5px #ffd23f}
 .splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70svh;text-align:center}
-.lvl{font-family:'Gochi Hand';font-size:clamp(70px,16vw,120px);animation:pop .5s ease-out;transform:rotate(-4deg)}
+.lvl{font-family:var(--display);font-size:clamp(70px,16vw,120px);animation:pop .5s ease-out;transform:rotate(-4deg)}
 .sub{font-size:28px;max-width:600px}
 @keyframes pop{0%{transform:scale(.3) rotate(-12deg);opacity:0}70%{transform:scale(1.12) rotate(-2deg)}100%{transform:scale(1) rotate(-4deg)}}
-.float{position:fixed;transform:translateX(-50%);font-family:'Gochi Hand';font-size:42px;color:var(--good);pointer-events:none;animation:floatUp 1.25s ease-out forwards;z-index:40;text-shadow:2px 2px 0 #fff,-2px -2px 0 #fff;white-space:nowrap}
+.float{position:fixed;transform:translateX(-50%);font-family:var(--display);font-size:42px;color:var(--good);pointer-events:none;animation:floatUp 1.25s ease-out forwards;z-index:40;text-shadow:2px 2px 0 #fff,-2px -2px 0 #fff;white-space:nowrap}
 @keyframes floatUp{from{opacity:1;margin-top:0}to{opacity:0;margin-top:-90px}}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
-.tab{font:inherit;font-size:19px;padding:5px 12px;border:2px solid var(--ink);border-radius:14px 5px 14px 5px;background:#fff;cursor:pointer;color:var(--ink)}
+.tab{font:inherit;font-size:19px;padding:5px 12px;border:2px solid var(--ink);border-radius:var(--r-chip);background:var(--card);cursor:pointer;color:var(--ink)}
 .tab.on{background:var(--sun)}
 .board{width:min(560px,100%);padding:12px 22px}
 .brow{display:grid;grid-template-columns:42px 1fr auto auto;gap:12px;padding:6px 4px;border-bottom:2px dashed #ddd;align-items:center}
 .brow:last-child{border-bottom:none}
 .brow.me{background:#fff3b0;border-radius:8px}
-.brow .rk{font-family:'Gochi Hand';font-size:26px}
+.brow .rk{font-family:var(--display);font-size:26px}
 .brow .sc{font-weight:bold}
 .brow .lv{font-size:16px;color:#777}
-.note{font-size:17px;color:#666;text-align:center;margin:8px 0 0}
+.note{font-size:17px;color:var(--muted);text-align:center;margin:8px 0 0}
 .empty{text-align:center;padding:16px;color:#777}
 .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;width:min(720px,100%);margin-top:10px}
-.cat{font:inherit;font-size:17px;line-height:1.1;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:16px 6px 16px 6px;padding:4px;cursor:pointer;box-shadow:2px 3px 0 var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-start}
+.cat{font:inherit;font-size:17px;line-height:1.1;color:var(--ink);background:var(--card);border:3px solid var(--ink);border-radius:var(--r-cat);padding:4px;cursor:pointer;box-shadow:2px 3px 0 var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-start}
 .cat svg{display:block;width:100%;height:auto}
 .cat:active{transform:translate(2px,3px);box-shadow:none}
 .cat.right{background:#c9f2d8;border-color:var(--good)}
 .spotwrap .facecard.big{width:min(70vw,38svh,330px)}
-.looking{font-family:'Gochi Hand';font-size:clamp(40px,9vw,70px)}
+.looking{font-family:var(--display);font-size:clamp(40px,9vw,70px)}
 /* On a phone, Spot the Difference fits the face, the timer and all fifteen choices on one screen. Every choice is one
    line tall, so the grid's height never depends on the font, and the face takes whatever height is left. */
 @media (max-width:700px){#screen{padding-bottom:8px}#screen:has(>.spotwrap){height:100svh;min-height:0;padding-top:12px}#screen:has(>.spotwrap)>:not(.spotwrap){flex-shrink:0}#screen:has(>.spotwrap) .hud span:first-child{display:none}.hud span{font-size:15px;padding:0 8px}.prompt{margin:2px 0 6px}.spotwrap{flex:1 1 0;min-height:160px;width:100%;align-items:center}.spotwrap .facecard.big{width:auto;height:100%;max-height:360px}.spotwrap .facecard.big svg{width:auto;height:100%}.spotwrap~.timer{margin:8px auto 2px}.cats{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:6px}.cat{font-size:13px;padding:2px;border-width:2px;box-shadow:1px 2px 0 var(--ink)}.cat span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.styles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;width:100%;max-width:980px}
+.stylecard{font:inherit;color:var(--ink);background:var(--card);border:3px solid var(--ink);border-radius:var(--r-card);padding:6px 6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;transition:transform .12s}
+.stylecard svg{display:block;width:100%;height:auto}
+.stylecard:hover{transform:scale(1.03)}
+.stylecard.on{border-color:#d4a017;box-shadow:0 0 0 5px #ffd23f}
+.sn{font-family:var(--display);font-size:24px;line-height:1.1}.sb{font-size:16px;line-height:1.2}
+@media (max-width:700px){.styles{grid-template-columns:repeat(2,1fr)}}

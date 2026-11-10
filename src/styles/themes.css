@@ -1,0 +1,56 @@
+/* One theme per art style, keyed off the data-style that settings.ts puts on the root. A theme restates the variables
+   of game.css and restyles a few parts. Its variables are set on the root itself, to outweigh :root; its other selectors sit inside :where(), so they weigh no more than the rules they
+   replace and the state rules of game.css (.right, .found, .on, :active) still win. The notebook sketch is game.css
+   as it stands. */
+
+/* Storybook: warm unlined paper and brown ink. */
+html[data-style="storybook"]{--ink:#4a3526;--text:#4a3526;--muted:#7a6756;--paper:#fbf1df;--card:#fffaf0;--sun:#ffd98a}
+:where(html[data-style="storybook"]) body{background:radial-gradient(ellipse at 50% 0,#fff8ea,#f6e6c8 85%) fixed var(--paper)}
+:where(html[data-style="storybook"]) .logo{text-shadow:3px 4px 0 var(--sun)}
+
+/* Cut Paper: a teal craft board with cream paper pieces and soft shadows instead of outlines. */
+html[data-style="paper"]{--ink:#3a2a12;--text:#fff6e0;--muted:#d5ebe4;--paper:#1f6f6b;--card:#fbf1d8;--sun:#ffc93c;--good:#35b56a;--bad:#ff6b4a;--display:'Titan One','Arial Black',sans-serif;--body:'Nunito',system-ui,sans-serif;--r-btn:3px;--r-big:3px;--r-card:2px;--r-chip:2px;--r-small:2px;--r-cat:2px}
+:where(html[data-style="paper"]) body{font-weight:700;background-color:var(--paper);background-size:220px 220px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -.6 .42'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
+:where(html[data-style="paper"]) :is(.btn,.sketch,.facecard,.tab,.chip,.cat,.timer,.badge,.stylecard){border-color:transparent;box-shadow:0 1px 0 rgba(0,0,0,.2),2px 5px 7px rgba(0,0,0,.35)}
+:where(html[data-style="paper"]) .hud span{border-color:transparent;background:var(--sun);box-shadow:1px 3px 3px rgba(0,0,0,.35);font-family:var(--display);font-size:16px;padding:3px 12px}
+:where(html[data-style="paper"]) .btn.primary{background:#ff6b4a;color:#fff6e0}
+:where(html[data-style="paper"]) .logo{text-shadow:3px 3px 0 #ff6b4a,6px 6px 0 #ffc93c,8px 10px 6px rgba(0,0,0,.35)}
+:where(html[data-style="paper"]) .timer .fill{background:#ff8a66}
+:where(html[data-style="paper"]) .timer.low .fill{background:#e5484d}
+:where(html[data-style="paper"]) .float{color:#ffe08a;text-shadow:2px 2px 0 #1a4f4c}
+:where(html[data-style="paper"]) .newhs{color:#c9611f}
+:where(html[data-style="paper"]) .prompt.bad{color:#ffb4a3}
+
+/* Pixel Arcade: a dark cabinet, square corners, block shadows and pixel type. */
+html[data-style="pixel"]{--ink:#171430;--text:#e8e6ff;--muted:#a9a5d6;--paper:#171430;--card:#e8e6ff;--sun:#ffd400;--good:#2fd66b;--bad:#ff5470;--display:'Press Start 2P','Courier New',monospace;--body:'VT323','Courier New',monospace;--r-btn:0;--r-big:0;--r-card:0;--r-chip:0;--r-small:0;--r-cat:0}
+:where(html[data-style="pixel"]) body{font-size:23px;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 2px,transparent 2px 4px) var(--paper)}
+:where(html[data-style="pixel"]) .logo{font-size:clamp(22px,6.4vw,58px);color:var(--sun);text-shadow:4px 4px 0 #e0218a;transform:none;margin-top:8px}
+:where(html[data-style="pixel"]) .prompt{font-size:clamp(13px,2.6vw,20px);line-height:1.6}
+:where(html[data-style="pixel"]) .lvl{font-size:clamp(28px,7.5vw,60px);color:var(--sun)}
+:where(html[data-style="pixel"]) .looking{font-size:clamp(16px,4.6vw,32px)}
+:where(html[data-style="pixel"]) :is(.mt,.blabel,.newhs,.sn){font-size:13px;line-height:1.5}
+:where(html[data-style="pixel"]) .bigscore{font-size:36px}
+:where(html[data-style="pixel"]) :is(.badge,.brow .rk){font-size:12px}
+:where(html[data-style="pixel"]) .float{font-size:20px;text-shadow:2px 2px 0 #171430}
+:where(html[data-style="pixel"]) :is(.btn,.cat){box-shadow:0 5px 0 #6a66a0}
+:where(html[data-style="pixel"]) .btn.primary{box-shadow:0 5px 0 #a86a00}
+:where(html[data-style="pixel"]) :is(.sketch,.facecard,.stylecard){box-shadow:5px 6px 0 #0b0a1c}
+:where(html[data-style="pixel"]) .facecard{background:#7fc8f8;border-color:#e8e6ff;border-width:4px}
+:where(html[data-style="pixel"]) .hud span{background:transparent;color:#5dfc8a;border-color:#5dfc8a}
+:where(html[data-style="pixel"]) .timer{border-color:#e8e6ff;background:#0b0a1c}
+:where(html[data-style="pixel"]) .timer .fill{background:repeating-linear-gradient(90deg,#5dfc8a 0 12px,transparent 12px 16px)}
+:where(html[data-style="pixel"]) .timer.low .fill{background:repeating-linear-gradient(90deg,#ff5470 0 12px,transparent 12px 16px)}
+:where(html[data-style="pixel"]) .timer .num{color:#e8e6ff;text-shadow:1px 1px 0 #0b0a1c}
+:where(html[data-style="pixel"]) .hero{transform:none}
+
+/* Modelling Clay: pastel tabletop, no outlines, puffy pieces with soft inner and outer shadows. */
+html[data-style="clay"]{--ink:#4a4370;--text:#4a4370;--muted:#7d77a3;--paper:#e6e4ff;--card:#fdfbff;--sun:#ffd76a;--good:#3fbf86;--bad:#f0567a;--display:'Baloo 2','Trebuchet MS',sans-serif;--body:'Nunito',system-ui,sans-serif;--r-btn:999px;--r-big:28px;--r-card:24px;--r-chip:999px;--r-small:16px;--r-cat:18px}
+:where(html[data-style="clay"]) body{font-weight:700;background:linear-gradient(160deg,#dfe7ff,#f7def0 70%,#ffe9d6) fixed var(--paper)}
+:where(html[data-style="clay"]) :is(.logo,.prompt,.mt,.lvl,.looking,.bigscore,.blabel,.newhs,.badge,.sn,.float,.brow .rk){font-weight:800}
+:where(html[data-style="clay"]) .logo{color:#ff6f91;text-shadow:0 2px 0 #ffa3b8,0 5px 0 #d94f73,0 12px 14px rgba(120,80,160,.35);transform:none}
+:where(html[data-style="clay"]) :is(.btn,.sketch,.facecard,.hud span,.tab,.chip,.cat,.badge,.stylecard){border-color:transparent;box-shadow:inset 0 -6px 9px rgba(120,110,170,.2),inset 0 4px 5px #fff,0 8px 14px rgba(110,100,170,.28)}
+:where(html[data-style="clay"]) .btn.primary{color:#fff;background:linear-gradient(#ff9bb3,#ff6f91);box-shadow:inset 0 -5px 7px rgba(170,30,80,.35),inset 0 3px 3px rgba(255,255,255,.55),0 8px 14px rgba(220,80,120,.35)}
+:where(html[data-style="clay"]) .timer{border-color:transparent;box-shadow:inset 0 4px 7px rgba(110,100,170,.35);border-radius:999px}
+:where(html[data-style="clay"]) .timer .fill{border-radius:999px;background:linear-gradient(#9fe3ff,#5fb8f5)}
+:where(html[data-style="clay"]) .timer.low .fill{background:linear-gradient(#ffb1c4,#f0567a)}
+:where(html[data-style="clay"]) .mt{line-height:1.1}

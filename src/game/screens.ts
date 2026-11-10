@@ -3,7 +3,9 @@ import {BUILD_ALL, BUILD_EASY, buildCount, buildMem, buildOpts, cfg, PLAIN, stag
 import {cropBox, FACE_ASPECT, faceSVG, featureBox} from "./draw.ts";
 import {diffKeys, type Face, FEATURES, type FeatureKey, HATC, KEYS, makeDecoy, randomFace, visKey} from "./faces.ts";
 import {MODES, modeOf} from "./modes.ts";
+import {chooseStyle} from "./settings.ts";
 import {SFX} from "./sound.ts";
+import {currentStyle, isStyleId, STYLES} from "./styles/index.ts";
 import {Store} from "./store.ts";
 import {$, esc, ls, pick, range, rnd, shuffle} from "./util.ts";
 
@@ -194,7 +196,7 @@ export function titleScreen(): void
  <div class="hero sketch" id="heroFace"></div>
  <p class="tag">Memorize the face. Find the face!</p>
  <div class="modes">${MODES.map((m) => `<button class="mode sketch" data-mode="${m.id}"><span class="mi">${m.icon}</span><span class="mt">${m.name}</span><span class="md">${m.desc}</span></button>`).join("")}</div>
- <div class="row" style="margin-top:20px"><button class="btn" id="hsBtn">🏆 High Scores</button></div>`,
+ <div class="row" style="margin-top:20px"><button class="btn" id="hsBtn">🏆 High Scores</button><button class="btn" id="settingsBtn">⚙️ Settings</button></div>`,
 		false,
 	);
 	updateHero();
@@ -215,6 +217,51 @@ export function titleScreen(): void
 	{
 		SFX.click();
 		boardScreen("classic");
+	};
+	$("#settingsBtn").onclick = (): void =>
+	{
+		SFX.click();
+		settingsScreen();
+	};
+}
+// One face with a bit of everything, drawn once in each art style so the styles can be compared.
+const STYLE_SAMPLE: Face =
+{
+	...PLAIN,
+	hairStyle: 5,
+	eyeColor: 1,
+	mouth: 1,
+	facialHair: 2,
+	glasses: 1,
+	hat: 1,
+	cheeks: 1,
+	neckwear: 1,
+};
+function settingsScreen(): void
+{
+	const chosen = currentStyle();
+	show(
+		`<h2 class="prompt">⚙️ Settings</h2>
+ <p class="tag">Pick an art style</p>
+ <div class="styles">${STYLES.map((st) => `<button class="stylecard${st === chosen ? " on" : ""}" data-style="${st.id}" aria-pressed="${st === chosen}">${faceSVG(STYLE_SAMPLE, {}, st)}<span class="sn">${st.name}</span><span class="sb">${st.blurb}</span></button>`).join("")}</div>
+ <div class="row" style="margin-top:20px"><button class="btn primary" id="back">◀ Menu</button></div>`,
+		false,
+	);
+	for (const b of document.querySelectorAll<HTMLElement>(".stylecard"))
+	{
+		b.onclick = (): void =>
+		{
+			const id = b.dataset["style"];
+			if (!isStyleId(id)) return;
+			SFX.click();
+			chooseStyle(id);
+			settingsScreen();
+		};
+	}
+	$("#back").onclick = (): void =>
+	{
+		SFX.click();
+		titleScreen();
 	};
 }
 function boardRows(list: ScoreEntry[], hiT?: number): string

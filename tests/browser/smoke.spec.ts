@@ -17,6 +17,27 @@ test("the title screen shows the four modes and a face", async ({page}) =>
 	expect(errors).toStrictEqual([]);
 });
 
+test("settings switch the art style, restyle the page and keep the choice after a reload", async ({page}) =>
+{
+	await page.goto("/");
+	await page.locator("#settingsBtn").click();
+	await expect(page.locator(".stylecard .sn")).toHaveText([
+		"Notebook",
+		"Storybook",
+		"Cut Paper",
+		"Pixel Arcade",
+		"Modelling Clay",
+	]);
+	await expect(page.locator(".stylecard svg.face")).toHaveCount(5);
+	await expect(page.locator('.stylecard[aria-pressed="true"]')).toHaveAttribute("data-style", "sketch");
+	await page.locator('.stylecard[data-style="pixel"]').click();
+	await expect(page.locator('.stylecard[aria-pressed="true"]')).toHaveAttribute("data-style", "pixel");
+	await expect(page.locator("html")).toHaveAttribute("data-style", "pixel");
+	await page.reload();
+	await expect(page.locator("html")).toHaveAttribute("data-style", "pixel");
+	await expect(page.locator("#heroFace svg.face")).toHaveCount(1);
+});
+
 test("a game starts at level 1 and shows the face to memorize", async ({page}) =>
 {
 	await page.goto("/");
