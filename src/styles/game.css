@@ -105,4 +105,4 @@ button{touch-action:manipulation}
 .spotwrap .facecard.big{width:min(70vw,38vh,330px)}
 .looking{font-family:'Gochi Hand';font-size:clamp(40px,9vw,70px)}
 /* On a phone, Spot the Difference fits the face, the timer and all fifteen choices on one screen. */
-@media (max-width:700px){#screen{padding-bottom:8px}.hud span{font-size:15px;padding:0 8px}.prompt{margin:2px 0 6px}.spotwrap .facecard.big{width:min(50vw,25vh)}.cats{grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}.cat{font-size:13px;padding:2px;border-width:2px;box-shadow:1px 2px 0 var(--ink)}}
+@media (max-width:700px){#screen{padding-bottom:8px}.hud span{font-size:15px;padding:0 8px}.prompt{margin:2px 0 6px}.spotwrap .facecard.big{width:min(46vw,21vh)}.cats{grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}.cat{font-size:13px;padding:2px;border-width:2px;box-shadow:1px 2px 0 var(--ink)}}
