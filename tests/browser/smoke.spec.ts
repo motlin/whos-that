@@ -61,8 +61,9 @@ const PHONES =
 		height: 548,
 	},
 };
-// Room, in pixels, each spot-the-difference label must leave beside its text.
-const LABEL_SPARE = 12;
+// Chromium on Linux sets the same font about 8% wider than on a Mac, so every spot-the-difference label must fit
+// with this much headroom on either.
+const LABEL_HEADROOM = 1.1;
 // Spot the Difference offers every category from level 23.
 const CATEGORIES = [
 	"Hat",
@@ -143,7 +144,7 @@ for (const [phone, viewport] of Object.entries(PHONES))
 		await spotChoices(page, viewport);
 		await allCategories(page);
 		const layout = await page.evaluate(
-			({smallest, spare}) =>
+			({smallest, headroom}) =>
 			{
 				const cats = [...document.querySelectorAll("#cats .cat")].map((c) => c.getBoundingClientRect());
 				const scroller = document.scrollingElement!;
@@ -151,7 +152,6 @@ for (const [phone, viewport] of Object.entries(PHONES))
 					overflow: scroller.scrollHeight - scroller.clientHeight,
 					cut: cats.filter((r) => r.bottom > innerHeight || r.right > innerWidth || r.left < 0).length,
 					choiceHeights: new Set(cats.map((r) => Math.round(r.height))).size,
-					// Text renders a little wider on Linux than on a Mac, so each label must fit with room to spare.
 					truncated: [...document.querySelectorAll<HTMLElement>("#cats .cat span")]
 						.filter((label) =>
 						{
@@ -163,7 +163,7 @@ for (const [phone, viewport] of Object.entries(PHONES))
 								parseFloat(choice.paddingRight);
 							const text = document.createRange();
 							text.selectNodeContents(label);
-							return text.getBoundingClientRect().width + spare > room;
+							return text.getBoundingClientRect().width * headroom > room;
 						})
 						.map((label) => label.textContent),
 					faceBigEnough: document.querySelector("#spotFace")!.getBoundingClientRect().width >= smallest,
@@ -171,7 +171,7 @@ for (const [phone, viewport] of Object.entries(PHONES))
 			},
 			{
 				smallest: SMALLEST_FACE,
-				spare: LABEL_SPARE,
+				headroom: LABEL_HEADROOM,
 			},
 		);
 		expect(layout).toStrictEqual(
