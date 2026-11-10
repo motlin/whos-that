@@ -1,6 +1,9 @@
 import {CLOTH, DYEC, EYEC, type Face, type FeatureKey, HAIRC, HATC, SKIN} from "./faces.ts";
 
 const INK = "#2a2522";
+// Ink disappears on the two darkest skins, so whatever is drawn on the face there uses this light line instead.
+const LIGHT = "#f3d9bd";
+const darkSkin = (f: Face): boolean => f.skin >= 3;
 const SHAPES = [
 	{
 		w: 60,
@@ -184,6 +187,13 @@ function hairFront(f: Face, g: Geo, hc: string): string
 			}
 			return p;
 		}
+		case 9:
+		{
+			// Balding: a tuft over each ear and a bare, shiny top.
+			const side = (x: number, s: number): string =>
+				`M${x - s * 4} ${ey + 2} C${x - s * 12} ${t + 30} ${x + s * 2} ${t + 10} ${x + s * 17} ${t + 15} Q${x + s * 8} ${t + 40} ${x + s * 9} ${ey + 2}Z`;
+			return `<path ${st} d="${side(L, 1)} ${side(R, -1)}"/><path d="M${N1(100 - w * 0.3)} ${t + 14} q12 -8 24 -5" stroke="#fff" stroke-width="4" fill="none" opacity=".85"/>`;
+		}
 	}
 	return "";
 }
@@ -221,10 +231,12 @@ function ears(f: Face, g: Geo, sk: string): string
 			const [dx, dy] = EB[f.ears] as [number, number];
 			const ex = x + s * dx,
 				ey2 = y + dy;
-			o +=
-				f.earrings === 1
-					? `<circle cx="${ex}" cy="${ey2 + 7}" r="7.5" fill="none" stroke="#d4a017" stroke-width="3.6"/>`
-					: `<path d="M${ex} ${ey2 - 1} v4" fill="none" stroke-width="2"/><path d="M${ex} ${ey2 + 2} q-10 13 0 17 q10 -4 0 -17Z" fill="#35c4f0" stroke-width="1.8"/>`;
+			o += [
+				`<circle cx="${ex}" cy="${ey2 + 7}" r="7.5" fill="none" stroke="#d4a017" stroke-width="3.6"/>`,
+				`<path d="M${ex} ${ey2 - 1} v4" fill="none" stroke-width="2"/><path d="M${ex} ${ey2 + 2} q-10 13 0 17 q10 -4 0 -17Z" fill="#35c4f0" stroke-width="1.8"/>`,
+				`<circle cx="${ex}" cy="${ey2 + 6}" r="7.5" fill="#e5484d" stroke-width="1.8"/>`,
+				`<path d="M${ex} ${ey2 - 1} l-8.5 19 h17Z" fill="#3fbf6f" stroke-width="1.8"/>`,
+			][f.earrings - 1]!;
 		}
 	}
 	return `<g fill="${sk}">${o}</g>`;
@@ -323,7 +335,7 @@ function mouth(f: Face, g: Geo): string
 		case 0:
 			return `<path fill="none" d="M86 ${y} Q100 ${y + 13} 114 ${y}"/>`;
 		case 1:
-			return `<path fill="#fff" d="M84 ${y - 2} L116 ${y - 2} Q114 ${y + 18} 100 ${y + 18} Q86 ${y + 18} 84 ${y - 2}Z"/><path fill="none" stroke-width="2" d="M85 ${y + 5} L115 ${y + 5} M93 ${y - 2} L93 ${y + 16} M100 ${y - 2} L100 ${y + 18} M107 ${y - 2} L107 ${y + 16}"/>`;
+			return `<path fill="#fff" stroke="${INK}" d="M84 ${y - 2} L116 ${y - 2} Q114 ${y + 18} 100 ${y + 18} Q86 ${y + 18} 84 ${y - 2}Z"/><path fill="none" stroke="${INK}" stroke-width="2" d="M85 ${y + 5} L115 ${y + 5} M93 ${y - 2} L93 ${y + 16} M100 ${y - 2} L100 ${y + 18} M107 ${y - 2} L107 ${y + 16}"/>`;
 		case 2:
 			return `<path fill="none" d="M87 ${y + 9} Q100 ${y - 4} 113 ${y + 9}"/>`;
 		case 3:
@@ -335,7 +347,10 @@ function mouth(f: Face, g: Geo): string
 		case 6:
 			return `<path fill="none" d="M87 ${y + 5} Q104 ${y + 7} 114 ${y - 4}"/>`;
 		case 7:
-			return `<path fill="none" d="M86 ${y} Q100 ${y + 9} 114 ${y}"/><path fill="#fff" stroke-width="2" d="M95 ${y + 4} h10 v9 h-10Z M100 ${y + 4} v9"/>`;
+			return `<path fill="none" d="M86 ${y} Q100 ${y + 9} 114 ${y}"/><path fill="#fff" stroke="${INK}" stroke-width="2" d="M95 ${y + 4} h10 v9 h-10Z M100 ${y + 4} v9"/>`;
+		case 8:
+			// Puckered lips, with a crease at each side.
+			return `<path fill="#e0455a" d="M90 ${y + 4} Q95 ${y - 5} 100 ${y + 1} Q105 ${y - 5} 110 ${y + 4} Q107 ${y + 16} 100 ${y + 16} Q93 ${y + 16} 90 ${y + 4}Z"/><path fill="none" stroke-width="2" d="M90 ${y + 4} Q100 ${y + 9} 110 ${y + 4} M85 ${y + 1} l-5 -3 M85 ${y + 8} l-5 3 M115 ${y + 1} l5 -3 M115 ${y + 8} l5 3"/>`;
 	}
 	return "";
 }
@@ -352,9 +367,9 @@ function beardBack(f: Face, g: Geo, hc: string, sk: string): string
 	}
 	if (f.facialHair === 6)
 	{
-		// Sideburns run from the hairline to the jaw and stop short of the cheeks.
+		// Sideburns start under the hair, so they join it, and run to the jaw short of the cheeks.
 		const side = (x: number, s: number): string =>
-			`M${x - s * 3} ${N1(ey - 8)} L${x + s * 13} ${N1(ey - 6)} L${x + s * 17} ${N1(ny + 14)} Q${x + s * 11} ${N1(ny + 27)} ${x + s * 4} ${N1(ny + 20)}Z`;
+			`M${x - s * 3} ${N1(ey - 18)} L${x + s * 15} ${N1(ey - 18)} L${x + s * 17} ${N1(ny + 14)} Q${x + s * 11} ${N1(ny + 27)} ${x + s * 4} ${N1(ny + 20)}Z`;
 		return `<path fill="${hc}" d="${side(L, 1)} ${side(R, -1)}"/>`;
 	}
 	if (f.facialHair === 7)
@@ -371,7 +386,7 @@ function beardBack(f: Face, g: Geo, hc: string, sk: string): string
 		{
 			s += `<circle cx="${N1(100 + u * w * 0.75)}" cy="${N1(my - 6 + v * (b - my + 2))}" r="1.4"/>`;
 		}
-		return `<g fill="${shade(hc, -0.4)}" stroke="none">${s}</g>`;
+		return `<g fill="${darkSkin(f) ? shade(hc, 0.5) : shade(hc, -0.4)}" stroke="none">${s}</g>`;
 	}
 	return "";
 }
@@ -414,19 +429,19 @@ function cheeks(f: Face, g: Geo, sk: string): string
 				] as const)
 					s += `<circle cx="${x + a}" cy="${cy + c}" r="2.2"/>`;
 			}
-			return `<g fill="${shade(sk, -0.5)}" stroke="none">${s}</g>`;
+			return `<g fill="${darkSkin(f) ? shade(sk, 0.5) : shade(sk, -0.5)}" stroke="none">${s}</g>`;
 		}
 		case 3:
 		{
 			// Two stripes of face paint on each cheek.
 			const stripes = (x: number, s: number): string =>
 				`M${x - s * 10} ${cy - 3} l${s * 19} -5 M${x - s * 10} ${cy + 6} l${s * 19} -5`;
-			return `<path fill="none" stroke="#2748b8" stroke-width="5" d="${stripes(lx, -1)} ${stripes(rx, 1)}"/>`;
+			return `<path fill="none" stroke="#3a78f2" stroke-width="5" d="${stripes(lx, -1)} ${stripes(rx, 1)}"/>`;
 		}
 		case 4:
-			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="#f3c999" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="#e2a96f" stroke="none"/></g>`;
+			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="#f3c999" stroke="${INK}" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="#e2a96f" stroke="none"/></g>`;
 		case 5:
-			return `<path d="${star(rx, cy, 12, 5.4)}" fill="#ffd23f" stroke-width="2"/>`;
+			return `<path d="${star(rx, cy, 12, 5.4)}" fill="#ffd23f" stroke="${INK}" stroke-width="2"/>`;
 	}
 	return "";
 }
@@ -450,6 +465,10 @@ function neckwear(f: Face): string
 			return `<path fill="#f39c12" d="M82 228 L74 253 L93 253 L95 231Z"/><path fill="none" stroke-width="2" d="M79 253 v-8 M84 253 v-8 M89 253 v-8"/><path fill="#f39c12" d="M77 206 Q100 217 123 206 L126 224 Q100 237 74 224Z"/><path fill="none" stroke="#c0392b" stroke-width="3" d="M88 211 l-2 17 M100 213 v19 M112 211 l2 17"/>`;
 		case 4:
 			return `<path fill="#fff" d="M100 223 L83 213 L79 229 L93 233Z M100 223 L117 213 L121 229 L107 233Z"/><path fill="#8e44ad" d="M96 232 L104 232 L111 254 L89 254Z"/><path fill="#8e44ad" d="M93 221 L107 221 L104 232 L96 232Z"/>`;
+		case 5:
+			return `<path fill="none" stroke-width="5.5" d="M83 213 Q90 232 100 238 Q110 232 117 213"/><path fill="none" stroke="#e6b422" stroke-width="2.6" d="M83 213 Q90 232 100 238 Q110 232 117 213"/><path fill="#e5484d" d="M100 235 l7 8 l-7 9 l-7 -9Z"/>`;
+		case 6:
+			return `<path fill="#2f6fde" d="M74 209 Q100 222 126 209 L100 251Z"/><g fill="#fff" stroke="none"><circle cx="90" cy="221" r="2.4"/><circle cx="110" cy="221" r="2.4"/><circle cx="100" cy="228" r="2.4"/><circle cx="100" cy="240" r="2.4"/></g>`;
 	}
 	return "";
 }
@@ -519,7 +538,7 @@ function hat(f: Face, g: Geo): string
 	switch (f.hat)
 	{
 		case 1:
-			return `<ellipse fill="${c}" cx="${100 + 10}" cy="${hy}" rx="${hw + 12}" ry="7"/><path fill="${c}" d="${dome(48)}"/><path fill="none" stroke-width="2" d="M100 ${hy - 48} Q${100 - hw * 0.5} ${hy - 30} ${100 - hw * 0.55} ${hy}"/><circle fill="${c}" cx="100" cy="${hy - 50}" r="4"/>`;
+			return `<path fill="${c}" d="${dome(48)}"/><path fill="#fff" d="M${N1(100 - hw * 0.5)} ${hy} Q${N1(100 - hw * 0.5)} ${hy - 44} 100 ${hy - 50} Q${N1(100 + hw * 0.5)} ${hy - 44} ${N1(100 + hw * 0.5)} ${hy}Z"/><circle fill="${c}" cx="100" cy="${hy - 50}" r="4.5"/><path fill="${shade(c, -0.2)}" d="M${100 - hw + 2} ${hy - 2} Q100 ${hy - 10} ${100 + hw - 2} ${hy - 2} Q${100 + hw + 6} ${hy + 13} 100 ${hy + 15} Q${100 - hw - 6} ${hy + 13} ${100 - hw + 2} ${hy - 2}Z"/>`;
 		case 2:
 			return `<path fill="${c}" d="${dome(52)}"/><rect fill="${shade(c, -0.15)}" x="${100 - hw - 3}" y="${hy - 13}" width="${2 * hw + 6}" height="17" rx="6"/><circle fill="#fff" cx="100" cy="${hy - 58}" r="10"/>`;
 		case 3:
@@ -542,15 +561,20 @@ function hat(f: Face, g: Geo): string
 		case 9:
 			return `<path fill="${c}" d="M${100 - hw - 10} ${hy - 8} Q${100 - hw - 6} ${hy - 48} 104 ${hy - 45} Q${100 + hw + 24} ${hy - 42} ${100 + hw + 13} ${hy - 6} Q100 ${hy + 4} ${100 - hw - 10} ${hy - 8}Z"/><path fill="${shade(c, -0.2)}" d="M${100 - hw + 2} ${hy - 6} Q100 ${hy + 6} ${100 + hw - 2} ${hy - 4} L${100 + hw - 2} ${hy + 3} Q100 ${hy + 13} ${100 - hw + 2} ${hy + 1}Z"/><path fill="none" d="M105 ${hy - 45} l4 -11"/>`;
 		case 10:
+		case 11:
 		{
 			const band = `M${100 - w - 2} ${N1(ey - 4)} C${100 - w - 6} ${t - 24} ${100 + w + 6} ${t - 24} ${100 + w + 2} ${N1(ey - 4)}`;
 			const by = t + 6 - (afro ? 20 : lift);
+			const cat = f.hat === 10,
+				col = cat ? "#2b2b2b" : "#d92b2b";
 			const ear = (s: number): string =>
 			{
 				const x = Number(N1(100 + s * w * 0.55));
-				return `<path fill="${c}" d="M${x - 16} ${by + 5} L${x + s * 5} ${by - 34} L${x + 16} ${by + 5}Z"/><path fill="#ffb3c7" stroke-width="2" d="M${x - 8} ${by + 1} L${x + s * 4} ${by - 21} L${x + 9} ${by + 1}Z"/>`;
+				return cat
+					? `<path fill="${col}" d="M${x - 21} ${by + 6} L${x + s * 6} ${by - 44} L${x + 21} ${by + 6}Z"/><path fill="#ffb3c7" stroke="none" d="M${x - 10} ${by + 1} L${x + s * 5} ${by - 27} L${x + 11} ${by + 1}Z"/>`
+					: `<path fill="${col}" d="M${x - 10} ${by + 5} Q${x - s * 6} ${by - 22} ${x + s * 20} ${by - 38} Q${x + s * 16} ${by - 8} ${x + 10} ${by + 5}Z"/>`;
 			};
-			return `${ear(-1)}${ear(1)}<path d="${band}" fill="none" stroke-width="10"/><path d="${band}" fill="none" stroke="${c}" stroke-width="6"/>`;
+			return `${ear(-1)}${ear(1)}<path d="${band}" fill="none" stroke-width="10"/><path d="${band}" fill="none" stroke="${col}" stroke-width="6"/>`;
 		}
 	}
 	return "";
@@ -658,6 +682,7 @@ export function faceSVG(f: Face, o: FaceOptions = {}): string
 		hc = HAIRC[f.hairColor]!,
 		// Dye colors the hair on the head; eyebrows and facial hair keep the natural color.
 		dye = f.hairDye ? DYEC[f.hairDye]! : hc;
+	const onFace = (inner: string): string => (darkSkin(f) ? `<g stroke="${LIGHT}">${inner}</g>` : inner);
 	let s = hairBack(f, g, dye);
 	s += `<path d="M86 ${g.b - 16} L86 228 L114 228 L114 ${g.b - 16}Z" fill="${sk}"/>`;
 	s += `<path d="M12 254 Q16 226 60 219 Q80 230 100 230 Q120 230 140 219 Q184 226 188 254Z" fill="${CLOTH[f.shirt]}"/>`;
@@ -665,15 +690,9 @@ export function faceSVG(f: Face, o: FaceOptions = {}): string
 		neckwear(f) +
 		ears(f, g, sk) +
 		`<g fill="${sk}">${headShape(f, g)}</g>` +
-		cheeks(f, g, sk) +
-		beardBack(f, g, hc, sk) +
+		onFace(cheeks(f, g, sk) + beardBack(f, g, hc, sk)) +
 		hairFront(f, g, dye) +
-		eyes(f, g) +
-		brows(f, g, hc) +
-		nose(f, g, sk) +
-		mouth(f, g) +
-		mustache(f, g, hc) +
-		glasses(f, g) +
+		onFace(eyes(f, g) + brows(f, g, hc) + nose(f, g, sk) + mouth(f, g) + mustache(f, g, hc) + glasses(f, g)) +
 		hat(f, g);
 	let hl = "";
 	if (o.hl)

@@ -31,6 +31,9 @@ const MIN_DISTINCT_PIXELS = 200;
 // Noses and mouths are drawn as fine lines on purpose, so they are held to a lower count.
 const MIN_FINE_LINE_PIXELS = 100;
 const FINE_LINES = new Set<FeatureKey>(["nose", "mouth"]);
+// A fine line stands out when it is this far from the skin under it, and this many of its pixels must.
+const MIN_LINE_CONTRAST = 200;
+const MIN_CONTRAST_PIXELS = 40;
 // How far apart any two colors of one palette must be, as a CIE76 distance.
 const MIN_PALETTE_DISTANCE = 20;
 const PALETTES: Partial<Record<FeatureKey, readonly string[]>> =
@@ -323,4 +326,38 @@ it("keeps every pair of glasses clear of the eyes", () =>
 		}
 	}
 	expect(covered).toStrictEqual([]);
+});
+
+// Ink on the darkest skins is dark on dark, so the lines drawn on the face must change color with the skin.
+it("draws noses and mouths that stand out on every skin", () =>
+{
+	const faint: string[] = [];
+	for (const skin of values("skin"))
+	{
+		for (const k of FINE_LINES)
+		{
+			const pixels = values(k).map((v) =>
+				render(
+					{
+						...BASE,
+						skin,
+						[k]: v,
+					},
+				),
+			);
+			for (const [a, pa] of pixels.entries())
+			{
+				for (const [b, pb] of [...pixels.entries()].slice(a + 1))
+				{
+					let n = 0;
+					for (let i = 0; i < pa.length; i += 4)
+					{
+						if (colorDistance(pa, pb, i) > MIN_LINE_CONTRAST) n++;
+					}
+					if (n < MIN_CONTRAST_PIXELS) faint.push(`${k} ${a}↔${b} on skin ${skin}: ${n} pixels`);
+				}
+			}
+		}
+	}
+	expect(faint).toStrictEqual([]);
 });

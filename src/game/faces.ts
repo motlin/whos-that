@@ -51,7 +51,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	hairStyle:
 	{
-		n: 9,
+		n: 10,
 		label: "hair style",
 	},
 	hairColor:
@@ -87,7 +87,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	mouth:
 	{
-		n: 8,
+		n: 9,
 		label: "mouth",
 	},
 	ears:
@@ -109,9 +109,9 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	hat:
 	{
-		n: 11,
+		n: 12,
 		label: "hat",
-		w: [12, 1.5, 1.5, 1, 1, 1, 1, 1, 1, 1, 1],
+		w: [12, 1.5, 1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 	},
 	hatColor:
 	{
@@ -126,15 +126,15 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	earrings:
 	{
-		n: 3,
+		n: 5,
 		label: "earrings",
-		w: [5, 1.5, 1.5],
+		w: [5, 1.5, 1.5, 1.5, 1.5],
 	},
 	neckwear:
 	{
-		n: 5,
+		n: 7,
 		label: "neckwear",
-		w: [4, 1.5, 1.5, 1.5, 1.5],
+		w: [4, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
 	},
 	shirt:
 	{
@@ -143,7 +143,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 };
 export const KEYS = Object.keys(FEATURES) as FeatureKey[];
-const HAT_COLORED = new Set([1, 2, 3, 5, 6, 7, 8, 9, 10]);
+const HAT_COLORED = new Set([1, 2, 3, 5, 6, 7, 8, 9]);
 
 function visible(f: Face, k: FeatureKey): boolean
 {
