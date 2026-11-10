@@ -1,4 +1,5 @@
 import {Resvg} from "@resvg/resvg-js";
+import {setImmediate} from "node:timers/promises";
 import {expect, it} from "vite-plus/test";
 import {faceSVG} from "../../src/game/draw.ts";
 import {DEFAULT_STYLE, styleOf} from "../../src/game/styles/index.ts";
@@ -59,6 +60,10 @@ const values = (k: FeatureKey): number[] =>
 		(_, v) => v,
 	);
 
+// resvg frees a render's memory only from a callback that runs once the event loop turns, so a loop that renders
+// without yielding holds every render it made: thousands of them outgrow a CI runner. Each test awaits breathe() as it
+// goes.
+const breathe = async (): Promise<void> => setImmediate();
 function render(f: Face, background = "#fff"): Uint8Array
 {
 	const svg = faceSVG(f, {}, STYLE).replaceAll(/ filter="url\(#[\w-]+\)"/g, "");
@@ -130,7 +135,7 @@ function unobstructedPixels(k: FeatureKey, a: number, b: number, shape: number):
 }
 
 // Every change of one feature, next to every value of one other feature, on every face shape.
-it("draws every difference the game counts so that it can be seen", () =>
+it("draws every difference the game counts so that it can be seen", async () =>
 {
 	const hidden = new Set<string>();
 	const uncounted = new Set<FeatureKey>();
@@ -141,6 +146,7 @@ it("draws every difference the game counts so that it can be seen", () =>
 			const shapes = k === "faceShape" || c === "faceShape" ? [BASE.faceShape] : values("faceShape");
 			for (const shape of shapes)
 			{
+				await breathe();
 				const face = (kv: number, cv: number): Face => (
 				{
 					...BASE,
@@ -198,11 +204,12 @@ it("draws every difference the game counts so that it can be seen", () =>
 });
 
 // Lenses may frame the eyes but not tint them: an eye color change keeps nearly all of its color difference behind every pair of glasses.
-it("shows eye color through every pair of glasses untinted", () =>
+it("shows eye color through every pair of glasses untinted", async () =>
 {
 	const worst = new Map<number, number>();
 	for (const eyes of values("eyes"))
 	{
+		await breathe();
 		for (const [ai, a] of values("eyeColor").entries())
 		{
 			for (const b of values("eyeColor").slice(ai + 1))
@@ -258,11 +265,12 @@ function lab(hex: string): [number, number, number]
 }
 
 // Two options of one feature that look alike make a round a guess, whatever else is on the face.
-it("draws every value of a feature unlike its other values", () =>
+it("draws every value of a feature unlike its other values", async () =>
 {
 	const alike: string[] = [];
 	for (const k of KEYS)
 	{
+		await breathe();
 		const palette = PALETTES[k];
 		if (palette)
 		{
@@ -300,12 +308,13 @@ it("draws every value of a feature unlike its other values", () =>
 });
 
 // On a grey card the only pure white a bare face draws is its eyes, and an eye color change marks the irises.
-it("keeps every pair of glasses clear of the eyes", () =>
+it("keeps every pair of glasses clear of the eyes", async () =>
 {
 	const GREY = "#808080";
 	const covered: string[] = [];
 	for (const eyes of values("eyes"))
 	{
+		await breathe();
 		const face = (glasses: number, eyeColor = 0): Face => (
 		{
 			...BASE,
@@ -333,11 +342,12 @@ it("keeps every pair of glasses clear of the eyes", () =>
 });
 
 // Ink on the darkest skins is dark on dark, so the lines drawn on the face must change color with the skin.
-it("draws noses and mouths that stand out on every skin", () =>
+it("draws noses and mouths that stand out on every skin", async () =>
 {
 	const faint: string[] = [];
 	for (const skin of values("skin"))
 	{
+		await breathe();
 		for (const k of FINE_LINES)
 		{
 			const pixels = values(k).map((v) =>
