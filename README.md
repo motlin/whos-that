@@ -4,7 +4,13 @@ A face-memory game: memorize a hand-drawn face, then find it again. It has four 
 
 ## Layout
 
-`src/game/` is the game, split into modules. `faces.ts` holds the face data and the face and decoy generators, `difficulty.ts` how each level scales, `draw.ts` the SVG drawing, `sound.ts` the sound effects, `screens.ts` every screen and the game flow, and `store.ts` the leaderboard client. `src/styles/game.css` is the artifact's stylesheet unchanged, and `index.html` its markup.
+`src/game/` is the game, split into modules. `faces.ts` holds the face data and the face and decoy generators, `difficulty.ts` how each level scales, `draw.ts` the SVG wrapper around a drawn face, `sound.ts` the sound effects, `screens.ts` every screen and the game flow, `settings.ts` the saved settings, and `store.ts` the leaderboard client. `src/styles/game.css` is the stylesheet, and `index.html` the markup.
+
+## Art styles
+
+The settings screen picks one of five art styles: Notebook (the original sketch), Storybook, Cut Paper, Pixel Arcade and Modelling Clay. The choice is kept in localStorage as `wt_style`. Each style is one file in `src/game/styles/` that draws every option of every feature, and `styles/index.ts` lists them. `geometry.ts` holds what they share: the card coordinates and the region each feature occupies, which is how the game crops, highlights and marks a face the same way in any style. A style's filters are in its `defs`, which `settings.ts` puts on the page once. `src/styles/themes.css` restyles the page to match the chosen style, keyed off `data-style` on the root.
+
+`just test-visibility` checks the Notebook style, `STYLE=clay just test-visibility` another one, and `just test-visibility-all` all five.
 
 The artifact's `Store` used the Claude artifact runtime (`window.claude.use('db')` and `('user')`). `src/game/store.ts` replaces it with calls to the Worker's API. When the API cannot be reached, the board falls back to localStorage under the artifact's `wt_boards` key, and the next load that reaches the API uploads those scores. Each device gets a random id, kept in localStorage as `wt_device`, and the player types a name when saving, as before.
 
