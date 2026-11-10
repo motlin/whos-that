@@ -2,7 +2,7 @@ import {range, rnd, shuffle} from "./util.ts";
 
 export const SKIN = ["#ffe4ca", "#eab380", "#bd7c46", "#7e4c29", "#452816"];
 // Natural colors, for the hair, eyebrows and facial hair.
-export const HAIRC = ["#2b2118", "#734a26", "#ecc65a", "#c9512b", "#a9a9a9"];
+export const HAIRC = ["#2b2118", "#734a26", "#ecc65a", "#c9512b", "#999999", "#f6f3ec"];
 // Dye colors the hair on the head only. The first entry is no dye.
 export const DYEC = ["", "#4a8fe0", "#ff7eb6", "#35b56a", "#8e5be0"];
 export const EYEC = ["#6b3e1f", "#3a7bd5", "#3fa34d", "#8a8f98", "#9b4dca"];
@@ -56,7 +56,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	hairColor:
 	{
-		n: 5,
+		n: 6,
 		label: "hair color",
 	},
 	hairDye:
