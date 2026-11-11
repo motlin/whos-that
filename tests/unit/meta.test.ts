@@ -1,5 +1,6 @@
 import {readFileSync} from "node:fs";
 import {expect, it} from "vite-plus/test";
+import {DEFAULT_STYLE, PAGE_COLOR} from "../../src/game/styles/pages.ts";
 
 const root = new URL("../../", import.meta.url);
 const read = (path: string): Buffer => readFileSync(new URL(path, root));
@@ -98,4 +99,33 @@ it("sizes the layout by the small viewport, so Safari's toolbars never cover it"
 	const css = read("src/styles/game.css").toString("utf8");
 	const units = new Set([...css.matchAll(/\d(d?[sld]?vh)\b/g)].map(([, unit]) => unit));
 	expect([...units]).toStrictEqual(["svh"]);
+});
+
+// The status bar, the installed app's splash screen and the icons' board all take a style's page color, so the CSS that
+// paints each page must agree with the table they read it from.
+it("paints every style's page in the color its toolbar and app use", () =>
+{
+	const css = read("src/styles/game.css").toString("utf8") + read("src/styles/themes.css").toString("utf8");
+	const pages = Object.fromEntries(
+		Object.keys(PAGE_COLOR).map((id) =>
+		{
+			// Notebook's colors are game.css's defaults on :root; every other style overrides them in themes.css.
+			const rule =
+				id === "sketch"
+					? /:root\{[^}]*--paper:(#\w+)/
+					: new RegExp(`html\\[data-style="${id}"\\]\\{[^}]*--paper:(#\\w+)`);
+			return [id, rule.exec(css)?.[1]];
+		}),
+	);
+	expect(
+		{
+			pages,
+			meta: head().find((tag) => tag.includes("theme-color")),
+		},
+	).toStrictEqual(
+		{
+			pages: PAGE_COLOR,
+			meta: `<meta name="theme-color" content="${PAGE_COLOR[DEFAULT_STYLE]}">`,
+		},
+	);
 });

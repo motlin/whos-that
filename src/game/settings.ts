@@ -1,14 +1,17 @@
 import {DEFAULT_STYLE, isStyleId, STYLES, setStyle} from "./styles/index.ts";
+import {PAGE_COLOR} from "./styles/pages.ts";
 import type {StyleId} from "./styles/style.ts";
 import {ls} from "./util.ts";
 
 const STYLE_KEY = "wt_style";
 
-// Switches the drawing and the page's theme, which game.css and themes.css key off the root's data-style.
+// Switches the drawing and the page's theme, which game.css and themes.css key off the root's data-style, and gives
+// the browser's toolbar the new page's color.
 function apply(id: StyleId): void
 {
 	setStyle(id);
 	document.documentElement.dataset["style"] = id;
+	document.querySelector('meta[name="theme-color"]')?.setAttribute("content", PAGE_COLOR[id]);
 }
 
 // Puts every style's filters on the page once, and starts in the style the player last chose.

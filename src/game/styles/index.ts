@@ -3,10 +3,12 @@ import {paper} from "./paper.ts";
 import {pixel} from "./pixel.ts";
 import {sketch} from "./sketch.ts";
 import {storybook} from "./storybook.ts";
+import {DEFAULT_STYLE} from "./pages.ts";
 import type {ArtStyle, StyleId} from "./style.ts";
 
+export {DEFAULT_STYLE} from "./pages.ts";
+
 export const STYLES: readonly ArtStyle[] = [storybook, paper, pixel, clay, sketch];
-export const DEFAULT_STYLE: StyleId = "paper";
 export const isStyleId = (id: unknown): id is StyleId => STYLES.some((s) => s.id === id);
 export const styleOf = (id: StyleId): ArtStyle => STYLES.find((s) => s.id === id)!;
 

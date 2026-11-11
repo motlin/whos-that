@@ -10,6 +10,7 @@ let root:
 	dataset: Record<string, string>;
 };
 let injected: string[];
+let themeColor: Record<string, string>;
 
 beforeEach(() =>
 {
@@ -19,6 +20,7 @@ beforeEach(() =>
 		dataset: {},
 	};
 	injected = [];
+	themeColor = {};
 	vi.stubGlobal(
 		"localStorage",
 		{
@@ -33,6 +35,16 @@ beforeEach(() =>
 		"document",
 		{
 			documentElement: root,
+			querySelector: (selector: string) =>
+				selector === 'meta[name="theme-color"]'
+					?
+						{
+							setAttribute: (name: string, value: string): void =>
+							{
+								themeColor[name] = value;
+							},
+						}
+					: null,
 			body:
 			{
 				insertAdjacentHTML: (_where: string, html: string): void =>
@@ -80,6 +92,7 @@ it("keeps a chosen art style and draws every face in it from then on", () =>
 			stored,
 			current: currentStyle().id,
 			theme: root.dataset["style"],
+			toolbar: themeColor,
 			drawn:
 				faceSVG(PLAIN) ===
 				faceSVG(
@@ -96,6 +109,11 @@ it("keeps a chosen art style and draws every face in it from then on", () =>
 			},
 			current: "clay",
 			theme: "clay",
+			// The browser's toolbar takes the clay page's color.
+			toolbar:
+			{
+				content: "#e6e4ff",
+			},
 			drawn: true,
 		},
 	);

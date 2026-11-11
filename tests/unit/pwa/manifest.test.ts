@@ -1,5 +1,6 @@
 import {readFileSync} from "node:fs";
 import {expect, test} from "vite-plus/test";
+import {DEFAULT_STYLE, PAGE_COLOR} from "../../../src/game/styles/pages.ts";
 import {APPLE_TOUCH_ICON, FAVICON, MANIFEST, PRECACHE_URLS} from "../../../src/pwa/manifest.ts";
 
 const read = (path: string): Buffer => readFileSync(new URL(`../../../${path}`, import.meta.url));
@@ -7,7 +8,7 @@ const read = (path: string): Buffer => readFileSync(new URL(`../../../${path}`, 
 // A PNG's width and height sit in its IHDR chunk, right after the 8-byte signature and the chunk's length and type.
 const pngSize = (bytes: Buffer): string => `${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`;
 
-test("the manifest installs a standalone app in the notebook paper's color", () =>
+test("the manifest installs a standalone app in the color of the default style's page", () =>
 {
 	expect(MANIFEST).toStrictEqual(
 		{
@@ -19,8 +20,8 @@ test("the manifest installs a standalone app in the notebook paper's color", () 
 			scope: "/",
 			display: "standalone",
 			orientation: "any",
-			background_color: "#1f6f6b",
-			theme_color: "#1f6f6b",
+			background_color: PAGE_COLOR[DEFAULT_STYLE],
+			theme_color: PAGE_COLOR[DEFAULT_STYLE],
 			icons: [
 				{
 					src: "/icons/icon-192.png",

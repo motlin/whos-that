@@ -1,6 +1,7 @@
 import {writeFileSync} from "node:fs";
 import {faceSVG} from "../src/game/draw.ts";
 import {DEFAULT_STYLE, styleOf} from "../src/game/styles/index.ts";
+import {PAGE_COLOR} from "../src/game/styles/pages.ts";
 import type {Face} from "../src/game/faces.ts";
 
 // Draws the icons from the game's own face code, in the default art style: one fixed, cheerful face, chosen feature by
@@ -31,8 +32,8 @@ const FACE: Face =
 
 // The head and shoulders, square, so the face fills the icon.
 const VIEW = "4 24 192 192";
-// The teal craft board the default style's pages sit on.
-const BOARD = "#1f6f6b";
+// The default style's page, which the icons sit on.
+const BOARD = PAGE_COLOR[DEFAULT_STYLE];
 const style = styleOf(DEFAULT_STYLE);
 
 // The style's filters travel inside each icon, since a standalone file cannot see the page's.
