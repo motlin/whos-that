@@ -2,6 +2,7 @@ import {Resvg} from "@resvg/resvg-js";
 import {setImmediate} from "node:timers/promises";
 import {expect, it} from "vite-plus/test";
 import {faceSVG} from "../../src/game/draw.ts";
+import {regions, VB} from "../../src/game/geometry.ts";
 import {DEFAULT_STYLE, styleOf} from "../../src/game/styles/index.ts";
 import type {StyleId} from "../../src/game/styles/style.ts";
 import
@@ -27,6 +28,11 @@ const WIDTH = 200;
 // A change is visible when it alters this many pixels, or the other features leave at least this share of what it alters on an unobstructed face.
 const MIN_PIXELS = 150;
 const MIN_SHARE = 0.5;
+// How far past its box, in card units, a hat or its shadow may reach, and how many pixels may stray further.
+const HAT_MARGIN = 4;
+const MAX_PIXELS_OUTSIDE = 20;
+// How much of a hair style change must still show under a hat.
+const MIN_HAT_SHARE = 0.6;
 // How far apart two pixels' colors must be, summed over red, green and blue, to count as changed.
 const MIN_COLOR_DISTANCE = 16;
 // How much of an eye color change's total color difference must show through glasses.
@@ -305,6 +311,82 @@ it("draws every value of a feature unlike its other values", async () =>
 		}
 	}
 	expect(alike).toStrictEqual([]);
+});
+
+// A hat sits up on the crown, so the hairline, fringe and sides show under it: whatever hair style changes, most of the
+// change still shows with any hat on.
+it("shows most of every hair style change under every hat", async () =>
+{
+	const hidden: string[] = [];
+	for (const hat of values("hat").slice(1))
+	{
+		await breathe();
+		const face = (hairStyle: number, h: number): Face => (
+		{
+			...BASE,
+			hairStyle,
+			hat: h,
+		});
+		const styles = values("hairStyle").filter((v) => valid(face(v, hat)));
+		const bare = styles.map((v) => render(face(v, 0)));
+		const worn = styles.map((v) => render(face(v, hat)));
+		for (const [i, a] of styles.entries())
+		{
+			for (const [j, b] of styles.entries())
+			{
+				if (j <= i) continue;
+				const share = changedPixels(worn[i]!, worn[j]!) / changedPixels(bare[i]!, bare[j]!);
+				if (share < MIN_HAT_SHARE) hidden.push(`hair ${a}↔${b} under hat ${hat}: ${Math.round(share * 100)}%`);
+			}
+		}
+	}
+	expect(hidden).toStrictEqual([]);
+});
+
+// A Spot the Difference choice for the hat shows the box around the hat's areas, so every hat is drawn inside it.
+it("draws every hat inside the box its choice shows", async () =>
+{
+	const scale = WIDTH / VB[2]!;
+	const outside: string[] = [];
+	for (const hairStyle of [0, 3, 4, 10, 12])
+	{
+		for (const faceShape of values("faceShape"))
+		{
+			await breathe();
+			const face = (hat: number): Face => (
+			{
+				...BASE,
+				faceShape,
+				hairStyle,
+				hat,
+			});
+			const bare = render(face(0));
+			for (const hat of values("hat").slice(1))
+			{
+				const areas = regions(face(hat), "hat");
+				// The choice crops to the box around the hat's areas.
+				const [x0, y0, x1, y1] = [
+					Math.min(...areas.map(([cx, , rx]) => cx - rx)) - HAT_MARGIN,
+					Math.min(...areas.map(([, cy, , ry]) => cy - ry)) - HAT_MARGIN,
+					Math.max(...areas.map(([cx, , rx]) => cx + rx)) + HAT_MARGIN,
+					Math.max(...areas.map(([, cy, , ry]) => cy + ry)) + HAT_MARGIN,
+				];
+				const inside = (X: number, Y: number): boolean => X >= x0 && X <= x1 && Y >= y0 && Y <= y1;
+				const worn = render(face(hat));
+				let n = 0;
+				for (let i = 0; i < bare.length; i += 4)
+				{
+					const p = i / 4;
+					const X = (p % WIDTH) / scale + VB[0]!,
+						Y = Math.floor(p / WIDTH) / scale + VB[1]!;
+					if (colorDistance(bare, worn, i) > MIN_COLOR_DISTANCE && !inside(X, Y)) n++;
+				}
+				if (n > MAX_PIXELS_OUTSIDE)
+					outside.push(`hat ${hat} on hair ${hairStyle}, face ${faceShape}: ${n} pixels`);
+			}
+		}
+	}
+	expect(outside).toStrictEqual([]);
 });
 
 // On a grey card the only pure white a bare face draws is its eyes, and an eye color change marks the irises.

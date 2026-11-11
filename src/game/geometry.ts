@@ -5,6 +5,8 @@ import type {Face, FeatureKey} from "./faces.ts";
 export const INK = "#2a2522";
 // The hat value that is a pair of headphones rather than something worn on the crown.
 export const HEADPHONES = 2;
+// The hats worn on a band over the hair: the bow, cat ears and devil horns.
+const HEADBANDS = new Set([5, 10, 11]);
 const SHAPES = [
 	{
 		w: 60,
@@ -128,14 +130,20 @@ export function regions(f: Face, k: FeatureKey): Region[]
 	{
 		case "hat":
 		case "hatColor":
-			// Headphones are a band over the top of the head and a cup over each ear.
-			return f.hat === HEADPHONES
-				? [
-						[100, t + 2, w + 14, 22],
-						[L - 4, ey + 12, 16, 22],
-						[R + 4, ey + 12, 16, 22],
-					]
-				: [[100, t - 14, w + 26, 42]];
+			// Headphones are a band over the top of the head and a cup over each ear, and the band runs down to the cups.
+			if (f.hat === HEADPHONES)
+			{
+				return [
+					[100, (VB[1]! + t + 44) / 2, w + 18, (t + 44 - VB[1]!) / 2],
+					[L - 4, ey + 6, 18, 32],
+					[R + 4, ey + 6, 18, 32],
+				];
+			}
+			// A band over the hair holds the bow, cat ears and horns, and runs down to the temples.
+			// Hats sit on top of the hair, however tall it is, so their area runs up to the top of the card.
+			if (HEADBANDS.has(f.hat)) return [[100, (VB[1]! + ey) / 2, w + 18, (ey - VB[1]!) / 2]];
+			// A cap's bill or a brim reaches out to the side.
+			return [[100, (VB[1]! + t + 38) / 2, w + 36, (t + 38 - VB[1]!) / 2]];
 		case "hairStyle":
 		case "hairDye":
 			return [[100, t + 26, w + 28, 56]];
