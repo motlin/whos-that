@@ -1,7 +1,8 @@
 // What makes the page an installable app: the web app manifest and the fixed files the service worker keeps for
 // offline play. index.html links them, and src/pwa/register.ts registers the worker. The colors are the game's
 // --paper, so the splash screen and status bar match the notebook page.
-const PAPER = "#fffdf6";
+// The craft board behind the default style, Cut Paper.
+const BOARD = "#1f6f6b";
 
 type Icon =
 {
@@ -21,8 +22,8 @@ export const MANIFEST =
 	scope: "/",
 	display: "standalone",
 	orientation: "any",
-	background_color: PAPER,
-	theme_color: PAPER,
+	background_color: BOARD,
+	theme_color: BOARD,
 	icons: [
 		{
 			src: "/icons/icon-192.png",

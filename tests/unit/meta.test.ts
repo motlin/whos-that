@@ -36,12 +36,12 @@ it("gives link previews a title, description and an absolute image URL, and link
 		`<meta property="og:image" content="https://whos-that.motlin.com/og.png">`,
 		`<meta property="og:image:width" content="1200">`,
 		`<meta property="og:image:height" content="630">`,
-		`<meta property="og:image:alt" content="The words Who's That? in hand-drawn letters beside a sketch of a smiling bearded man in a red cap on lined notebook paper">`,
+		`<meta property="og:image:alt" content="The words Who's That? in chunky cream letters beside a cut-paper face of a smiling woman with a gray afro, a star on her cheek and blue earrings, on a teal board">`,
 		`<meta name="twitter:card" content="summary_large_image">`,
 		`<meta name="twitter:title" content="Who's That? A face-memory game">`,
 		`<meta name="twitter:description" content="${DESCRIPTION}">`,
 		`<meta name="twitter:image" content="https://whos-that.motlin.com/og.png">`,
-		`<meta name="theme-color" content="#fffdf6">`,
+		`<meta name="theme-color" content="#1f6f6b">`,
 		`<meta name="mobile-web-app-capable" content="yes">`,
 		`<meta name="apple-mobile-web-app-capable" content="yes">`,
 		`<meta name="apple-mobile-web-app-status-bar-style" content="default">`,
@@ -57,8 +57,18 @@ it("ships the preview card at 1200x630 and the icons the page links", () =>
 	expect(pngSize("public/icons/apple-touch-icon.png")).toStrictEqual([180, 180]);
 	const favicon = read("public/favicon.svg").toString("utf8");
 	expect(favicon.startsWith("<svg ")).toBe(true);
-	// index.html defines the game's #wob filter, which a standalone favicon cannot see.
-	expect(favicon.includes("url(#wob)")).toBe(false);
+	// The icon is drawn in the default style, Cut Paper, and carries that style's filter with it.
+	expect(
+		{
+			defaultStyle: favicon.includes('filter="url(#paper-cut)"') && favicon.includes('<filter id="paper-cut"'),
+			notebookFilter: favicon.includes("url(#wob)"),
+		},
+	).toStrictEqual(
+		{
+			defaultStyle: true,
+			notebookFilter: false,
+		},
+	);
 });
 
 it("sizes the layout by the small viewport, so Safari's toolbars never cover it", () =>

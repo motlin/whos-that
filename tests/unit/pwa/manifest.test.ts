@@ -19,8 +19,8 @@ test("the manifest installs a standalone app in the notebook paper's color", () 
 			scope: "/",
 			display: "standalone",
 			orientation: "any",
-			background_color: "#fffdf6",
-			theme_color: "#fffdf6",
+			background_color: "#1f6f6b",
+			theme_color: "#1f6f6b",
 			icons: [
 				{
 					src: "/icons/icon-192.png",
@@ -74,7 +74,7 @@ test("the maskable icon keeps the face inside the safe zone, the circle of 80% o
 	);
 	expect((Number(size) / 2) * Math.SQRT2).toBeLessThanOrEqual(0.4 * 64);
 	// It fills the whole square, so no mask shape shows a transparent corner.
-	expect(svg).toContain('<rect width="64" height="64" fill="#ffe066"/>');
+	expect(svg).toContain('<rect width="64" height="64" fill="#1f6f6b"/>');
 });
 
 test("the page links the manifest and gives Safari the tags it reads for a home screen app", () =>
@@ -87,7 +87,7 @@ test("the page links the manifest and gives Safari the tags it reads for a home 
 	].map(([tag]) => tag);
 	expect(tags).toStrictEqual([
 		'<link rel="manifest" href="/manifest.webmanifest">',
-		'<meta name="theme-color" content="#fffdf6">',
+		'<meta name="theme-color" content="#1f6f6b">',
 		'<meta name="mobile-web-app-capable" content="yes">',
 		'<meta name="apple-mobile-web-app-capable" content="yes">',
 		'<meta name="apple-mobile-web-app-status-bar-style" content="default">',

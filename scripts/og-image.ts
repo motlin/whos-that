@@ -3,7 +3,7 @@ import {extname, join} from "node:path";
 import {chromium} from "@playwright/test";
 
 // Renders public/og.png, the 1200x630 image link previews show, from the built title screen itself: its logo, its
-// tagline and its hero face on the notebook paper, with the mode buttons, the high-score button and the corner buttons
+// tagline and its hero face in the default art style, with the mode buttons, the high-score button and the corner buttons
 // hidden. The fonts come from Google Fonts, so this needs the network. Run it with `just og-image` after changing the
 // title screen.
 const OUT = "public/og.png";
@@ -25,15 +25,17 @@ const CARD_CSS = `
 	#home, #snd, #screen .modes, #screen .row { display: none !important; }
 	#screen { max-width: none; min-height: 0; height: 100vh; padding: 0 60px 0 110px; display: grid;
 		grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 50px; align-content: center; align-items: center; }
-	#screen .logo { grid-column: 1; grid-row: 1; align-self: end; font-size: 150px; text-shadow: 6px 6px 0 var(--sun); }
-	#screen .tag { grid-column: 1; grid-row: 2; align-self: start; font-size: 46px; margin: 28px 0 0 10px; }
+	#screen .logo { grid-column: 1; grid-row: 1; align-self: end; font-size: 150px; }
+	#screen .tag { grid-column: 1; grid-row: 2; align-self: start; font-size: 40px; margin: 28px 0 0 10px; white-space: nowrap; }
 	#screen .hero { grid-column: 2; grid-row: 1 / span 2; width: 380px; padding: 12px; margin: 0; }
 `;
 
-// The hero face is random and changes every 1.5 seconds; a fixed seed picks the same face on every run.
-function seedRandom(): void
+// The hero face is random and changes every 1.5 seconds; a fixed seed picks the same face on every run. This one
+// draws a cheerful face.
+const SEED = Number(process.env["OG_SEED"] ?? 8);
+function seedRandom(seed: number): void
 {
-	let a = 5;
+	let a = seed;
 	Math.random = (): number =>
 	{
 		a = (a + 0x6d2b79f5) >>> 0;
@@ -56,7 +58,7 @@ try
 			},
 		},
 	);
-	await page.addInitScript(seedRandom);
+	await page.addInitScript(seedRandom, SEED);
 	await page.route(`${ORIGIN}/**`, async (route) =>
 	{
 		const path = new URL(route.request().url()).pathname;
@@ -83,7 +85,7 @@ try
 	const loaded = await page.evaluate(async () =>
 	{
 		const faces = await Promise.all(
-			['150px "Gochi Hand"', '46px "Patrick Hand"'].map(async (font) => document.fonts.load(font, "Who's That?")),
+			['150px "Titan One"', '700 40px "Nunito"'].map(async (font) => document.fonts.load(font, "Who's That?")),
 		);
 		return faces.every((face) => face.length > 0);
 	});
