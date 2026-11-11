@@ -44,6 +44,8 @@ interface Art
 	noseRow: number;
 	mouthRow: number;
 	head(X: number, Y: number, grow?: number): boolean;
+	// Where head hair may go: a hat that sits over the crown keeps every lock above its bottom edge close to the head.
+	room: Test;
 }
 
 const cellX = (x: number): number => X0 + (x + 0.5) * CELL;
@@ -195,7 +197,11 @@ const rimTone = (a: Art, base: string): string => (a.f.skin >= 3 && luma(base) <
 function mass(a: Art, test: Test, base: string): void
 {
 	const rim = rimTone(a, base);
-	const inside = a.px.map((_, i) => test(cellX(i % COLS), cellY(Math.floor(i / COLS))));
+	const inside = a.px.map((_, i) =>
+	{
+		const [X, Y] = [cellX(i % COLS), cellY(Math.floor(i / COLS))];
+		return test(X, Y) && a.room(X, Y);
+	});
 	for (const [i, on] of inside.entries())
 	{
 		if (!on) continue;
@@ -224,6 +230,36 @@ function gloss(a: Art, base: string, from: number, to: number): void
 		).find((y) => a.px[y * COLS + x] === base);
 		if (top !== undefined && a.px[(top + 1) * COLS + x] === base) dot(a.px, x, top + 1, shade(base, 0.3));
 	}
+}
+
+// How far each hair style lifts a hat off the head.
+const LIFT: Record<number, number> =
+{
+	1: 10,
+	8: 8,
+	2: 4,
+	3: 4,
+	12: 8,
+	13: 4,
+};
+// The hats that sit over the whole crown of the head, rather than on a band or perched on top.
+const CROWNED = new Set([1, 2, 3, 4, 7, 8, 9]);
+
+// The bottom edge of the hat and its half width. An afro holds a hat up on top of the ball of hair.
+function fit(
+	f: Face,
+	g: Geo,
+):
+{
+	hy: number;
+	hw: number;
+}
+{
+	const afro = f.hairStyle === 4;
+	return {
+		hy: afro ? g.t + 44 - g.w : g.t + 16 - (LIFT[f.hairStyle] ?? 0),
+		hw: g.w + (afro ? 24 : 7),
+	};
 }
 
 function hairBack(a: Art): void
@@ -292,9 +328,13 @@ function hairBack(a: Art): void
 			break;
 		}
 		case 7:
-			mass(a, (X, Y) => oval(off(X), Y, w - 4, t + 2, 23, 23), a.hair);
-			tint(a.px, a.hair, (X, Y) => oval(off(X), Y, w - 12, t - 8, 7, 5), shade(a.hair, 0.3));
+		{
+			// Under a hat over the crown, the buns are worn low, tucked under its edge at each side of the head.
+			const [bx, by, r] = CROWNED.has(a.f.hat) ? [w + 4, fit(a.f, a.g).hy + 16, 13] : [w - 4, t + 2, 23];
+			mass(a, (X, Y) => oval(off(X), Y, bx, by, r, r), a.hair);
+			tint(a.px, a.hair, (X, Y) => oval(off(X), Y, bx - r * 0.35, by - r * 0.45, 7, 5), shade(a.hair, 0.3));
 			break;
+		}
 		case 11:
 		{
 			// Two braids hang beside the neck, each a chain of knots with a red tie at the end.
@@ -677,8 +717,10 @@ function head(a: Art): void
 const EYES: readonly (readonly [number, number, readonly string[]])[] = [
 	[2, 2, [".KKK.", "WHIIW", "WIPIW", "WIIIW", ".WWW."]],
 	[3, 3, [".KKKKK.", "WWIIIWW", "WIHIIIW", "WIIPIIW", "WIIIIIW", "WWIIIWW", ".WWWWW."]],
-	[3, 2, ["..LLL..", "KKKKKKK", ".WIPIW.", ".WIIIW.", "..WWW.."]],
-	[3, 1, [".KKKKK.", "WWIPIWW", ".WIIIW."]],
+	// Sleepy: a heavy shaded lid comes halfway down over a round eye, leaving only the bottom of the iris.
+	[3, 3, ["..LLL..", ".LLLLL.", "KKKKKKK", "WIIPIIW", ".WIIIW.", "..WWW.."]],
+	// Almond: a long, narrow eye that tapers to a point at each end, with a flick at the outer corner.
+	[3, 2, ["......K", ".KKKKK.", "WWIPIWW", ".WIIIW."]],
 	[2, 4, [".K.K...", "KKKKKKK", "KKKKK..", "WHIIW..", "WIPIW..", "WIIIW..", ".WWW..."]],
 	[3, 2, [".KKKKK.", "WWWWHII", "WWWWIPI", "WWWWIII", ".WWWWW."]],
 ];
@@ -693,7 +735,8 @@ function eyes(a: Art): void
 		H: "#fff",
 		I: EYEC[a.f.eyeColor]!,
 		P: "#111",
-		L: shade(a.sk, -0.2),
+		// The lid is tinted toward the face line, so it shows as a lid on every skin.
+		L: mix(a.sk, a.line, 0.4),
 	};
 	const left = MID + a.eyeCol - ox,
 		top = a.eyeRow - oy;
@@ -1067,32 +1110,68 @@ function neckwear(a: Art): void
 	switch (a.f.neckwear)
 	{
 		case 1:
+			// A bow tie: two outlined wings round a lighter knot, wide enough to read on any shirt.
 			stamp(
 				px,
-				MID - 5,
-				65,
-				["KK......KK", "KKK.CC.KKK", "KKKKCCKKKK", "KKK.CC.KKK", "KK......KK"],
+				MID - 7,
+				64,
+				[
+					"OOO........OOO",
+					"OHHOO....OOKKO",
+					"OHKKKOOOOKKKKO",
+					"OKKKKOCCOKKKKO",
+					"OKKKKOCCOKKKKO",
+					"OKKKKOOOOKKKKO",
+					"OKKOO....OOKKO",
+					"OOO........OOO",
+				],
 				{
-					K: "#2c3e50",
-					C: "#51677e",
+					O: OUTLINE,
+					K: "#3a3f5c",
+					H: "#646c94",
+					C: "#8790b8",
 				},
 			);
 			break;
 		case 2:
-			// Pearls: a string of beads, every other one in shade so each reads as its own bead.
-			for (let i = 0; i < 9; i++)
-			{
-				const turn = Math.PI * (0.12 + (0.76 * i) / 8);
-				box(
+		{
+			// Pearls: a string of big beads on a dark thread, each with a shine, so they show on the palest skin.
+			const beads = Array.from(
+				{
+					length: 6,
+				},
+				(_, i) =>
+				{
+					const turn = Math.PI * (0.06 + (0.88 * i) / 5);
+					return [col(100 - Math.cos(turn) * 32) - 1, row(213 + Math.sin(turn) * 22) - 1] as const;
+				},
+			);
+			for (const [x, y] of beads)
+				stamp(
 					px,
-					col(100 - Math.cos(turn) * 25) - 1,
-					row(214 + Math.sin(turn) * 17) - 1,
-					2,
-					2,
-					i % 2 ? "#cfc6b4" : "#fffaf0",
+					x - 1,
+					y - 1,
+					[".OOO.", "OOOOO", "OOOOO", "OOOOO", ".OOO."],
+					{
+						O: OUTLINE,
+					},
+				);
+			for (const [x, y] of beads)
+			{
+				stamp(
+					px,
+					x,
+					y,
+					["HWW", "WWW", "WWS"],
+					{
+						W: "#f4eedf",
+						H: "#fff",
+						S: "#bdb3a0",
+					},
 				);
 			}
 			break;
+		}
 		case 3:
 			// A scarf: a striped band round the neck and a fringed tail.
 			area(
@@ -1125,22 +1204,23 @@ function neckwear(a: Art): void
 			break;
 		case 5:
 		{
-			// A chain of alternating links with a red pendant.
-			for (let i = 0; i <= 12; i++)
+			// A chunky chain of alternating links, two cells thick so it shows on a small card, with a red pendant.
+			for (let i = 0; i <= 8; i++)
 			{
-				const s = i / 12;
+				const s = i / 8;
 				const x = col(83 * (1 - s) ** 2 + 180 * s * (1 - s) + 100 * s * s),
 					y = row(213 * (1 - s) ** 2 + 464 * s * (1 - s) + 236 * s * s);
-				both(px, MID - x - 1, y, 1, 1, i % 2 ? GOLD_DARK : GOLD);
+				both(px, MID - x - 1, y, 2, 2, i % 2 ? GOLD_DARK : GOLD);
 			}
 			stamp(
 				px,
-				MID - 2,
-				70,
-				[".RR.", "RHRR", "RRRD", ".DD."],
+				MID - 3,
+				69,
+				[".GGGG.", "GRHRRG", "GRRRRG", "GRRRDG", ".GRDG.", "..GG.."],
 				{
+					G: GOLD_DARK,
 					R: "#e5484d",
-					H: "#ffa3a6",
+					H: "#ffd0d2",
 					D: "#a82a30",
 				},
 			);
@@ -1276,17 +1356,6 @@ function glasses(a: Art): void
 		both(px, x, a.eyeRow - 1, 1, 1, inks.F);
 }
 
-// How far each hair style lifts a hat off the head.
-const LIFT: Record<number, number> =
-{
-	1: 10,
-	8: 8,
-	2: 4,
-	3: 4,
-	12: 8,
-	13: 4,
-};
-
 function hat(a: Art): void
 {
 	const {f, g, px} = a;
@@ -1294,8 +1363,7 @@ function hat(a: Art): void
 	const {w, t, ey} = g;
 	const afro = f.hairStyle === 4;
 	const lift = LIFT[f.hairStyle] ?? 0;
-	const hy = afro ? t + 44 - w : t + 16 - lift;
-	const hw = w + (afro ? 24 : 7);
+	const {hy, hw} = fit(f, g);
 	const c = HATC[f.hatColor]!;
 	const low = shade(c, -0.22);
 	const dome =
@@ -1311,16 +1379,24 @@ function hat(a: Art): void
 	switch (f.hat)
 	{
 		case 1:
-			// A baseball cap: a white front panel, a button on top and a long bill.
-			area(px, dome(48), (X) => (X > 100 + hw * 0.7 ? low : c));
-			area(px, dome(46, hw * 0.52), "#fff");
+		{
+			// A baseball cap: a white front panel, a button on top and a long bill that sticks out to one side.
+			// The crown hugs the head, so the bill stands well clear of it.
+			const cw = Math.min(hw, w + 3);
+			area(px, dome(48, cw), (X) => (X > 100 + cw * 0.7 ? low : c));
+			area(px, dome(46, cw * 0.52), "#fff");
 			both(px, 0, row(hy - 52), 1, 1, low);
+			// The bill is a long flat oval, outlined so it stands off the crown, reaching to the edge of the hat's region.
+			const [rx, by] = [36, hy];
+			const bx = 100 - w - 22 + rx;
+			area(px, (X, Y) => oval(X, Y, bx, by, rx + 4, 12), OUTLINE);
 			area(
 				px,
-				(X, Y) => Y > hy - 3 && oval(X, Y, 100, hy - 3, hw + 4, 18),
-				(_, Y) => (Y > hy + 9 ? shade(c, -0.42) : low),
+				(X, Y) => oval(X, Y, bx, by, rx, 8),
+				(X, Y) => (Y > by + 3 ? shade(c, -0.5) : Y < by - 3 && X < bx ? shade(c, 0.25) : low),
 			);
 			break;
+		}
 		case 2:
 			// A beanie: a ribbed band and a pompom.
 			area(px, dome(52), (X) => (X > 100 + hw * 0.7 ? low : c));
@@ -1598,7 +1674,15 @@ function paint(f: Face): string
 			const half = headHalf(f, g, g.cy + ((Y - g.cy) * g.ry) / (g.ry + grow));
 			return half >= 0 && off(X) <= (half * (g.w + grow)) / g.w;
 		},
+		room: () => true,
 	};
+	// Under a hat that covers the crown, hair above the hat's edge stays close to the head instead of poking out
+	// beside it. The afro is the exception: its hat sits on top of it.
+	if (CROWNED.has(f.hat) && f.hairStyle !== 4)
+	{
+		const {hy} = fit(f, g);
+		a.room = (X, Y) => Y >= hy || a.head(X, Y, 4);
+	}
 	hairBack(a);
 	body(a);
 	neckwear(a);
