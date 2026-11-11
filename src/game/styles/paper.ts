@@ -7,6 +7,8 @@ type Pt = [number, number];
 // Nothing is outlined, so whatever is glued onto the skin is cut from paper that contrasts with it: a deeper skin tone
 // on the three lighter skins and a lighter one on the two darkest.
 const TONE = ["#c8946e", "#9f643a", "#5c3218", "#dba878", "#b07a4e"];
+// The big noses are cut from paper part way between the skin and TONE, with a strip of TONE along their shadow side.
+const LUMP = ["#e6c0a1", "#c88f60", "#915b31", "#a8754d", "#754d2f"];
 const MOUTH = ["#9c2f3a", "#9c2f3a", "#5e1620", "#ffb3a3", "#ffb3a3"];
 const LIPS = ["#e0455a", "#c2203c", "#7d0c20", "#ff5d73", "#ff5d73"];
 const WHITE = "#fffdf5";
@@ -528,11 +530,30 @@ function eyes(c: Ctx): string
 	return o;
 }
 
-// Hair glued onto the two darkest skins sits on a backing of lighter paper, or dark hair would vanish there.
-const fur = (c: Ctx, path: string): string =>
-	(c.dark
-		? `<path fill="${c.tone}" stroke="${c.tone}" stroke-width="2.4" stroke-linejoin="round" d="${path}"/>`
-		: "") + holed(c.hc, path);
+// A piece of hair: its outline, then any holes cut in it.
+type Piece = Pt[][];
+const twin = (p: Pt[]): Piece[] => [[p], [mirror(p)]];
+// The same shape cut by hand about k larger all round (smaller for a negative k), the margin wider at some corners than
+// at others.
+function ragged(p: Pt[], k: number): Pt[]
+{
+	const out = inset(p, -1);
+	return p.map(([x, y], i) =>
+	{
+		const reach = k * (0.75 + ((i * 7) % 5) * 0.14);
+		return [x + (out[i]![0] - x) * reach, y + (out[i]![1] - y) * reach];
+	});
+}
+// Hair glued onto the two darkest skins would vanish there, so it is first glued onto a hand-cut piece of lighter paper,
+// a little larger and set up and to the left: it shows on the lit side, and the hair's shadow falls on it below.
+function fur(c: Ctx, pieces: Piece[]): string
+{
+	const backing = pieces.map(([outline, ...holes]) =>
+		holed(c.tone, [ragged(outline!, 1.6), ...holes.map((h) => ragged(h, -1.6))].map(d).join("")),
+	);
+	const hair = pieces.map((piece) => holed(c.hc, piece.map(d).join("")));
+	return (c.dark ? layer(`<g transform="translate(-1.5 -1.8)">${backing.join("")}</g>`) : "") + layer(hair.join(""));
+}
 
 function brows(c: Ctx): string
 {
@@ -562,16 +583,15 @@ function brows(c: Ctx): string
 		return [];
 	};
 	if (c.f.eyebrows === 4)
-		return fur(
-			c,
-			d(
+		return fur(c, [
+			[
 				strip(
 					pts`${100 - ex - 13},${y + 2} ${100 - ex},${y - 4.5} 100,${y + 0.5} ${100 + ex},${y - 4.5} ${100 + ex + 13},${y + 2}`,
 					6.6,
 				),
-			),
-		);
-	return fur(c, d(one(-1)) + d(one(1)));
+			],
+		]);
+	return fur(c, [[one(-1)], [one(1)]]);
 }
 
 function nose(c: Ctx): string
@@ -589,14 +609,15 @@ function nose(c: Ctx): string
 				d(strip(pts`99.5,${y - 21} 102.5,${y - 4} 96.5,${y + 5} 101,${y + 9.5} 106.5,${y + 4}`, 3.6)),
 			);
 		case 3:
-			return cut(c.tone, d(ngon(100, y, 10, 10, 7, 0.2)));
-		case 4:
-			return cut(
-				c.tone,
-				d(
-					pts`95.5,${y - 19} 101,${y - 19.5} 112.5,${y - 4} 113.5,${y + 4} 107,${y + 9} 96,${y + 8} 92,${y + 2}`,
-				),
+			return (
+				cut(LUMP[c.f.skin]!, d(ngon(100, y, 10, 10, 7, 0.2))) +
+				cut(c.tone, d(strip(ngon(100, y, 8.1, 8.1, 7, -1.6).slice(0, 5), 3.8)))
 			);
+		case 4:
+		{
+			const bulb = pts`95.5,${y - 19} 101,${y - 19.5} 112.5,${y - 4} 113.5,${y + 4} 107,${y + 9} 96,${y + 8} 92,${y + 2}`;
+			return cut(LUMP[c.f.skin]!, d(bulb)) + cut(c.tone, d(strip(inset(bulb, 1.8).slice(1, 6), 3.6)));
+		}
 		case 5:
 			return cut(
 				c.tone,
@@ -715,23 +736,20 @@ function beard(c: Ctx): string
 				},
 			);
 			const x = edge(c, ny + 18);
-			return layer(
-				fur(
-					c,
-					d([
+			return fur(c, [
+				[
+					[
 						...jaw,
 						...pts`${100 - x + 10},${ny + 21} 78,${y - 6} 90,${y - 11.5} 100,${y - 13} 110,${y - 11.5} 122,${y - 6} ${100 + x - 10},${ny + 21}`,
-					]) + d(ngon(100, y + 8, 21, 14, 8, Math.PI / 8)),
-				),
-			);
+					],
+					ngon(100, y + 8, 21, 14, 8, Math.PI / 8),
+				],
+			]);
 		}
 		case 4:
-			return layer(
-				fur(
-					c,
-					d(pts`90.5,${y + 11.5} 100,${y + 9} 109.5,${y + 11.5} 105,${y + 27} 100,${y + 31.5} 95,${y + 27}`),
-				),
-			);
+			return fur(c, [
+				[pts`90.5,${y + 11.5} 100,${y + 9} 109.5,${y + 11.5} 105,${y + 27} 100,${y + 31.5} 95,${y + 27}`],
+			]);
 		case 5:
 		{
 			let dots = "";
@@ -740,27 +758,23 @@ function beard(c: Ctx): string
 		}
 		case 6:
 			// Sideburns start under the hair, so they join it, and run to the jaw short of the cheeks.
-			return layer(
-				fur(
-					c,
-					both([
-						...burn(pts`${ey - 18},15 ${ey + 6},16 ${ny + 10},17`),
-						...pts`${100 - edge(c, ny + 22) + 8},${ny + 23} ${100 - edge(c, ny + 20) - 1},${ny + 20}`,
-					]),
-				),
+			return fur(
+				c,
+				twin([
+					...burn(pts`${ey - 18},15 ${ey + 6},16 ${ny + 10},17`),
+					...pts`${100 - edge(c, ny + 22) + 8},${ny + 23} ${100 - edge(c, ny + 20) - 1},${ny + 20}`,
+				]),
 			);
 		case 7:
 		{
 			// A goatee circles the mouth: mustache, chin and the strips that join them.
 			const low = Math.min(y + 34, b + 5);
-			return layer(
-				fur(
-					c,
-					d(
-						pts`78.5,${y - 7} 89,${y - 12.5} 100,${y - 14} 111,${y - 12.5} 121.5,${y - 7} 122.5,${y + 17} 112,${low} 100,${low + 3} 88,${low} 77.5,${y + 17}`,
-					) + d(ngon(100, y + 6, 15.5, 10.5, 8, Math.PI / 8)),
-				),
-			);
+			return fur(c, [
+				[
+					pts`78.5,${y - 7} 89,${y - 12.5} 100,${y - 14} 111,${y - 12.5} 121.5,${y - 7} 122.5,${y + 17} 112,${low} 100,${low + 3} 88,${low} 77.5,${y + 17}`,
+					ngon(100, y + 6, 15.5, 10.5, 8, Math.PI / 8),
+				],
+			]);
 		}
 		case 8:
 		{
@@ -768,25 +782,23 @@ function beard(c: Ctx): string
 			const side = burn(pts`${ey - 18},13 ${ey + 6},13 ${ny + 8},13`);
 			const outer = side.slice(0, 3),
 				inner = side.slice(3);
-			return layer(
-				fur(
-					c,
-					both([
-						...outer,
-						...pts`${100 - edge(c, ny + 20) - 1},${ny + 20} ${100 - edge(c, y + 6) + 2},${y + 7} ${100 - Math.max(w - 30, 17)},${y + 11} 86,${y + 0.5} 100,${y - 2.5} 100,${y - 9} 93.5,${y - 12.5} ${100 - Math.max(w - 32, 15)},${ny + 25} ${100 - edge(c, ny + 18) + 14},${ny + 18}`,
-						...inner,
-					]),
-				),
+			return fur(
+				c,
+				twin([
+					...outer,
+					...pts`${100 - edge(c, ny + 20) - 1},${ny + 20} ${100 - edge(c, y + 6) + 2},${y + 7} ${100 - Math.max(w - 30, 17)},${y + 11} 86,${y + 0.5} 100,${y - 2.5} 100,${y - 9} 93.5,${y - 12.5} ${100 - Math.max(w - 32, 15)},${ny + 25} ${100 - edge(c, ny + 18) + 14},${ny + 18}`,
+					...inner,
+				]),
 			);
 		}
 		case 9:
 			// A chin strap: one thin band of beard along the jaw, ear to ear.
-			return layer(fur(c, d([...under(c, ny + 4, 8, 1), ...under(c, ny + 4, 8, -7).toReversed()])));
+			return fur(c, [[[...under(c, ny + 4, 8, 1), ...under(c, ny + 4, 8, -7).toReversed()]]]);
 		case 10:
 			// A long chin beard that hangs to a point below the chin.
-			return layer(
-				fur(c, d(pts`81,${y + 9.5} 100,${y + 13} 119,${y + 9.5} 113.5,${b + 2} 100,${b + 26} 86.5,${b + 2}`)),
-			);
+			return fur(c, [
+				[pts`81,${y + 9.5} 100,${y + 13} 119,${y + 9.5} 113.5,${b + 2} 100,${b + 26} 86.5,${b + 2}`],
+			]);
 	}
 	return "";
 }
@@ -795,19 +807,16 @@ function mustache(c: Ctx): string
 {
 	const y = c.g.my;
 	if (c.f.facialHair === 1)
-		return layer(fur(c, d(sym(pts`100,${y - 12.5} 86,${y - 12} 79,${y - 2.5} 92,${y - 4.5} 100,${y - 6}`))));
+		return fur(c, [[sym(pts`100,${y - 12.5} 86,${y - 12} 79,${y - 2.5} 92,${y - 4.5} 100,${y - 6}`)]]);
 	if (c.f.facialHair === 2)
 		// A handlebar: wide, with both ends curled up.
-		return layer(
-			fur(
-				c,
-				d(
-					sym(
-						pts`100,${y - 12} 88,${y - 13.5} 76,${y - 7} 70.5,${y - 1.5} 66.5,${y - 11} 62.5,${y - 3.5} 69,${y + 5.5} 78,${y + 2.5} 90,${y - 3.5} 100,${y - 5}`,
-					),
+		return fur(c, [
+			[
+				sym(
+					pts`100,${y - 12} 88,${y - 13.5} 76,${y - 7} 70.5,${y - 1.5} 66.5,${y - 11} 62.5,${y - 3.5} 69,${y + 5.5} 78,${y + 2.5} 90,${y - 3.5} 100,${y - 5}`,
 				),
-			),
-		);
+			],
+		]);
 	return "";
 }
 
@@ -1300,7 +1309,8 @@ function paint(f: Face): string
 		beard(c) +
 		hairFront(c) +
 		layer(eyes(c)) +
-		layer(brows(c) + nose(c) + mouth(c)) +
+		brows(c) +
+		layer(nose(c) + mouth(c)) +
 		mustache(c) +
 		glasses(c) +
 		hat(c)
