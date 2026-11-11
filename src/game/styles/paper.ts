@@ -546,16 +546,21 @@ function ragged(p: Pt[], k: number): Pt[]
 }
 // Hair glued onto the two darkest skins would vanish there, so it is first glued onto a hand-cut piece of lighter paper,
 // a little larger and set up and to the left: it shows on the lit side, and the hair's shadow falls on it below.
-function fur(c: Ctx, pieces: Piece[]): string
+// Whatever is glued down beside the hair shares its layer.
+function fur(c: Ctx, pieces: Piece[], beside = ""): string
 {
 	const backing = pieces.map(([outline, ...holes]) =>
 		holed(c.tone, [ragged(outline!, 1.6), ...holes.map((h) => ragged(h, -1.6))].map(d).join("")),
 	);
 	const hair = pieces.map((piece) => holed(c.hc, piece.map(d).join("")));
-	return (c.dark ? layer(`<g transform="translate(-1.5 -1.8)">${backing.join("")}</g>`) : "") + layer(hair.join(""));
+	return (
+		(c.dark ? layer(`<g transform="translate(-1.5 -1.8)">${backing.join("")}</g>`) : "") +
+		layer(hair.join("") + beside)
+	);
 }
 
-function brows(c: Ctx): string
+// The nose and mouth are glued down with the brows, in one layer.
+function brows(c: Ctx, beside: string): string
 {
 	const {ey, ex} = c.g;
 	// Glasses push the eyebrows up, so no frame ever sits on top of them.
@@ -583,15 +588,19 @@ function brows(c: Ctx): string
 		return [];
 	};
 	if (c.f.eyebrows === 4)
-		return fur(c, [
+		return fur(
+			c,
 			[
-				strip(
-					pts`${100 - ex - 13},${y + 2} ${100 - ex},${y - 4.5} 100,${y + 0.5} ${100 + ex},${y - 4.5} ${100 + ex + 13},${y + 2}`,
-					6.6,
-				),
+				[
+					strip(
+						pts`${100 - ex - 13},${y + 2} ${100 - ex},${y - 4.5} 100,${y + 0.5} ${100 + ex},${y - 4.5} ${100 + ex + 13},${y + 2}`,
+						6.6,
+					),
+				],
 			],
-		]);
-	return fur(c, [[one(-1)], [one(1)]]);
+			beside,
+		);
+	return fur(c, [[one(-1)], [one(1)]], beside);
 }
 
 function nose(c: Ctx): string
@@ -1309,8 +1318,7 @@ function paint(f: Face): string
 		beard(c) +
 		hairFront(c) +
 		layer(eyes(c)) +
-		brows(c) +
-		layer(nose(c) + mouth(c)) +
+		brows(c, nose(c) + mouth(c)) +
 		mustache(c) +
 		glasses(c) +
 		hat(c)
