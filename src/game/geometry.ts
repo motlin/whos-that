@@ -62,6 +62,43 @@ export function geo(f: Face): Geo
 		ry: h / 2,
 	};
 }
+// Where a curve that rises with s on 0..1 reaches the target.
+export function solve(curve: (s: number) => number, target: number): number
+{
+	let lo = 0,
+		hi = 1;
+	for (let i = 0; i < 16; i++)
+	{
+		const s = (lo + hi) / 2;
+		if (curve(s) < target) lo = s;
+		else hi = s;
+	}
+	return (lo + hi) / 2;
+}
+
+// Half the width of the head at a height, or -1 above and below it. The shapes are the ones every style draws.
+export function headHalf(f: Face, g: Geo, Y: number): number
+{
+	const {w, t, b, cy, ry} = g;
+	if (Y < t || Y > b) return -1;
+	if (f.faceShape === 2)
+	{
+		const d = Math.max(t + 28 - Y, Y - (b - 28), 0);
+		return w - 28 + Math.sqrt(28 * 28 - d * d);
+	}
+	if (f.faceShape === 4)
+	{
+		if (Y <= t + 50)
+		{
+			const s = 1 - Math.sqrt((Y - t) / 50);
+			return w * (1 - s * s);
+		}
+		const s = solve((v) => (t + 50) * (1 - v) ** 2 + 2 * (b - 40) * v * (1 - v) + b * v * v, Y);
+		return w * (1 - s) ** 2 + 2 * (w - 4) * s * (1 - s);
+	}
+	return w * Math.sqrt(1 - ((Y - cy) / ry) ** 2);
+}
+
 export function shade(hex: string, p: number): string
 {
 	const n = parseInt(hex.slice(1), 16);

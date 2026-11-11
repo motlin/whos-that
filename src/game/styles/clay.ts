@@ -1,5 +1,5 @@
 import {CLOTH, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
-import {geo, type Geo, shade, star} from "../geometry.ts";
+import {geo, type Geo, headHalf, shade, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
 // Creases pressed into the skin (nose shadows, ear folds, pucker lines) and the thin bed under hair that lies on the
@@ -77,29 +77,6 @@ const oval = (cx: number, cy: number, rx: number, ry: number): string =>
 const shine = (x: number, y: number): string =>
 	svg`<ellipse cx="${x}" cy="${y}" rx="14" ry="6" transform="rotate(-22 ${x} ${y})" fill="#fff" opacity=".5"/>`;
 
-// A point along a quadratic curve, in one coordinate.
-const at = (u: number, p0: number, p1: number, p2: number): number =>
-	(1 - u) ** 2 * p0 + 2 * u * (1 - u) * p1 + u * u * p2;
-// Half the width of the head at height y, on the lower half of the face.
-function halfWidth(f: Face, g: Geo, y: number): number
-{
-	const {w, t, b, cy, ry} = g;
-	if (f.faceShape === 2) return w - 28 + Math.sqrt(Math.max(0, 784 - Math.max(0, y - b + 28) ** 2));
-	if (f.faceShape === 4)
-	{
-		// The heart's side is a curve from (w, t + 50) through (w - 4, b - 40) to the chin; find where it passes y.
-		let lo = 0,
-			hi = 1;
-		for (let i = 0; i < 20; i++)
-		{
-			const u = (lo + hi) / 2;
-			if (at(u, t + 50, b - 40, b) < y) lo = u;
-			else hi = u;
-		}
-		return at(lo, w, w - 4, 0);
-	}
-	return w * Math.sqrt(Math.max(0, 1 - ((y - cy) / ry) ** 2));
-}
 function head(f: Face, g: Geo, fill: string): string
 {
 	const {w, t, b, cy, ry, L, R} = g;
@@ -596,7 +573,7 @@ function beard(f: Face, g: Geo, hc: string): string
 			// Mutton chops: full sideburns that widen under the cheeks, follow the jaw and sweep up into a mustache,
 			// leaving the chin bare.
 			let low = y + 24;
-			while (halfWidth(f, g, low) < w * 0.4) low--;
+			while (headHalf(f, g, low) < w * 0.4) low--;
 			const chop = (s: number): string =>
 			{
 				const X = (dx: number): number => 100 - s * dx;
@@ -604,12 +581,12 @@ function beard(f: Face, g: Geo, hc: string): string
 				for (let i = 0; i <= 4; i++)
 				{
 					const h = low + ((ny + 8 - low) * i) / 4;
-					jaw += svg` L${X(halfWidth(f, g, h) - 1)} ${h}`;
+					jaw += svg` L${X(headHalf(f, g, h) - 1)} ${h}`;
 				}
 				return (
 					svg`M${X(w + 3)} ${ey - 18} L${X(w * 0.7)} ${ey - 18} L${X(w * 0.72)} ${ny + 14} Q${X(w * 0.72)} ${ny + 24} ${X(w * 0.5)} ${ny + 25}` +
 					svg` L${X(13)} ${y - 10} Q${X(6)} ${y - 14} 100 ${y - 9} L100 ${y - 3} Q${X(14)} ${y - 1} ${X(w * 0.36)} ${y + 9}` +
-					svg` Q${X(w * 0.36)} ${low} ${X(halfWidth(f, g, low) - 1)} ${low}${jaw}Z`
+					svg` Q${X(w * 0.36)} ${low} ${X(headHalf(f, g, low) - 1)} ${low}${jaw}Z`
 				);
 			};
 			return small(onSkin(f, `<path d="${chop(1)} ${chop(-1)}"/>`, hc, 2));
