@@ -1077,17 +1077,40 @@ const LIFT: Record<number, number> =
 	13: 4,
 };
 
+// Where a hat perched on the crown rests, below the top of the face: on top of the hair, so the hairline, fringe and
+// sides of every hair style show beneath it.
+const CROWN: Record<number, number> =
+{
+	0: 14,
+	1: 0,
+	2: -3,
+	3: -5,
+	4: -27,
+	8: -8,
+	9: 14,
+	10: -10,
+	12: -19,
+	13: -6,
+};
+
+// How much bigger a perched hat is drawn than it is cut.
+const PERCH = 1.25;
+
 function hat(c: Ctx): string
 {
-	const {w, t, ey} = c.g;
+	const {w, t, ey, L, R} = c.g;
 	const afro = c.f.hairStyle === 4;
 	const lift = LIFT[c.f.hairStyle] ?? 0;
-	const hy = afro ? t + 34 - (w + 20) + 30 : t + 16 - lift;
-	const hw = w + (afro ? 22 : 5);
 	const col = HATC[c.f.hatColor]!;
-	const dome = (width: number, h: number): Pt[] =>
+	// The rim of a hat perched on the crown, and half its width.
+	const hy = t + (CROWN[c.f.hairStyle] ?? 0);
+	const hw = w * (afro ? 0.7 : 0.6);
+	// Cut a little small and scaled up about the rim, so the hat stays the same shape at any size.
+	const perch = (s: string): string =>
+		`<g transform="translate(100 ${hy}) scale(${PERCH}) translate(-100 ${-hy})">${s}</g>`;
+	const dome = (width: number, h: number, y = hy): Pt[] =>
 		sym(
-			pts`100,${hy - h - 2} ${100 - width * 0.34},${hy - h} ${100 - width * 0.72},${hy - h * 0.82} ${100 - width * 0.95},${hy - h * 0.46} ${100 - width},${hy}`,
+			pts`100,${y - h - 1} ${100 - width * 0.34},${y - h} ${100 - width * 0.72},${y - h * 0.82} ${100 - width * 0.95},${y - h * 0.46} ${100 - width},${y}`,
 		);
 	// A band over the top of the head, for whatever is worn on one.
 	const band = (fill: string): string => cut(fill, d(strip(over(c, ey - 4, 8, 2.5), 6.4)));
@@ -1096,76 +1119,74 @@ function hat(c: Ctx): string
 		case 0:
 			return "";
 		case 1:
-			return (
-				layer(cut(col, d(dome(hw, 48)))) +
-				layer(cut(WHITE, d(dome(hw * 0.5, 46))) + cut(col, d(ngon(100, hy - 50, 5, 4.5, 6)))) +
+			// A baseball cap: a round crown with a seam and button, and a long stiff bill out to one side.
+			return perch(
 				layer(
 					cut(
-						shade(col, -0.22),
+						shade(col, -0.25),
 						d(
-							sym(
-								pts`100,${hy - 8} ${100 - hw + 2},${hy - 2.5} ${100 - hw - 6},${hy + 9} ${100 - hw * 0.5},${hy + 15} 100,${hy + 16}`,
+							pts`${100 + hw * 0.4},${hy - 7} ${100 + hw + 24},${hy - 3} ${100 + hw + 27},${hy + 2} ${100 + hw * 0.4},${hy + 2}`,
+						),
+					),
+				) +
+					layer(
+						cut(col, d(dome(hw, 24))) +
+							cut(shade(col, -0.22), d(pts`98.8,${hy - 24} 101.2,${hy - 24} 101.2,${hy} 98.8,${hy}`)) +
+							cut(WHITE, d(ngon(100, hy - 26, 4, 3.5, 6))),
+					),
+			);
+		case 2:
+		{
+			// Headphones: a band arching over the hair and a big cup over each ear.
+			const cups = (x: number, s: number): string =>
+				cut(shade(col, -0.45), d(ngon(x + s * 6, ey + 12, 7, 15, 8))) +
+				cut(col, d(ngon(x - s * 2, ey + 12, 11, 17, 8)));
+			return layer(cut(col, d(strip(over(c, ey - 2, 12, 14), 6)))) + layer(cups(L - 4, 1) + cups(R + 4, -1));
+		}
+		case 3:
+			// A top hat: a tall dark crown with a ribbon, on a narrow brim.
+			return perch(
+				layer(
+					cut(
+						"#2d2d2d",
+						d(
+							pts`${100 - hw * 0.72},${hy - 30} ${100 + hw * 0.72},${hy - 31} ${100 + hw * 0.66},${hy} ${100 - hw * 0.66},${hy}`,
+						),
+					),
+				) +
+					layer(
+						cut(
+							col,
+							d(
+								pts`${100 - hw * 0.67},${hy - 10} ${100 + hw * 0.67},${hy - 10.5} ${100 + hw * 0.66},${hy - 4} ${100 - hw * 0.66},${hy - 4}`,
+							),
+						),
+					) +
+					layer(
+						cut(
+							"#2d2d2d",
+							d(
+								pts`${100 - hw - 6},${hy - 3} ${100 + hw + 6},${hy - 3.5} ${100 + hw + 4},${hy + 3} ${100 - hw - 4},${hy + 3}`,
 							),
 						),
 					),
-				)
-			);
-		case 2:
-			return (
-				layer(cut(col, d(dome(hw, 52)))) +
-				layer(
-					cut(
-						shade(col, -0.2),
-						d(
-							pts`${100 - hw - 3},${hy - 13} ${100 + hw + 3},${hy - 12} ${100 + hw + 3},${hy + 4.5} ${100 - hw - 3},${hy + 3.5}`,
-						),
-					),
-				) +
-				layer(cut(WHITE, d(ngon(100, hy - 58, 10.5, 10.5, 8, 0.3))))
-			);
-		case 3:
-			return (
-				layer(
-					cut(
-						"#2d2d2d",
-						d(
-							pts`${100 - hw * 0.74},${hy - 61} ${100 + hw * 0.74},${hy - 63} ${100 + hw * 0.72},${hy} ${100 - hw * 0.72},${hy}`,
-						),
-					),
-				) +
-				layer(
-					cut(
-						col,
-						d(
-							pts`${100 - hw * 0.72},${hy - 20} ${100 + hw * 0.72},${hy - 21} ${100 + hw * 0.72},${hy - 8} ${100 - hw * 0.72},${hy - 8}`,
-						),
-					),
-				) +
-				layer(
-					cut(
-						"#2d2d2d",
-						d(
-							pts`${100 - hw - 14},${hy - 4} ${100 + hw + 14},${hy - 5} ${100 + hw + 11},${hy + 6.5} ${100 - hw - 11},${hy + 6.5}`,
-						),
-					),
-				)
 			);
 		case 4:
-			return (
+			return perch(
 				layer(
 					cut(
 						"#f5c542",
 						d(
 							sym(
-								pts`100,${hy - 44} ${100 - hw * 0.45},${hy - 16} ${100 - hw * 0.86},${hy - 36} ${100 - hw * 0.8},${hy + 2}`,
+								pts`100,${hy - 24} ${100 - hw * 0.4},${hy - 10} ${100 - hw * 0.85},${hy - 22} ${100 - hw * 0.8},${hy + 2}`,
 							),
 						),
 					),
 				) +
-				layer(
-					cut("#e74c3c", d(ngon(100, hy - 10, 5.5, 6.5, 4))) +
-						cut("#3498db", both(ngon(100 - hw * 0.45, hy - 6, 4.5, 4.5, 4, Math.PI / 4))),
-				)
+					layer(
+						cut("#e74c3c", d(ngon(100, hy - 5, 4, 4.8, 4))) +
+							cut("#3498db", both(ngon(100 - hw * 0.45, hy - 3, 3.4, 3.4, 4, Math.PI / 4))),
+					),
 			);
 		case 5:
 		{
@@ -1185,6 +1206,8 @@ function hat(c: Ctx): string
 		}
 		case 6:
 		{
+			// A party hat stands on the top of the head, where it always has.
+			const py = afro ? t + 34 - (w + 20) + 30 : t + 16 - lift;
 			let dots = "";
 			for (const [x, y] of [
 				[96, 14],
@@ -1193,73 +1216,86 @@ function hat(c: Ctx): string
 				[116, 10],
 				[86, 4],
 			] as const)
-				dots += d(ngon(x, hy - y, 3.8, 3.8, 4, x));
+				dots += d(ngon(x, py - y, 3.8, 3.8, 4, x));
 			return (
-				layer(cut(col, d(pts`74,${hy} 106,${hy - 66} 130,${hy + 2}`))) +
-				layer(cut(WHITE, dots + d(ngon(106, hy - 68, 7.5, 7.5, 7))))
+				layer(cut(col, d(pts`74,${py} 106,${py - 66} 130,${py + 2}`))) +
+				layer(cut(WHITE, dots + d(ngon(106, py - 68, 7.5, 7.5, 7))))
 			);
 		}
 		case 7:
-			return (
-				layer(cut(col, d(dome(hw, 50)))) +
-				layer(
-					cut("#f1c40f", d(pts`91.5,${hy} 93.5,${hy - 34} 100,${hy - 52} 106.5,${hy - 34} 108.5,${hy}`)) +
-						cut("#3b3b45", d(pts`98.4,${hy - 51} 101.6,${hy - 51} 101.6,${hy - 65} 98.4,${hy - 65}`)),
-				) +
-				layer(
-					cut("#f1c40f", both(pts`100,${hy - 66} 88,${hy - 71} 75.5,${hy - 66.5} 88,${hy - 61}`)) +
-						cut(col, d(ngon(100, hy - 66, 4, 4, 6))),
-				)
+		{
+			// A propeller beanie: a striped skullcap with a propeller spinning on a stalk.
+			const bw = hw * 0.85;
+			let stripes = "";
+			for (const x of [-0.55, 0.55])
+				stripes += d(
+					pts`${100 + bw * x - 4},${hy} ${100 + bw * x * 0.7 - 2.5},${hy - 18} ${100 + bw * x * 0.7 + 2.5},${hy - 18} ${100 + bw * x + 4},${hy}`,
+				);
+			return perch(
+				layer(cut(col, d(dome(bw, 20)))) +
+					layer(
+						cut("#f1c40f", stripes + d(pts`96,${hy} 97,${hy - 20} 103,${hy - 20} 104,${hy}`)) +
+							cut("#3b3b45", d(pts`98.6,${hy - 20} 101.4,${hy - 20} 101.4,${hy - 28} 98.6,${hy - 28}`)),
+					) +
+					layer(
+						cut("#f1c40f", both(pts`100,${hy - 29} 90,${hy - 33} 79,${hy - 29.5} 90,${hy - 25.5}`)) +
+							cut(col, d(ngon(100, hy - 29, 3.2, 3.2, 6))),
+					),
 			);
+		}
 		case 8:
-			return (
+			// A fedora: a pinched crown with a ribbon on a wide brim that turns up at the ends.
+			return perch(
 				layer(
 					cut(
 						"#9a7650",
 						d(
 							sym(
-								pts`100,${hy - 7.5} ${100 - hw - 10},${hy - 6.5} ${100 - hw - 21},${hy + 1} ${100 - hw - 8},${hy + 7.5} 100,${hy + 8}`,
+								pts`100,${hy - 4} ${100 - hw - 8},${hy - 4} ${100 - hw - 15},${hy - 9} ${100 - hw - 9},${hy + 2} ${100 - hw * 0.6},${hy + 4} 100,${hy + 4}`,
 							),
 						),
 					),
 				) +
-				layer(
-					cut(
-						"#a9845c",
-						d(
-							sym(
-								pts`100,${hy - 45} ${100 - hw * 0.4},${hy - 51} ${100 - hw * 0.84},${hy - 41} ${100 - hw * 0.78},${hy} 100,${hy}`,
-							),
-						),
-					) +
+					layer(
 						cut(
 							col,
 							d(
-								pts`${100 - hw * 0.8},${hy - 15} ${100 + hw * 0.8},${hy - 15.5} ${100 + hw * 0.78},${hy - 3} ${100 - hw * 0.78},${hy - 3}`,
+								sym(
+									pts`100,${hy - 19} ${100 - hw * 0.3},${hy - 24} ${100 - hw * 0.66},${hy - 22} ${100 - hw * 0.76},${hy - 2} 100,${hy - 2}`,
+								),
 							),
-						),
-				)
+						) +
+							cut(
+								col,
+								d(
+									pts`${100 - hw * 0.74},${hy - 9} ${100 + hw * 0.74},${hy - 9.5} ${100 + hw * 0.76},${hy - 2} ${100 - hw * 0.76},${hy - 2}`,
+								),
+							),
+					),
 			);
 		case 9:
-			return (
-				layer(cut("#3b3b45", d(strip(pts`105,${hy - 44} 109.5,${hy - 57}`, 3.6)))) +
-				layer(
-					cut(
-						col,
-						d(
-							pts`${100 - hw - 10},${hy - 8} ${100 - hw - 5},${hy - 30} ${100 - hw * 0.4},${hy - 45} ${100 + hw * 0.5},${hy - 46} ${100 + hw + 19},${hy - 31} ${100 + hw + 13},${hy - 6} 100,${hy + 2}`,
-						),
+		{
+			// A beret: a wide flat disc of felt, tipped over to one side, with a stalk on top.
+			const bx = 100 + hw * 0.2;
+			const tip = (p: Pt[]): string => d(turn(p, -9, bx, hy));
+			return perch(
+				layer(cut("#3b3b45", d(strip(pts`${bx - 2},${hy - 13} ${bx - 4},${hy - 21}`, 3.4)))) +
+					layer(
+						cut(
+							col,
+							tip(
+								pts`${bx - hw - 12},${hy - 2} ${bx - hw - 8},${hy - 10} ${bx - hw * 0.4},${hy - 15} ${bx + hw * 0.4},${hy - 15} ${bx + hw + 8},${hy - 10} ${bx + hw + 12},${hy - 2} ${bx + hw * 0.5},${hy + 2} ${bx - hw * 0.5},${hy + 2}`,
+							),
+						) +
+							cut(
+								shade(col, -0.22),
+								tip(
+									pts`${bx - hw - 8},${hy - 2} ${bx + hw + 8},${hy - 2} ${bx + hw * 0.5},${hy + 2} ${bx - hw * 0.5},${hy + 2}`,
+								),
+							),
 					),
-				) +
-				layer(
-					cut(
-						shade(col, -0.22),
-						d(
-							pts`${100 - hw + 2},${hy - 6} 100,${hy + 3.5} ${100 + hw - 2},${hy - 4} ${100 + hw - 2},${hy + 3} 100,${hy + 11.5} ${100 - hw + 2},${hy + 1}`,
-						),
-					),
-				)
 			);
+		}
 	}
 	// Cat ears and devil horns stand on a band.
 	const by = t + 6 - (afro ? 20 : lift),
