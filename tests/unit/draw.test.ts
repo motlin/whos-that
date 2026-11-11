@@ -21,8 +21,8 @@ it("crops a face to any group of features, including the ones build mode shows w
 		{
 			hat: "-4.0 -85.0 208.0 208.0",
 			eyes: "41.0 48.8 118.0 118.0",
-			earrings: "9.0 32.8 182.0 182.0",
-			oneEarring: "0.0 87.8 72.0 72.0",
+			earrings: "6.0 37.8 188.0 188.0",
+			oneEarring: "-10.0 85.8 92.0 92.0",
 			shirt: "6.0 146.0 188.0 188.0",
 			shirtStyle: "6.0 146.0 188.0 188.0",
 			skin: "4.0 24.0 192.0 192.0",

@@ -28,8 +28,8 @@ const WIDTH = 200;
 // A change is visible when it alters this many pixels, or the other features leave at least this share of what it alters on an unobstructed face.
 const MIN_PIXELS = 150;
 const MIN_SHARE = 0.5;
-// How far past its box, in card units, a hat or its shadow may reach, and how many pixels may stray further.
-const HAT_MARGIN = 4;
+// How far past its box, in card units, a hat or earring or its shadow may reach, and how many pixels may stray further.
+const BOX_MARGIN = 4;
 const MAX_PIXELS_OUTSIDE = 20;
 // How much of a hair style change must still show under a hat.
 const MIN_HAT_SHARE = 0.6;
@@ -38,7 +38,7 @@ const MIN_COLOR_DISTANCE = 16;
 // How much of an eye color change's total color difference must show through glasses.
 const MIN_UNTINTED_SHARE = 0.999;
 // How many pixels any two values of one feature must differ by on a bare face, so no two options read as the same one.
-const MIN_DISTINCT_PIXELS = 200;
+const MIN_DISTINCT_PIXELS = 300;
 // Noses and mouths are drawn as fine lines on purpose, so they are held to a lower count.
 const MIN_FINE_LINE_PIXELS = 100;
 const FINE_LINES = new Set<FeatureKey>(["nose", "mouth"]);
@@ -343,46 +343,56 @@ it("shows most of every hair style change under every hat", async () =>
 	expect(hidden).toStrictEqual([]);
 });
 
-// A Spot the Difference choice for the hat shows the box around the hat's areas, so every hat is drawn inside it.
-it("draws every hat inside the box its choice shows", async () =>
+// A Spot the Difference choice for the hat or the earrings shows the box around that feature's areas, so every hat and
+// every earring is drawn inside it, whatever hair or ears it is worn with.
+const BOXED: readonly (readonly [FeatureKey, FeatureKey, readonly number[]])[] = [
+	["hat", "hairStyle", [0, 3, 4, 10, 12]],
+	["earrings", "ears", values("ears")],
+];
+it("draws every hat and earring inside the box its choice shows", async () =>
 {
 	const scale = WIDTH / VB[2]!;
 	const outside: string[] = [];
-	for (const hairStyle of [0, 3, 4, 10, 12])
+	for (const [k, by, bys] of BOXED)
 	{
-		for (const faceShape of values("faceShape"))
+		for (const v of bys)
 		{
-			await breathe();
-			const face = (hat: number): Face => (
+			for (const faceShape of values("faceShape"))
 			{
-				...BASE,
-				faceShape,
-				hairStyle,
-				hat,
-			});
-			const bare = render(face(0));
-			for (const hat of values("hat").slice(1))
-			{
-				const areas = regions(face(hat), "hat");
-				// The choice crops to the box around the hat's areas.
-				const [x0, y0, x1, y1] = [
-					Math.min(...areas.map(([cx, , rx]) => cx - rx)) - HAT_MARGIN,
-					Math.min(...areas.map(([, cy, , ry]) => cy - ry)) - HAT_MARGIN,
-					Math.max(...areas.map(([cx, , rx]) => cx + rx)) + HAT_MARGIN,
-					Math.max(...areas.map(([, cy, , ry]) => cy + ry)) + HAT_MARGIN,
-				];
-				const inside = (X: number, Y: number): boolean => X >= x0 && X <= x1 && Y >= y0 && Y <= y1;
-				const worn = render(face(hat));
-				let n = 0;
-				for (let i = 0; i < bare.length; i += 4)
+				await breathe();
+				const face = (kv: number): Face => (
 				{
-					const p = i / 4;
-					const X = (p % WIDTH) / scale + VB[0]!,
-						Y = Math.floor(p / WIDTH) / scale + VB[1]!;
-					if (colorDistance(bare, worn, i) > MIN_COLOR_DISTANCE && !inside(X, Y)) n++;
+					...BASE,
+					faceShape,
+					[by]: v,
+					[k]: kv,
+				});
+				const bare = render(face(0));
+				for (const kv of values(k).slice(1))
+				{
+					const areas = regions(face(kv), k);
+					const [x0, y0, x1, y1] = [
+						Math.min(...areas.map(([cx, , rx]) => cx - rx)) - BOX_MARGIN,
+						Math.min(...areas.map(([, cy, , ry]) => cy - ry)) - BOX_MARGIN,
+						Math.max(...areas.map(([cx, , rx]) => cx + rx)) + BOX_MARGIN,
+						Math.max(...areas.map(([, cy, , ry]) => cy + ry)) + BOX_MARGIN,
+					];
+					const worn = render(face(kv));
+					let n = 0;
+					for (let i = 0; i < bare.length; i += 4)
+					{
+						const p = i / 4;
+						const X = (p % WIDTH) / scale + VB[0]!,
+							Y = Math.floor(p / WIDTH) / scale + VB[1]!;
+						if (
+							colorDistance(bare, worn, i) > MIN_COLOR_DISTANCE &&
+							!(X >= x0 && X <= x1 && Y >= y0 && Y <= y1)
+						)
+							n++;
+					}
+					if (n > MAX_PIXELS_OUTSIDE)
+						outside.push(`${k} ${kv} with ${by} ${v}, face ${faceShape}: ${n} pixels`);
 				}
-				if (n > MAX_PIXELS_OUTSIDE)
-					outside.push(`hat ${hat} on hair ${hairStyle}, face ${faceShape}: ${n} pixels`);
 			}
 		}
 	}

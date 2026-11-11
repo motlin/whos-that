@@ -166,10 +166,15 @@ export function regions(f: Face, k: FeatureKey): Region[]
 			if (f.facialHair === 6 || f.facialHair === 8) return [[100, (ey + b) / 2, w + 8, (b - ey) / 2 + 12]];
 			return f.facialHair === 10 ? [[100, my + 18, w * 0.85, 44]] : [[100, my + 6, w * 0.85, 32]];
 		case "ears":
-		case "earrings":
 			return [
 				[L - 4, ey + 16, 19, 28],
 				[R + 4, ey + 16, 19, 28],
+			];
+		// Earrings hang below the ear, and below the big ears furthest.
+		case "earrings":
+			return [
+				[L - 4, ey + 24, 22, 38],
+				[R + 4, ey + 24, 22, 38],
 			];
 		case "cheeks":
 			return [
