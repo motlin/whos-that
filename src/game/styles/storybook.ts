@@ -1031,7 +1031,22 @@ const LIFT: Record<number, number> =
 	12: 8,
 	13: 4,
 };
-// Where a hat sits: the height of its brim and its half width, which follow the hair under it.
+// How far each hair style rises above the top of the head, so a hat perched on the crown sits on the hair.
+const CROWN: Record<number, number> =
+{
+	1: 9,
+	2: 6,
+	3: 6,
+	5: 6,
+	7: 6,
+	9: 8,
+	10: 8,
+	11: 6,
+	12: 21,
+	13: 6,
+};
+// Where a hat sits: the height of its brim and its half width. A hat perches up on the crown of the hair, so the
+// hairline, the fringe and the sides of any hair style show under it.
 function hatSeat(
 	f: Face,
 	g: Geo,
@@ -1044,36 +1059,31 @@ function hatSeat(
 }
 {
 	const afro = f.hairStyle === 4;
-	const lift = LIFT[f.hairStyle] ?? 0;
 	return {
 		afro,
-		lift,
-		hy: afro ? g.t + 34 - (g.w + 20) + 30 : g.t + 16 - lift,
-		hw: g.w + (afro ? 22 : 5),
+		lift: LIFT[f.hairStyle] ?? 0,
+		hy: afro ? g.t + 38 - g.w : g.t + 4 - (CROWN[f.hairStyle] ?? 0),
+		hw: g.w * (afro ? 0.74 : 0.72),
 	};
 }
-// The shadow a brim casts on the forehead: a dark sliver that shows below the hat drawn over it.
+// The shadow a brim casts on the top of the head: a dark sliver that shows below the hat drawn over it.
 function hatShadow(f: Face, g: Geo): string
 {
 	const {hy, hw} = hatSeat(f, g);
 	const cast = (
 		{
-			1: [7, hw + 3, 13],
-			2: [3, hw + 3, 7],
-			3: [5, hw + 12, 8],
-			4: [2, hw * 0.8, 5],
-			7: [1, hw, 6],
-			8: [5, hw + 18, 8],
-			9: [2, hw, 11],
+			1: [4, hw * 0.9, 5],
+			3: [3, hw * 0.9, 4],
+			8: [3, hw, 5],
 		} as Record<number, [number, number, number]>
 	)[f.hat];
 	if (!cast) return "";
-	return p`<ellipse cx="100" cy="${hy + cast[0]}" rx="${cast[1]}" ry="${cast[2]}" fill="#2a1408" opacity=".24" stroke="none"/>`;
+	return p`<ellipse cx="100" cy="${hy + cast[0]}" rx="${cast[1]}" ry="${cast[2]}" fill="#2a1408" opacity=".2" stroke="none"/>`;
 }
 function hat(f: Face, g: Geo): string
 {
 	if (!f.hat) return "";
-	const {w, t, ey} = g;
+	const {w, t, ey, L, R} = g;
 	const {afro, lift, hy, hw} = hatSeat(f, g);
 	const c = HATC[f.hatColor]!;
 	const dim = shade(c, -0.2),
@@ -1085,9 +1095,9 @@ function hat(f: Face, g: Geo): string
 	// The light catches the top left of a domed hat.
 	const sheen = (h: number): string =>
 		line(
-			p`M${100 - hw * 0.84} ${hy - h * 0.34} Q${100 - hw * 0.76} ${hy - h * 0.74} ${100 - hw * 0.44} ${hy - h * 0.9}`,
+			p`M${100 - hw * 0.8} ${hy - h * 0.34} Q${100 - hw * 0.72} ${hy - h * 0.74} ${100 - hw * 0.4} ${hy - h * 0.9}`,
 			lit,
-			3.4,
+			3,
 		);
 	const pompom = (x: number, y: number, r: number): string =>
 		p`<circle fill="${CREAM}" cx="${x}" cy="${y}" r="${r}"/>` +
@@ -1096,75 +1106,87 @@ function hat(f: Face, g: Geo): string
 			"#cdbba8",
 			1.4,
 		);
-	const band = p`M${100 - w - 2} ${ey - 4} C${100 - w - 6} ${t - 24} ${100 + w + 6} ${t - 24} ${100 + w + 2} ${ey - 4}`;
+	const sink = afro ? 0 : Math.max(0, 9 - (CROWN[f.hairStyle] ?? 0));
+	const band = p`M${100 - w + 4} ${t + 30 + sink} C${100 - w - 4} ${t - 24 + sink} ${100 + w + 4} ${t - 24 + sink} ${100 + w - 4} ${t + 30 + sink}`;
 	const hairband = (col: string): string =>
 		`<path d="${band}" fill="none" stroke-width="9.8"/>` + line(band, col, 6) + line(band, light(col, 0.4), 1.2);
 	switch (f.hat)
 	{
 		case 1:
+		{
+			// A ball cap worn with its bill swung out to one side, so its outline is unlike any other dome.
+			const bill = p`M${100 + hw * 0.55} ${hy - 6} Q${100 + hw + 14} ${hy - 9} ${100 + hw + 25} ${hy - 1} Q${100 + hw + 27} ${hy + 5} ${100 + hw + 18} ${hy + 6} Q${100 + hw * 0.8} ${hy + 6} ${100 + hw * 0.4} ${hy + 3}Z`;
 			return (
-				`<path fill="${c}" ${big} d="${dome(48)}"/>` +
-				p`<path fill="${CREAM}" d="M${100 - hw * 0.5} ${hy} Q${100 - hw * 0.5} ${hy - 44} 100 ${hy - 50} Q${100 + hw * 0.5} ${hy - 44} ${100 + hw * 0.5} ${hy}Z"/>` +
-				line(p`M100 ${hy - 46} V${hy - 10}`, "#d9cbb8", FINE) +
-				sheen(48) +
-				p`<circle fill="${c}" cx="100" cy="${hy - 50}" r="4.5"/>` +
-				p`<path fill="${dim}" ${big} d="M${100 - hw + 2} ${hy - 2} Q100 ${hy - 10} ${100 + hw - 2} ${hy - 2} Q${100 + hw + 6} ${hy + 13} 100 ${hy + 15} Q${100 - hw - 6} ${hy + 13} ${100 - hw + 2} ${hy - 2}Z"/>` +
+				p`<path fill="${dim}" ${big} d="${bill}"/>` +
 				line(
-					p`M${100 - hw * 0.8} ${hy + 1.5} Q100 ${hy - 5} ${100 + hw * 0.5} ${hy - 1.5}`,
-					light(c, 0.25),
-					2.2,
+					p`M${100 + hw * 0.7} ${hy + 0.5} Q${100 + hw + 10} ${hy - 1} ${100 + hw + 21} ${hy + 2}`,
+					deep,
+					1.3,
 				) +
-				p`<path fill="none" stroke="${deep}" stroke-width="1.4" stroke-dasharray="3 3.4" d="M${100 - hw * 0.86} ${hy + 8} Q100 ${hy + 12.5} ${100 + hw * 0.86} ${hy + 8}"/>`
+				`<path fill="${c}" ${big} d="${dome(30)}"/>` +
+				line(
+					p`M100 ${hy - 31} V${hy - 2} M${100 - hw * 0.55} ${hy - 2} Q${100 - hw * 0.5} ${hy - 22} 100 ${hy - 31} M${100 + hw * 0.55} ${hy - 2} Q${100 + hw * 0.5} ${hy - 22} 100 ${hy - 31}`,
+					deep,
+					1.5,
+				) +
+				sheen(30) +
+				p`<rect fill="${dim}" stroke-width="2.4" x="${100 - hw}" y="${hy - 6}" width="${2 * hw}" height="7" rx="3"/>` +
+				p`<circle fill="${CREAM}" stroke-width="2" cx="100" cy="${hy - 32}" r="3.6"/>`
 			);
+		}
 		case 2:
 		{
-			let ribs = "";
-			for (let i = 1; i < 10; i++) ribs += p`M${100 - hw - 3 + ((2 * hw + 6) * i) / 10} ${hy - 10} v11 `;
+			// Headphones: a band over the top of the head and a big cup over each ear, so the hair shows between.
+			const top = t - 40,
+				lx = L - 6,
+				rx = R + 6,
+				cy = ey + 6;
+			const arc = p`M${lx - 4} ${cy - 13} C${lx - 14} ${top} ${rx + 14} ${top} ${rx + 4} ${cy - 13}`;
+			const cup = (x: number, s: number): string =>
+				p`<rect fill="#3a3330" stroke-width="2.6" x="${x + s * 5 - 4}" y="${cy - 14}" width="8" height="28" rx="4"/>` +
+				p`<ellipse fill="${c}" ${big} cx="${x - s * 2}" cy="${cy}" rx="11" ry="16"/>` +
+				p`<ellipse fill="${dim}" stroke="none" cx="${x - s * 4}" cy="${cy + 2}" rx="5.5" ry="10"/>` +
+				line(p`M${x - 7} ${cy - 6} Q${x - 5} ${cy - 12} ${x} ${cy - 13}`, lit, 2.2);
 			return (
-				`<path fill="${c}" ${big} d="${dome(52)}"/>` +
-				line(
-					p`M${100 - hw * 0.5} ${hy - 13} Q${100 - hw * 0.46} ${hy - 40} ${100 - hw * 0.12} ${hy - 52} M${100 + hw * 0.5} ${hy - 13} Q${100 + hw * 0.46} ${hy - 40} ${100 + hw * 0.12} ${hy - 52} M100 ${hy - 13} V${hy - 50}`,
-					dim,
-					2,
-				) +
-				sheen(52) +
-				p`<rect fill="${shade(c, -0.15)}" ${big} x="${100 - hw - 3}" y="${hy - 13}" width="${2 * hw + 6}" height="17" rx="6"/>` +
-				line(ribs, deep, 1.4) +
-				pompom(100, hy - 58, 10)
+				`<path d="${arc}" fill="none" stroke-width="10.4"/>` +
+				line(arc, c, 6.6) +
+				line(arc, lit, 1.4) +
+				cup(lx, -1) +
+				cup(rx, 1)
 			);
 		}
 		case 3:
 			return (
-				p`<path fill="#2f2a28" ${big} d="M${100 - hw * 0.7} ${hy} L${100 - hw * 0.75} ${hy - 59} Q100 ${hy - 64} ${100 + hw * 0.75} ${hy - 59} L${100 + hw * 0.7} ${hy}Z"/>` +
-				line(p`M${100 - hw * 0.54} ${hy - 52} L${100 - hw * 0.52} ${hy - 26}`, "#6f6660", 3.4) +
-				p`<path fill="${c}" d="M${100 - hw * 0.72} ${hy - 20} L${100 + hw * 0.72} ${hy - 20} L${100 + hw * 0.71} ${hy - 8} L${100 - hw * 0.71} ${hy - 8}Z"/>` +
-				line(p`M${100 - hw * 0.62} ${hy - 16.6} H${100 + hw * 0.2}`, lit, 1.6) +
-				p`<ellipse fill="#2f2a28" ${big} cx="100" cy="${hy}" rx="${hw + 14}" ry="8"/>` +
+				p`<path fill="#2f2a28" ${big} d="M${100 - hw * 0.62} ${hy} L${100 - hw * 0.68} ${hy - 44} Q100 ${hy - 48} ${100 + hw * 0.68} ${hy - 44} L${100 + hw * 0.62} ${hy}Z"/>` +
+				line(p`M${100 - hw * 0.46} ${hy - 38} L${100 - hw * 0.44} ${hy - 20}`, "#6f6660", 3) +
+				p`<path fill="${c}" d="M${100 - hw * 0.64} ${hy - 15} L${100 + hw * 0.64} ${hy - 15} L${100 + hw * 0.63} ${hy - 6} L${100 - hw * 0.63} ${hy - 6}Z"/>` +
+				line(p`M${100 - hw * 0.54} ${hy - 12.4} H${100 + hw * 0.2}`, lit, 1.4) +
+				p`<ellipse fill="#2f2a28" ${big} cx="100" cy="${hy}" rx="${hw + 10}" ry="6"/>` +
 				line(
-					p`M${100 - hw - 5} ${hy - 1.5} Q${100 - hw * 0.4} ${hy - 5} ${100 + hw * 0.1} ${hy - 4.6}`,
+					p`M${100 - hw - 3} ${hy - 1} Q${100 - hw * 0.4} ${hy - 4} ${100 + hw * 0.1} ${hy - 3.6}`,
 					"#6f6660",
-					2,
+					1.8,
 				)
 			);
 		case 4:
 		{
-			const tips = [-0.86, 0, 0.86]
+			const tips = [-0.82, 0, 0.82]
 				.map(
 					(u) =>
-						p`<circle fill="#f5c542" stroke-width="2" cx="${100 + hw * u}" cy="${hy - (u ? 37 : 45)}" r="4"/>`,
+						p`<circle fill="#f5c542" stroke-width="2" cx="${100 + hw * u}" cy="${hy - (u ? 28 : 34)}" r="3.6"/>`,
 				)
 				.join("");
 			return (
-				p`<path fill="#f5c542" ${big} d="M${100 - hw * 0.8} ${hy + 2} L${100 - hw * 0.86} ${hy - 36} L${100 - hw * 0.45} ${hy - 16} L100 ${hy - 44} L${100 + hw * 0.45} ${hy - 16} L${100 + hw * 0.86} ${hy - 36} L${100 + hw * 0.8} ${hy + 2}Z"/>` +
+				p`<path fill="#f5c542" ${big} d="M${100 - hw * 0.76} ${hy + 1} L${100 - hw * 0.82} ${hy - 27} L${100 - hw * 0.42} ${hy - 12} L100 ${hy - 33} L${100 + hw * 0.42} ${hy - 12} L${100 + hw * 0.82} ${hy - 27} L${100 + hw * 0.76} ${hy + 1}Z"/>` +
 				flat(
-					p`M${100 + hw * 0.5} ${hy - 13} L${100 + hw * 0.84} ${hy - 30} L${100 + hw * 0.79} ${hy} L${100 + hw * 0.5} ${hy}Z`,
+					p`M${100 + hw * 0.48} ${hy - 10} L${100 + hw * 0.8} ${hy - 22} L${100 + hw * 0.75} ${hy} L${100 + hw * 0.48} ${hy}Z`,
 					"#dfa326",
 				) +
-				line(p`M${100 - hw * 0.76} ${hy - 12} L${100 - hw * 0.8} ${hy - 27}`, "#fff0a6", 2.6) +
-				line(p`M${100 - hw * 0.8} ${hy - 14} H${100 + hw * 0.8}`, "#b97f14", 1.5) +
+				line(p`M${100 - hw * 0.72} ${hy - 8} L${100 - hw * 0.76} ${hy - 20}`, "#fff0a6", 2.4) +
+				line(p`M${100 - hw * 0.77} ${hy - 10} H${100 + hw * 0.77}`, "#b97f14", 1.4) +
 				tips +
-				p`<circle cx="100" cy="${hy - 6}" r="5" fill="#e74c3c" stroke-width="2"/><circle cx="${100 - hw * 0.45}" cy="${hy - 6}" r="4" fill="#3498db" stroke-width="2"/><circle cx="${100 + hw * 0.45}" cy="${hy - 6}" r="4" fill="#3498db" stroke-width="2"/>` +
-				p`<g fill="#fff" stroke="none" opacity=".8"><circle cx="98.4" cy="${hy - 7.6}" r="1.4"/><circle cx="${100 - hw * 0.45 - 1.2}" cy="${hy - 7.2}" r="1.1"/><circle cx="${100 + hw * 0.45 - 1.2}" cy="${hy - 7.2}" r="1.1"/></g>`
+				p`<circle cx="100" cy="${hy - 4.5}" r="4" fill="#e74c3c" stroke-width="2"/><circle cx="${100 - hw * 0.45}" cy="${hy - 4.5}" r="3.2" fill="#3498db" stroke-width="2"/><circle cx="${100 + hw * 0.45}" cy="${hy - 4.5}" r="3.2" fill="#3498db" stroke-width="2"/>` +
+				p`<g fill="#fff" stroke="none" opacity=".8"><circle cx="98.6" cy="${hy - 5.8}" r="1.2"/><circle cx="${100 - hw * 0.45 - 1}" cy="${hy - 5.6}" r="1"/><circle cx="${100 + hw * 0.45 - 1}" cy="${hy - 5.6}" r="1"/></g>`
 			);
 		}
 		case 5:
@@ -1194,57 +1216,63 @@ function hat(f: Face, g: Geo): string
 				pompom(106, hy - 68, 7)
 			);
 		case 7:
+		{
+			// A propeller beanie: a small round dome in bright stripes, with the propeller spinning on top.
+			const gore = (s: number): string =>
+				p`M${100 + s * hw * 0.62} ${hy} Q${100 + s * hw * 0.6} ${hy - 18} ${100 + s * hw * 0.06} ${hy - 27.5} Q${100 + s * hw * 0.28} ${hy - 14} ${100 + s * hw * 0.22} ${hy}Z`;
 			return (
-				`<path fill="${c}" ${big} d="${dome(50)}"/>` +
-				p`<path fill="#f1c40f" d="M92 ${hy} Q93 ${hy - 40} 100 ${hy - 52} Q107 ${hy - 40} 108 ${hy}Z"/>` +
-				line(
-					p`M${100 - hw * 0.56} ${hy - 1} Q${100 - hw * 0.52} ${hy - 36} ${100 - hw * 0.16} ${hy - 49} M${100 + hw * 0.56} ${hy - 1} Q${100 + hw * 0.52} ${hy - 36} ${100 + hw * 0.16} ${hy - 49}`,
-					dim,
-					2,
-				) +
-				sheen(50) +
-				p`<path d="M100 ${hy - 52} L100 ${hy - 64}" fill="none"/><ellipse fill="#f1c40f" cx="88" cy="${hy - 66}" rx="12" ry="4.5"/><ellipse fill="#f1c40f" cx="112" cy="${hy - 66}" rx="12" ry="4.5"/>` +
-				line(p`M80 ${hy - 67.4} h9 M108 ${hy - 67.4} h9`, "#fff3a6", 1.5) +
-				p`<circle fill="${c}" cx="100" cy="${hy - 66}" r="3.5"/>`
+				`<path fill="${c}" ${big} d="${dome(26)}"/>` +
+				flat(gore(-1) + gore(1), "#f1c40f") +
+				line(gore(-1) + gore(1), LINE, 1.4) +
+				sheen(26) +
+				p`<rect fill="#2e86de" stroke-width="2.4" x="${100 - hw}" y="${hy - 4}" width="${2 * hw}" height="6" rx="3"/>` +
+				p`<path d="M100 ${hy - 28} L100 ${hy - 38}" fill="none"/>` +
+				p`<path fill="#e74c3c" stroke-width="2.2" d="M100 ${hy - 40} Q88 ${hy - 48} 77 ${hy - 43} Q88 ${hy - 37} 100 ${hy - 40}Z"/>` +
+				p`<path fill="#2e86de" stroke-width="2.2" d="M100 ${hy - 40} Q112 ${hy - 33} 123 ${hy - 37} Q112 ${hy - 44} 100 ${hy - 40}Z"/>` +
+				p`<circle fill="#f1c40f" stroke-width="2" cx="100" cy="${hy - 40}" r="3"/>`
 			);
+		}
 		case 8:
 			return (
-				p`<ellipse fill="#9a7650" ${big} cx="100" cy="${hy}" rx="${hw + 20}" ry="8"/>` +
-				p`<path fill="#9a7650" ${big} d="M${100 - hw * 0.78} ${hy} Q${100 - hw * 0.86} ${hy - 42} ${100 - hw * 0.38} ${hy - 48} Q100 ${hy - 36} ${100 + hw * 0.38} ${hy - 48} Q${100 + hw * 0.86} ${hy - 42} ${100 + hw * 0.78} ${hy}Z"/>` +
+				p`<ellipse fill="#9a7650" ${big} cx="100" cy="${hy}" rx="${hw + 16}" ry="6.5"/>` +
+				p`<path fill="#9a7650" ${big} d="M${100 - hw * 0.74} ${hy} Q${100 - hw * 0.82} ${hy - 32} ${100 - hw * 0.36} ${hy - 36} Q100 ${hy - 27} ${100 + hw * 0.36} ${hy - 36} Q${100 + hw * 0.82} ${hy - 32} ${100 + hw * 0.74} ${hy}Z"/>` +
 				flat(
-					p`M${100 + hw * 0.42} ${hy - 44} Q${100 + hw * 0.8} ${hy - 40} ${100 + hw * 0.74} ${hy - 16} L${100 + hw * 0.46} ${hy - 16} Q${100 + hw * 0.56} ${hy - 32} ${100 + hw * 0.42} ${hy - 44}Z`,
+					p`M${100 + hw * 0.4} ${hy - 33} Q${100 + hw * 0.76} ${hy - 30} ${100 + hw * 0.7} ${hy - 12} L${100 + hw * 0.44} ${hy - 12} Q${100 + hw * 0.54} ${hy - 24} ${100 + hw * 0.4} ${hy - 33}Z`,
 					"#7f5f3e",
 				) +
-				line(p`M100 ${hy - 39} q-2 9 0 17`, "#6b4e31", FINE) +
+				line(p`M100 ${hy - 29} q-2 7 0 13`, "#6b4e31", FINE) +
 				line(
-					p`M${100 - hw * 0.66} ${hy - 22} Q${100 - hw * 0.68} ${hy - 38} ${100 - hw * 0.4} ${hy - 42}`,
+					p`M${100 - hw * 0.62} ${hy - 16} Q${100 - hw * 0.64} ${hy - 28} ${100 - hw * 0.38} ${hy - 31}`,
 					"#c4a078",
-					3,
+					2.6,
 				) +
-				p`<path fill="${c}" d="M${100 - hw * 0.8} ${hy - 15} L${100 + hw * 0.8} ${hy - 15} L${100 + hw * 0.78} ${hy - 3} L${100 - hw * 0.78} ${hy - 3}Z"/>` +
-				line(p`M${100 - hw * 0.7} ${hy - 11.6} H${100 + hw * 0.2}`, lit, 1.6) +
+				p`<path fill="${c}" d="M${100 - hw * 0.76} ${hy - 11} L${100 + hw * 0.76} ${hy - 11} L${100 + hw * 0.75} ${hy - 2.5} L${100 - hw * 0.75} ${hy - 2.5}Z"/>` +
+				line(p`M${100 - hw * 0.66} ${hy - 8.4} H${100 + hw * 0.2}`, lit, 1.4) +
 				line(
-					p`M${100 - hw - 12} ${hy + 3} Q${100 - hw * 0.3} ${hy + 6.4} ${100 + hw * 0.3} ${hy + 5.4}`,
+					p`M${100 - hw - 8} ${hy + 2} Q${100 - hw * 0.3} ${hy + 5} ${100 + hw * 0.3} ${hy + 4.2}`,
 					"#c4a078",
-					1.8,
+					1.6,
 				)
 			);
 		case 9:
+			// A beret: a wide, flat disc of felt tipped down over one side, with a little stalk in the middle.
 			return (
-				p`<path fill="${c}" ${big} d="M${100 - hw - 10} ${hy - 8} Q${100 - hw - 6} ${hy - 48} 104 ${hy - 45} Q${100 + hw + 24} ${hy - 42} ${100 + hw + 13} ${hy - 6} Q100 ${hy + 4} ${100 - hw - 10} ${hy - 8}Z"/>` +
-				line(p`M${100 + hw * 0.3} ${hy - 12} Q${100 + hw + 6} ${hy - 12} ${100 + hw + 10} ${hy - 24}`, dim, 4) +
+				p`<g transform="rotate(-9 100 ${hy})">` +
+				p`<path fill="${dim}" stroke-width="2.6" d="M${100 - hw * 0.8} ${hy - 4} H${100 + hw * 0.8} V${hy + 3} Q100 ${hy + 6} ${100 - hw * 0.8} ${hy + 3}Z"/>` +
+				p`<path fill="${c}" ${big} d="M${100 - hw - 9} ${hy - 4} Q${100 - hw - 12} ${hy - 19} ${100 - 6} ${hy - 21} Q${100 + hw + 22} ${hy - 22} ${100 + hw + 18} ${hy - 7} Q${100 + hw + 10} ${hy + 1} 100 ${hy} Q${100 - hw - 6} ${hy + 1} ${100 - hw - 9} ${hy - 4}Z"/>` +
+				line(p`M${100 - hw * 0.2} ${hy - 4} Q${100 + hw + 4} ${hy - 4} ${100 + hw + 12} ${hy - 9}`, dim, 3) +
 				line(
-					p`M${100 - hw - 2} ${hy - 20} Q${100 - hw + 2} ${hy - 37} ${100 - hw * 0.3} ${hy - 39}`,
+					p`M${100 - hw - 4} ${hy - 11} Q${100 - hw * 0.7} ${hy - 19} ${100 - hw * 0.1} ${hy - 19}`,
 					lit,
-					3.4,
+					3,
 				) +
-				p`<path fill="${dim}" d="M${100 - hw + 2} ${hy - 6} Q100 ${hy + 6} ${100 + hw - 2} ${hy - 4} L${100 + hw - 2} ${hy + 3} Q100 ${hy + 13} ${100 - hw + 2} ${hy + 1}Z"/>` +
-				p`<path fill="none" d="M105 ${hy - 45} l4 -11"/>`
+				p`<path fill="none" stroke-width="3" d="M102 ${hy - 21} l2 -7"/>` +
+				`</g>`
 			);
 		case 10:
 		case 11:
 		{
-			const by = t + 6 - (afro ? 20 : lift);
+			const by = t + 2 + sink - (afro ? 20 : lift);
 			const cat = f.hat === 10,
 				col = cat ? "#2b2b2b" : "#d92b2b";
 			const ear = (s: number): string =>
