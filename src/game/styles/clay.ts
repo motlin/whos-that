@@ -290,10 +290,10 @@ function ears(f: Face, g: Geo, sk: string): string
 			const ex = x + s * dx,
 				ey2 = y + dy;
 			rings += [
-				svg`<circle cx="${ex}" cy="${ey2 + 7}" r="7.5" fill="none" stroke="${GOLD}" stroke-width="4"/>`,
-				svg`<path d="M${ex} ${ey2} q-11 15 0 19 q11 -4 0 -19Z" fill="#2fb7ee"/>`,
-				ball(ex, ey2 + 6, 8, "#e5484d"),
-				slab(svg`M${ex} ${ey2} l-8 17 h16Z`, "#33b565", 3),
+				svg`<circle cx="${ex}" cy="${ey2 + 10}" r="10" fill="none" stroke="${GOLD}" stroke-width="5"/>`,
+				svg`<path d="M${ex} ${ey2} q-15 20 0 26 q15 -6 0 -26Z" fill="#2fb7ee"/>`,
+				ball(ex, ey2 + 8, 10.5, "#e5484d"),
+				slab(svg`M${ex} ${ey2} l-11 22 h22Z`, "#33b565", 3),
 			][f.earrings - 1]!;
 		}
 	}
@@ -622,9 +622,9 @@ function mustache(f: Face, g: Geo, hc: string): string
 		return small(
 			onSkin(
 				f,
-				svg`<path d="M82 ${y - 3.5} Q89 ${y - 16} 100 ${y - 9.5} Q111 ${y - 16} 118 ${y - 3.5} Q108 ${y - 6} 100 ${y - 5.5} Q92 ${y - 6} 82 ${y - 3.5}Z"/>`,
+				svg`<path d="M75 ${y - 2} Q85 ${y - 20} 100 ${y - 11} Q115 ${y - 20} 125 ${y - 2} Q111 ${y - 5.5} 100 ${y - 5} Q89 ${y - 5.5} 75 ${y - 2}Z"/>`,
 				hc,
-				2.5,
+				3.5,
 			),
 		);
 	}
@@ -658,15 +658,15 @@ function cheeks(f: Face, g: Geo, sk: string): string
 			for (const x of [lx, rx])
 			{
 				for (const [a, c] of [
-					[-8, -3],
-					[-2, -5],
-					[5, -3],
-					[-5, 2],
-					[1, 1],
-					[8, 3],
-					[-1, 6],
+					[-10, -4],
+					[-2, -7],
+					[7, -4],
+					[-6, 3],
+					[2, 1],
+					[10, 4],
+					[-1, 8],
 				] as const)
-					s += svg`<circle cx="${x + a}" cy="${cy + c}" r="2.3"/>`;
+					s += svg`<circle cx="${x + a}" cy="${cy + c}" r="3.2"/>`;
 			}
 			return `<g fill="${darkSkin(f) ? shade(sk, 0.5) : shade(sk, -0.5)}">${s}</g>`;
 		}
@@ -679,7 +679,7 @@ function cheeks(f: Face, g: Geo, sk: string): string
 		}
 		case 4:
 			return small(
-				svg`<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 14}" y="${cy - 6}" width="28" height="12" rx="5" fill="#f8dcb4"/><rect x="${lx - 5}" y="${cy - 4.5}" width="10" height="9" rx="2" fill="#d99a5c"/></g>`,
+				svg`<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 18}" y="${cy - 8}" width="36" height="16" rx="6.5" fill="#f8dcb4"/><rect x="${lx - 6.5}" y="${cy - 6}" width="13" height="12" rx="2.5" fill="#d99a5c"/></g>`,
 			);
 		case 5:
 			return small(slab(star(rx, cy, 13, 6), "#ffd23f", 2.5));
