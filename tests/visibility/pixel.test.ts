@@ -11,7 +11,7 @@ const PIXEL = styleOf("pixel");
 const WIDTH = VB[2]!;
 const BASE = Object.fromEntries(KEYS.map((k) => [k, 0])) as Face;
 // The hats that cover the crown of the head.
-const CROWNED = [1, 2, 3, 4, 7, 8, 9];
+const CROWNED = [1, 3, 4, 7, 8, 9];
 // One cell of the grid.
 const CELL = 4;
 // How far a cap's bill may hang below the hat's region.
