@@ -12,11 +12,8 @@ const POOLS: FeatureKey[][] = [
 		"shirt",
 		"shirtStyle",
 		"neckwear",
-		"mouth",
-		"nose",
+		// Noses, mouths, ears and cheeks are small or fine lines, so they wait for the next stage.
 		"eyes",
-		"ears",
-		"cheeks",
 		"eyebrows",
 		"skin",
 	],
