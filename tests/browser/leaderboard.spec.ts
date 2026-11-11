@@ -73,6 +73,11 @@ test("a game's score saves to the shared board and is highlighted there", async 
 	expect(right).toBeGreaterThanOrEqual(0);
 	await picks.nth(right).click();
 	await expect(page.locator(".lvl")).toHaveText("Level 2");
+	// Level 1 is worth 100, plus up to 100 for answer time left and up to 100 for memorize time left. Tapping ready
+	// and answering at once leaves most of both, which only the memorize bonus takes past 200.
+	await page.locator(".memo .facecard").waitFor();
+	const levelOne = Number(await page.locator("#hudScore").textContent());
+	expect(levelOne > 250 && levelOne <= 300).toBe(true);
 	const second = await page.locator(".memo .facecard").innerHTML();
 	await page.locator("#ready").click();
 	await page.locator(".pick").first().waitFor();

@@ -29,17 +29,20 @@ export function sortTop(boards: Boards): Boards
 	return boards;
 }
 
-// The game's award(): a cleared level L is worth 100 + 10*(L-1), plus up to 100 more for the fraction of time left.
-export const levelPoints = (level: number, frac: number): number => 100 + 10 * (level - 1) + Math.round(100 * frac);
+// The game's award(): a cleared level L is worth 100 + 10*(L-1), plus up to 100 more for the fraction of the answer time
+// left and up to 100 more for the fraction of the memorize time left when the player tapped ready. Both fractions come
+// from the millisecond clock, and the total is rounded once.
+export const levelPoints = (level: number, answer: number, memorize: number): number =>
+	100 + 10 * (level - 1) + Math.round(100 * (answer + memorize));
 
 // The game submits G.level at game over, and G.level moves past a level only once it is cleared, so a score at level l
-// holds one award for each of levels 1 to l - 1. Summing levelPoints(L, frac) over those levels gives
-// 100c + 5c(c - 1) with no time left (frac = 0) and 200c + 5c(c - 1) with all of it (frac = 1), where c = l - 1.
+// holds one award for each of levels 1 to l - 1. Summing levelPoints(L, frac, frac) over those levels gives
+// 100c + 5c(c - 1) with no time left (frac = 0) and 300c + 5c(c - 1) with all of it (frac = 1), where c = l - 1.
 const cleared = (level: number): number => Math.max(0, level - 1);
 export const minScoreForLevel = (level: number): number =>
 	100 * cleared(level) + 5 * cleared(level) * (cleared(level) - 1);
 export const maxScoreForLevel = (level: number): number =>
-	200 * cleared(level) + 5 * cleared(level) * (cleared(level) - 1);
+	300 * cleared(level) + 5 * cleared(level) * (cleared(level) - 1);
 
 const NAME_MAX = 12;
 const DEVICE_ID = /^[A-Za-z0-9_-]{8,64}$/;

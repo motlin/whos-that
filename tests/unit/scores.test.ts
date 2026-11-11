@@ -11,11 +11,15 @@ import
 
 describe("levelPoints", () =>
 {
-	it("gives 100 points plus 10 per level cleared before, plus up to 100 for time left", () =>
+	it("gives 100 points plus 10 per level cleared before, plus up to 100 each for answer and memorize time left", () =>
 	{
-		expect([levelPoints(1, 0), levelPoints(1, 1), levelPoints(3, 0.5), levelPoints(10, 0.004)]).toStrictEqual([
-			100, 200, 170, 190,
-		]);
+		expect([
+			levelPoints(1, 0, 0),
+			levelPoints(1, 1, 1),
+			levelPoints(3, 0.5, 0.25),
+			levelPoints(10, 0.004, 0),
+			levelPoints(1, 0, 0.996),
+		]).toStrictEqual([100, 300, 195, 190, 200]);
 	});
 });
 
@@ -24,7 +28,7 @@ describe("levelPoints", () =>
 function sum(level: number, frac: number): number
 {
 	let total = 0;
-	for (let L = 1; L < level; L++) total += levelPoints(L, frac);
+	for (let L = 1; L < level; L++) total += levelPoints(L, frac, frac);
 	return total;
 }
 
@@ -42,10 +46,10 @@ describe("the score bound for a level", () =>
 	{
 		expect([1, 2, 3, 6, 9].map((l) => [minScoreForLevel(l), maxScoreForLevel(l)])).toStrictEqual([
 			[0, 0],
-			[100, 200],
-			[210, 410],
-			[600, 1100],
-			[1080, 1880],
+			[100, 300],
+			[210, 610],
+			[600, 1600],
+			[1080, 2680],
 		]);
 	});
 

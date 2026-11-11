@@ -15,6 +15,8 @@ const G:
 	mode: ModeId;
 	level: number;
 	score: number;
+	// The share of this level's memorize time left when the player tapped ready, 0 if the timer ran out.
+	memorize: number;
 	stops: (() => void)[];
 	screen: number;
 } =
@@ -22,6 +24,7 @@ const G:
 	mode: "classic",
 	level: 1,
 	score: 0,
+	memorize: 0,
 	stops: [],
 	screen: 0,
 };
@@ -396,7 +399,7 @@ function levelSplash(): void
 }
 function award(frac: number): number
 {
-	const pts = levelPoints(G.level, frac);
+	const pts = levelPoints(G.level, frac, G.memorize);
 	G.score += pts;
 	SFX.ding();
 	return pts;
@@ -416,17 +419,22 @@ function memorizeScreen(faces: Face[], sec: number, next: () => void, msg: strin
  <div class="memo memo-${faces.length}">${faces.map((f, i) => `<div class="facecard big">${faces.length > 1 ? `<span class="badge">${i + 1}</span>` : ""}${faceSVG(f)}</div>`).join("")}</div>
  ${timerHTML()}<div class="row"><button class="btn primary" id="ready">I'm ready! ▶</button></div>`);
 	let done = false;
-	const go = (): void =>
+	const go = (left: number): void =>
 	{
 		if (done) return;
 		done = true;
+		G.memorize = left;
+		t.stop();
 		next();
 	};
-	timer(sec, $(".timer"), go);
+	const t = timer(sec, $(".timer"), () =>
+	{
+		go(0);
+	});
 	$("#ready").onclick = (): void =>
 	{
 		SFX.click();
-		go();
+		go(t.frac());
 	};
 }
 function choiceScreen(

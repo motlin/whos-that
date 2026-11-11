@@ -32,7 +32,7 @@ The game installs from the browser as a standalone app and plays offline. `index
 
 ### The score bound
 
-The artifact's `award(frac)` gives `100 + 10*(L-1) + Math.round(100*frac)` points for clearing level `L`, where `frac` is the fraction of the round's time left, from 0 to 1. `G.level` starts at 1 and goes up by one only after a level is cleared, and the game submits `G.level` at game over. So a score submitted at level `l` holds exactly one award for each of levels 1 to `l - 1`. With `c = l - 1`, summing the awards gives `100c + 5c(c-1)` when no time was left on any level and `200c + 5c(c-1)` when all of it was. The API accepts only scores between those two. `tests/unit/scores.test.ts` checks the closed forms against the summed awards, and checks that the artifact's source still has that exact `award()`.
+The game's `award()` gives `levelPoints(L, answer, memorize)` from `src/shared/scores.ts`: `100 + 10*(L-1) + Math.round(100*(answer + memorize))` points for clearing level `L`, where `answer` is the fraction of the answer time left and `memorize` the fraction of the memorize time left when the player tapped ready, each from 0 to 1 and read from the millisecond clock. `G.level` starts at 1 and goes up by one only after a level is cleared, and the game submits `G.level` at game over. So a score submitted at level `l` holds exactly one award for each of levels 1 to `l - 1`. With `c = l - 1`, summing the awards gives `100c + 5c(c-1)` when no time was left on any level and `300c + 5c(c-1)` when all of both was. The API accepts only scores between those two. `tests/unit/scores.test.ts` checks the closed forms against the summed awards.
 
 ### Adding Turnstile or Cloudflare Access
 
