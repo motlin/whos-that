@@ -444,6 +444,7 @@ function hairFront(f: Face, g: Geo, hr: Tones, sk: Skin): Hair
 		detail: "",
 	};
 }
+const EARRING_SCALE = 1.4;
 function ears(f: Face, g: Geo, sk: Skin): string
 {
 	const {w, ey} = g;
@@ -492,6 +493,8 @@ function ears(f: Face, g: Geo, sk: Skin): string
 			const [dx, dy] = EB[f.ears] as [number, number];
 			const ex = x + s * dx,
 				ey2 = y + dy;
+			// Each earring is scaled up from where it hangs, so it reads at card size.
+			o += p`<g transform="translate(${ex} ${ey2}) scale(${EARRING_SCALE}) translate(${-ex} ${-ey2})">`;
 			o += [
 				p`<circle cx="${ex}" cy="${ey2 + 7}" r="7.5" fill="none" stroke-width="5.4"/><circle cx="${ex}" cy="${ey2 + 7}" r="7.5" fill="none" stroke="${GOLD}" stroke-width="3"/>` +
 					line(p`M${ex - 6.6} ${ey2 + 3.5} A7.5 7.5 0 0 1 ${ex - 1} ${ey2 - 0.4}`, "#fff3b0", 1.2),
@@ -501,6 +504,7 @@ function ears(f: Face, g: Geo, sk: Skin): string
 				p`<path d="M${ex} ${ey2 - 1} l-8.5 19 h17Z" fill="#3fbf6f" stroke-width="1.8"/>` +
 					flat(p`M${ex} ${ey2 + 3} l-5 12.5 h5Z`, "#8fe0ab"),
 			][f.earrings - 1]!;
+			o += `</g>`;
 		}
 	}
 	return `<g fill="${sk.base}" stroke-width="${OUT}">${o}</g>`;
@@ -595,7 +599,8 @@ function brows(f: Face, g: Geo, hc: string): string
 			case 2:
 				return p`M${xi} ${y + 0.5} L${xo} ${y - 6.5} L${xo + s * 0.5} ${y - 2.5} L${xi} ${y + 7}Z`;
 			case 3:
-				return p`M${xi} ${y - 8} L${xo} ${y + 0.5} L${xo + s * 0.5} ${y + 4.5} L${xi} ${y - 1.5}Z`;
+				// Worried: thick brows that climb steeply toward the middle.
+				return p`M${xi} ${y - 12} L${xo + s * 2} ${y + 0.5} L${xo + s * 2} ${y + 6} L${xi} ${y - 3}Z`;
 			case 5:
 				return s < 0
 					? p`M${xi} ${y - 8} Q${x} ${y - 21} ${xo} ${y - 5} Q${xo} ${y - 3} ${xo - s} ${y - 2.5} Q${x} ${y - 14} ${xi} ${y - 2}Z`
@@ -780,8 +785,8 @@ function mustache(f: Face, g: Geo, hr: Tones): string
 	const y = g.my;
 	if (f.facialHair === 1)
 		return (
-			p`<path fill="${hr.base}" d="M83 ${y - 3} Q90 ${y - 14} 100 ${y - 7} Q110 ${y - 14} 117 ${y - 3} Q108 ${y - 3} 100 ${y - 4} Q92 ${y - 3} 83 ${y - 3}Z"/>` +
-			strands(p`M100 ${y - 7} v2.5 M93 ${y - 8.5} q-3 1 -5 3.5 M107 ${y - 8.5} q3 1 5 3.5`, hr)
+			p`<path fill="${hr.base}" d="M78 ${y + 1} Q86 ${y - 18} 100 ${y - 10} Q114 ${y - 18} 122 ${y + 1} Q110 ${y - 2} 100 ${y - 3} Q90 ${y - 2} 78 ${y + 1}Z"/>` +
+			strands(p`M100 ${y - 10} v4 M92 ${y - 12} q-4 2 -7 6 M108 ${y - 12} q4 2 7 6`, hr)
 		);
 	if (f.facialHair === 2)
 	{
@@ -818,15 +823,16 @@ function cheeks(f: Face, g: Geo, sk: Skin): string
 			for (const x of [lx, rx])
 			{
 				for (const [a, c] of [
-					[-8, -3],
-					[-2, -5],
-					[5, -3],
-					[-5, 2],
+					[-11, -4],
+					[-3, -7],
+					[6, -5],
+					[-7, 3],
 					[1, 1],
-					[8, 3],
-					[-1, 6],
+					[10, 2],
+					[-2, 8],
+					[6, 8],
 				] as const)
-					s += p`<circle cx="${x + a}" cy="${cy + c}" r="2.2"/>`;
+					s += p`<circle cx="${x + a}" cy="${cy + c}" r="2.9"/>`;
 			}
 			return `<g fill="${darkSkin(f) ? shade(sk.base, 0.5) : shade(sk.base, -0.5)}" stroke="none">${s}</g>`;
 		}
@@ -842,14 +848,14 @@ function cheeks(f: Face, g: Geo, sk: Skin): string
 		}
 		case 4:
 			return (
-				p`<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="#f3c999" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="#e2a96f" stroke="none"/>` +
+				p`<g transform="rotate(-25 ${lx} ${cy}) translate(${lx} ${cy}) scale(1.4) translate(${-lx} ${-cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="#f3c999" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="#e2a96f" stroke="none"/>` +
 				line(p`M${lx - 8.5} ${cy - 1.5} v3 M${lx + 8.5} ${cy - 1.5} v3`, "#b98148", 1.4) +
 				`</g>`
 			);
 		case 5:
 			return (
-				`<path d="${star(rx, cy, 12, 5.4)}" fill="#ffd23f" stroke-width="2"/>` +
-				line(p`M${rx - 3.5} ${cy - 1} l2.5 -5`, "#fff3b8", 1.8)
+				`<path d="${star(rx, cy, 16, 7.2)}" fill="#ffd23f" stroke-width="2.4"/>` +
+				line(p`M${rx - 4.5} ${cy - 1.5} l3.3 -6.5`, "#fff3b8", 2.2)
 			);
 	}
 	return "";
