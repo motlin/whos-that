@@ -3,6 +3,8 @@ import type {Face, FeatureKey} from "./faces.ts";
 // What every art style shares: where the features sit on the card, so crops, highlights and tap marks line up whatever
 // style drew the face.
 export const INK = "#2a2522";
+// The hat value that is a pair of headphones rather than something worn on the crown.
+const HEADPHONES = 2;
 const SHAPES = [
 	{
 		w: 60,
@@ -126,7 +128,14 @@ export function regions(f: Face, k: FeatureKey): Region[]
 	{
 		case "hat":
 		case "hatColor":
-			return [[100, t - 14, w + 26, 42]];
+			// Headphones are a band over the top of the head and a cup over each ear.
+			return f.hat === HEADPHONES
+				? [
+						[100, t + 2, w + 14, 22],
+						[L - 4, ey + 12, 16, 22],
+						[R + 4, ey + 12, 16, 22],
+					]
+				: [[100, t - 14, w + 26, 42]];
 		case "hairStyle":
 		case "hairDye":
 			return [[100, t + 26, w + 28, 56]];
