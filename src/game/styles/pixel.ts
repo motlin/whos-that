@@ -329,8 +329,8 @@ function hairBack(a: Art): void
 		}
 		case 7:
 		{
-			// Under a hat over the crown, the buns are worn low, tucked under its edge at each side of the head.
-			const [bx, by, r] = CROWNED.has(a.f.hat) ? [w + 4, fit(a.f, a.g).hy + 16, 13] : [w - 4, t + 2, 23];
+			// The buns sit at the sides of the head, below where a hat over the crown ends, so a hat never hides or moves them.
+			const [bx, by, r] = [w + 6, t + 31, 18];
 			mass(a, (X, Y) => oval(off(X), Y, bx, by, r, r), a.hair);
 			tint(a.px, a.hair, (X, Y) => oval(off(X), Y, bx - r * 0.35, by - r * 0.45, 7, 5), shade(a.hair, 0.3));
 			break;
@@ -766,24 +766,24 @@ function brows(a: Art): void
 		R: rimTone(a, a.natural),
 	};
 	// Tall eyes and glasses push the eyebrows up, so neither a lash nor a frame ever sits on top of them.
-	const bottom = a.eyeRow - (f.glasses ? 7 : f.eyes === 1 || f.eyes === 4 ? 5 : 4);
+	const bottom = a.eyeRow - Math.max(f.glasses ? 7 : 0, EYES[f.eyes]![1] + 2);
 	const left = MID + a.eyeCol - 3;
 	const over = (rows: readonly string[], lift = 0): number => bottom - rows.length + 1 - lift;
 	switch (f.eyebrows)
 	{
 		case 4:
 			// One brow across both eyes, its ends turned down.
-			both(px, 0, bottom - 2, a.eyeCol + 2, 2, inks.H);
-			both(px, 0, bottom, a.eyeCol + 2, 1, inks.R);
-			both(px, a.eyeCol + 2, bottom - 1, 2, 2, inks.H);
-			both(px, a.eyeCol + 2, bottom + 1, 2, 1, inks.R);
+			both(px, 0, bottom - 3, a.eyeCol + 2, 2, inks.H);
+			both(px, 0, bottom - 1, a.eyeCol + 2, 1, inks.R);
+			both(px, a.eyeCol + 2, bottom - 2, 2, 2, inks.H);
+			both(px, a.eyeCol + 2, bottom, 2, 1, inks.R);
 			break;
 		case 5:
 		{
 			// Quizzical: one arch raised high, the other brow flat and low.
 			const flat = ["HHHHHHH", "RRRRRRR"];
 			stamp(px, 2 * MID - left - 7, over(BROWS[0]!, 2), BROWS[0]!, inks, true);
-			stamp(px, left, over(flat, -1), flat, inks);
+			stamp(px, left, over(flat), flat, inks);
 			break;
 		}
 		default:
@@ -1151,7 +1151,7 @@ function neckwear(a: Art): void
 					px,
 					x - 1,
 					y - 1,
-					[".OOO.", "OOOOO", "OOOOO", "OOOOO", ".OOO."],
+					[".OO.", "OOOO", "OOOO", "OOOO", ".OO."],
 					{
 						O: OUTLINE,
 					},
@@ -1162,7 +1162,7 @@ function neckwear(a: Art): void
 					px,
 					x,
 					y,
-					["HWW", "WWW", "WWS"],
+					["HW", "WW", "WS"],
 					{
 						W: "#f4eedf",
 						H: "#fff",
@@ -1381,14 +1381,14 @@ function hat(a: Art): void
 		case 1:
 		{
 			// A baseball cap: a white front panel, a button on top and a long bill that sticks out to one side.
-			// The crown hugs the head, so the bill stands well clear of it.
-			const cw = Math.min(hw, w + 3);
+			// The crown hugs the head, so the bill stands well clear of it. On an afro it spans most of the ball of hair.
+			const cw = afro ? hw - 6 : w + 3;
 			area(px, dome(48, cw), (X) => (X > 100 + cw * 0.7 ? low : c));
 			area(px, dome(46, cw * 0.52), "#fff");
 			both(px, 0, row(hy - 52), 1, 1, low);
 			// The bill is a long flat oval, outlined so it stands off the crown, reaching to the edge of the hat's region.
 			const [rx, by] = [36, hy];
-			const bx = 100 - w - 22 + rx;
+			const bx = 100 - cw - 25 + rx;
 			area(px, (X, Y) => oval(X, Y, bx, by, rx + 4, 12), OUTLINE);
 			area(
 				px,
