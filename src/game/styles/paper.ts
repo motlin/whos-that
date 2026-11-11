@@ -434,23 +434,26 @@ function earrings(c: Ctx): string
 	{
 		case 1:
 		{
-			const hoop = ngon(x, y + 7, 9.4, 9.4, 8, 0.4);
-			return holed(GOLD, frame(hoop, 3.6) + frame(mirror(hoop), 3.6));
+			const hoop = ngon(x, y + 9, 12.5, 12.5, 8, 0.4);
+			return holed(GOLD, frame(hoop, 4.6) + frame(mirror(hoop), 4.6));
 		}
 		case 2:
 			return (
-				cut(c.tone, both(pts`${x - 1},${y - 2} ${x + 1},${y - 2} ${x + 1},${y + 3} ${x - 1},${y + 3}`)) +
+				cut(
+					c.tone,
+					both(pts`${x - 1.4},${y - 2} ${x + 1.4},${y - 2} ${x + 1.4},${y + 4} ${x - 1.4},${y + 4}`),
+				) +
 				cut(
 					"#35c4f0",
 					both(
-						pts`${x},${y + 1} ${x + 6},${y + 12} ${x + 3.5},${y + 19} ${x - 3.5},${y + 19} ${x - 6},${y + 12}`,
+						pts`${x},${y + 1} ${x + 8.5},${y + 15} ${x + 5},${y + 25} ${x - 5},${y + 25} ${x - 8.5},${y + 15}`,
 					),
 				)
 			);
 		case 3:
-			return cut("#e5484d", both(ngon(x, y + 6, 8, 8, 8, 0.4)));
+			return cut("#e5484d", both(ngon(x, y + 7, 11, 11, 8, 0.4)));
 		case 4:
-			return cut("#3fbf6f", both(pts`${x},${y - 1} ${x + 9.5},${y + 18} ${x - 9.5},${y + 18.5}`));
+			return cut("#3fbf6f", both(pts`${x},${y - 1} ${x + 11.5},${y + 21.5} ${x - 11.5},${y + 22}`));
 	}
 	return "";
 }
@@ -501,24 +504,24 @@ function eyes(c: Ctx): string
 			{
 				// A heavy lid line with four long lashes fanning outwards.
 				const lash = (ax: number, ay: number, bx: number, by: number): string =>
-					d(pts`${x + s * (ax - 1.6)},${y + ay} ${x + s * (ax + 1.6)},${y + ay} ${x + s * bx},${y + by}`);
+					d(pts`${x + s * (ax - 2.2)},${y + ay} ${x + s * (ax + 2.2)},${y + ay} ${x + s * bx},${y + by}`);
 				o +=
 					round(x, 10, 6.8, 3) +
 					cut(
 						DARK,
 						d(
 							strip(
-								pts`${x - 11},${y - 3} ${x - 7},${y - 9} ${x},${y - 11.5} ${x + 7},${y - 9} ${x + 11},${y - 3}`,
-								3.6,
+								pts`${x - 11.5},${y - 3} ${x - 7},${y - 9.5} ${x},${y - 12} ${x + 7},${y - 9.5} ${x + 11.5},${y - 3}`,
+								4.6,
 							),
 						),
 					) +
 					cut(
 						c.dark ? c.tone : DARK,
-						lash(-2, -11, -2, -18) +
-							lash(4.5, -10, 8.5, -17) +
-							lash(8.5, -7, 16.5, -12) +
-							lash(10.5, -3, 19.5, -3),
+						lash(-2, -11, -2.5, -20) +
+							lash(4.5, -10, 9.5, -19) +
+							lash(8.5, -7, 18.5, -13.5) +
+							lash(10.5, -3, 21.5, -3),
 					);
 				break;
 			}
@@ -575,11 +578,11 @@ function brows(c: Ctx, beside: string): string
 			case 0:
 				return strip(pts`${xi},${y + 1.5} ${x - s * 2},${y - 4} ${xo},${y + 2.5}`, 5.4);
 			case 1:
-				return pts`${xi - s},${y - 6} ${xo + s},${y - 5.5} ${xo},${y + 4} ${xi},${y + 4.5}`;
+				return pts`${xi - s * 2},${y - 7.5} ${xo + s * 2},${y - 7} ${xo + s},${y + 5} ${xi - s},${y + 5.5}`;
 			case 2:
 				return strip(pts`${xo},${y - 5} ${xi},${y + 4.5}`, 5.6);
 			case 3:
-				return strip(pts`${xo},${y + 4} ${xi},${y - 5.5}`, 5.6);
+				return strip(pts`${xo + s * 2},${y + 5.5} ${xi - s * 2},${y - 8}`, 7.8);
 			case 5:
 				return s < 0
 					? strip(pts`${xi},${y - 5} ${x},${y - 14} ${xo},${y - 4}`, 5.4)
@@ -756,9 +759,7 @@ function beard(c: Ctx): string
 			]);
 		}
 		case 4:
-			return fur(c, [
-				[pts`90.5,${y + 11.5} 100,${y + 9} 109.5,${y + 11.5} 105,${y + 27} 100,${y + 31.5} 95,${y + 27}`],
-			]);
+			return fur(c, [[pts`88,${y + 12} 100,${y + 9.5} 112,${y + 12} 107,${y + 30} 100,${y + 35} 93,${y + 30}`]]);
 		case 5:
 		{
 			let dots = "";
@@ -816,7 +817,7 @@ function mustache(c: Ctx): string
 {
 	const y = c.g.my;
 	if (c.f.facialHair === 1)
-		return fur(c, [[sym(pts`100,${y - 12.5} 86,${y - 12} 79,${y - 2.5} 92,${y - 4.5} 100,${y - 6}`)]]);
+		return fur(c, [[sym(pts`100,${y - 15} 85,${y - 14.5} 75,${y - 0.5} 91,${y - 3.5} 100,${y - 5}`)]]);
 	if (c.f.facialHair === 2)
 		// A handlebar: wide, with both ends curled up.
 		return fur(c, [
@@ -850,8 +851,8 @@ function cheeks(c: Ctx): string
 				[8, 3],
 				[-1, 6.5],
 			] as const)
-				dots += both(ngon(x + a, y + e, 2.6, 2.6, 4, a));
-			return cut(c.tone, dots);
+				dots += both(ngon(x + a * 1.3, y + e * 1.3, 3.6, 3.6, 4, a));
+			return layer(cut(c.tone, dots));
 		}
 		case 3:
 		{
@@ -865,17 +866,17 @@ function cheeks(c: Ctx): string
 					cut(
 						"#fdfaf2",
 						d(
-							pts`${x - 13},${y - 3.5} ${x - 11},${y - 5.5} ${x + 11},${y - 5.5} ${x + 13},${y - 3.5} ${x + 13},${y + 3.5} ${x + 11},${y + 5.5} ${x - 11},${y + 5.5} ${x - 13},${y + 3.5}`,
+							pts`${x - 17},${y - 5} ${x - 14.5},${y - 7.5} ${x + 14.5},${y - 7.5} ${x + 17},${y - 5} ${x + 17},${y + 5} ${x + 14.5},${y + 7.5} ${x - 14.5},${y + 7.5} ${x - 17},${y + 5}`,
 						),
 					) +
 					cut(
 						"#dfa66c",
-						d(pts`${x - 4.5},${y - 5.5} ${x + 4.5},${y - 5.5} ${x + 4.5},${y + 5.5} ${x - 4.5},${y + 5.5}`),
+						d(pts`${x - 6},${y - 7.5} ${x + 6},${y - 7.5} ${x + 6},${y + 7.5} ${x - 6},${y + 7.5}`),
 					) +
 					"</g>",
 			);
 		case 5:
-			return layer(cut("#ffd23f", star(200 - x, y, 14, 6.3)));
+			return layer(cut("#ffd23f", star(200 - x, y, 18, 8)));
 	}
 	return "";
 }
@@ -970,8 +971,8 @@ function neckwear(c: Ctx): string
 			);
 		case 5:
 			return (
-				layer(cut(GOLD, d(strip(pts`83,212 90,228 100,238 110,228 117,212`, 3)))) +
-				layer(cut("#e5484d", d(pts`100,234.5 107.5,243 100,252.5 92.5,243`)))
+				layer(cut(GOLD, d(strip(pts`82,212 89.5,228 100,236 110.5,228 118,212`, 3.8)))) +
+				layer(cut("#e5484d", d(pts`100,232 111,242.5 100,254 89,242.5`)))
 			);
 		case 6:
 		{
@@ -1258,7 +1259,7 @@ function hat(c: Ctx): string
 				) +
 					layer(
 						cut(
-							col,
+							"#a9845c",
 							d(
 								sym(
 									pts`100,${hy - 19} ${100 - hw * 0.3},${hy - 24} ${100 - hw * 0.66},${hy - 22} ${100 - hw * 0.76},${hy - 2} 100,${hy - 2}`,
