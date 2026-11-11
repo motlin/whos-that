@@ -1,5 +1,5 @@
 import {CLOTH, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
-import {geo, type Geo, INK, N1, shade, star} from "../geometry.ts";
+import {geo, type Geo, HEADPHONES, INK, N1, shade, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
 // Ink disappears on the two darkest skins, so lines drawn on the skin there use a warm tone a few shades lighter than
@@ -523,69 +523,171 @@ function glasses(f: Face, g: Geo): string
 	}
 	return "";
 }
-const LIFT: Record<number, number> =
+// How far above the top of the head each hair style rises in the middle, where a hat rests on it.
+const HAIR_TOP: Record<number, number> =
 {
-	1: 10,
-	8: 8,
-	2: 4,
-	3: 4,
-	12: 8,
-	13: 4,
+	1: 20,
+	2: 8,
+	3: 6,
+	5: 8,
+	7: 8,
+	8: 14,
+	10: 30,
+	11: 8,
+	12: 24,
+	13: 10,
 };
-function hat(f: Face, g: Geo): string
+// A hat that covers the crown sinks this far into the hair or scalp under it, and never rises above this height over
+// the top of the head, so it stays in the hat's highlight area.
+const SINK = 12;
+const HAT_CEILING = 54;
+// Draws a hat that sits on the crown, in coordinates centred on the middle of its base, half width hw. The hat is
+// scaled down when the hair under it leaves less than its height of room below the ceiling.
+function perched(f: Face, g: Geo, c: string): string
 {
-	if (!f.hat) return "";
-	const {w, t, ey} = g;
+	const {w, t} = g;
 	const afro = f.hairStyle === 4;
-	const lift = LIFT[f.hairStyle] ?? 0;
-	const hy = afro ? t + 34 - (w + 20) + 30 : t + 16 - lift;
-	const hw = w + (afro ? 22 : 5);
-	const c = HATC[f.hatColor]!;
-	const dome = (h: number): string =>
-		`M${100 - hw} ${hy} Q${100 - hw} ${hy - h} 100 ${hy - h - 2} Q${100 + hw} ${hy - h} ${100 + hw} ${hy}Z`;
+	const hy = afro ? t - 22 : t - (HAIR_TOP[f.hairStyle] ?? 0) + SINK;
+	const hw = Number(N1(w * (afro ? 0.85 : 0.72)));
+	const dark = shade(c, -0.25);
+	let d: string, h: number;
 	switch (f.hat)
 	{
 		case 1:
-			return `<path fill="${c}" d="${dome(48)}"/><path fill="#fff" d="M${N1(100 - hw * 0.5)} ${hy} Q${N1(100 - hw * 0.5)} ${hy - 44} 100 ${hy - 50} Q${N1(100 + hw * 0.5)} ${hy - 44} ${N1(100 + hw * 0.5)} ${hy}Z"/><circle fill="${c}" cx="100" cy="${hy - 50}" r="4.5"/><path fill="${shade(c, -0.2)}" d="M${100 - hw + 2} ${hy - 2} Q100 ${hy - 10} ${100 + hw - 2} ${hy - 2} Q${100 + hw + 6} ${hy + 13} 100 ${hy + 15} Q${100 - hw - 6} ${hy + 13} ${100 - hw + 2} ${hy - 2}Z"/>`;
-		case 2:
-			return `<path fill="${c}" d="${dome(52)}"/><rect fill="${shade(c, -0.15)}" x="${100 - hw - 3}" y="${hy - 13}" width="${2 * hw + 6}" height="17" rx="6"/><circle fill="#fff" cx="100" cy="${hy - 58}" r="10"/>`;
-		case 3:
-			return `<rect fill="#2d2d2d" x="${N1(100 - hw * 0.72)}" y="${hy - 60}" width="${N1(hw * 1.44)}" height="60"/><rect fill="${c}" x="${N1(100 - hw * 0.72)}" y="${hy - 20}" width="${N1(hw * 1.44)}" height="12"/><ellipse fill="#2d2d2d" cx="100" cy="${hy}" rx="${hw + 14}" ry="8"/>`;
-		case 4:
-			return `<path fill="#f5c542" d="M${N1(100 - hw * 0.8)} ${hy + 2} L${N1(100 - hw * 0.86)} ${hy - 36} L${N1(100 - hw * 0.45)} ${hy - 16} L100 ${hy - 44} L${N1(100 + hw * 0.45)} ${hy - 16} L${N1(100 + hw * 0.86)} ${hy - 36} L${N1(100 + hw * 0.8)} ${hy + 2}Z"/><circle cx="100" cy="${hy - 10}" r="5" fill="#e74c3c" stroke-width="2"/><circle cx="${N1(100 - hw * 0.45)}" cy="${hy - 6}" r="4" fill="#3498db" stroke-width="2"/><circle cx="${N1(100 + hw * 0.45)}" cy="${hy - 6}" r="4" fill="#3498db" stroke-width="2"/>`;
-		case 5:
 		{
-			const band = `M${100 - w - 2} ${N1(ey - 4)} C${100 - w - 6} ${t - 24} ${100 + w + 6} ${t - 24} ${100 + w + 2} ${N1(ey - 4)}`;
-			const bx = Number(N1(100 - w * 0.5)),
-				by = t + 4 - (afro ? 20 : lift);
-			return `<path d="${band}" fill="none" stroke-width="10"/><path d="${band}" fill="none" stroke="${c}" stroke-width="6"/><path fill="${c}" d="M${bx} ${by} L${bx - 20} ${by - 14} L${bx - 20} ${by + 14}Z M${bx} ${by} L${bx + 20} ${by - 14} L${bx + 20} ${by + 14}Z"/><circle fill="${c}" cx="${bx}" cy="${by}" r="6"/>`;
+			// A baseball cap worn sideways: a round crown with a white front panel and a long bill out to one side.
+			const cw = hw * 0.9;
+			h = 30;
+			d =
+				`<path fill="${dark}" d="M${N1(cw * 0.5)} -6 Q${N1(cw + 22)} -14 ${N1(cw + 34)} -3 Q${N1(cw + 20)} 4 ${N1(cw * 0.5)} 2Z"/>` +
+				`<path fill="${c}" d="M${N1(-cw)} 2 Q${N1(-cw)} -27 0 -27 Q${N1(cw)} -27 ${N1(cw)} 2Z"/>` +
+				`<path fill="#fff" d="M${N1(-cw * 0.45)} 2 Q${N1(-cw * 0.45)} -24 0 -27 Q${N1(cw * 0.45)} -24 ${N1(cw * 0.45)} 2Z"/>` +
+				`<circle fill="${c}" cx="0" cy="-27" r="4"/>`;
+			break;
+		}
+		case 3:
+		{
+			// A top hat: a tall cylinder with a hat-colored band over a narrow brim.
+			const cw = hw * 0.62;
+			h = 36;
+			d =
+				`<path fill="#2d2d2d" d="M${N1(-cw)} 0 L${N1(-cw - 3)} -34 L${N1(cw + 3)} -34 L${N1(cw)} 0Z"/>` +
+				`<path fill="${c}" d="M${N1(-cw)} -2 L${N1(-cw - 1)} -11 L${N1(cw + 1)} -11 L${N1(cw)} -2Z"/>` +
+				`<ellipse fill="#2d2d2d" cx="0" cy="0" rx="${N1(hw + 8)}" ry="5"/>`;
+			break;
+		}
+		case 4:
+		{
+			const cw = hw * 0.8;
+			h = 32;
+			d =
+				`<path fill="#f5c542" d="M${N1(-cw)} 2 L${N1(-cw * 1.08)} -26 L${N1(-cw * 0.52)} -12 L0 -32 L${N1(cw * 0.52)} -12 L${N1(cw * 1.08)} -26 L${N1(cw)} 2Z"/>` +
+				`<circle cx="0" cy="-7" r="4.5" fill="#e74c3c" stroke-width="2"/><circle cx="${N1(-cw * 0.55)}" cy="-4" r="3.5" fill="#3498db" stroke-width="2"/><circle cx="${N1(cw * 0.55)}" cy="-4" r="3.5" fill="#3498db" stroke-width="2"/>`;
+			break;
 		}
 		case 6:
-			return `<path fill="${c}" d="M74 ${hy} L106 ${hy - 66} L130 ${hy + 2}Z"/><g fill="#fff" stroke="none"><circle cx="96" cy="${hy - 14}" r="3.5"/><circle cx="110" cy="${hy - 30}" r="3.5"/><circle cx="104" cy="${hy - 48}" r="3"/><circle cx="116" cy="${hy - 10}" r="3.5"/><circle cx="86" cy="${hy - 4}" r="3"/></g><circle fill="#fff" cx="106" cy="${hy - 68}" r="7"/>`;
+			h = 39;
+			d = `<path fill="${c}" d="M-19 1 L4 -32 L21 2Z"/><g fill="#fff" stroke="none"><circle cx="-7" cy="-5" r="3"/><circle cx="7" cy="-16" r="3"/><circle cx="4" cy="-25" r="2.5"/><circle cx="12" cy="-3" r="3"/></g><circle fill="#fff" cx="4" cy="-34" r="5.5"/>`;
+			break;
 		case 7:
-			return `<path fill="${c}" d="${dome(50)}"/><path fill="#f1c40f" d="M92 ${hy} Q93 ${hy - 40} 100 ${hy - 52} Q107 ${hy - 40} 108 ${hy}Z"/><path d="M100 ${hy - 52} L100 ${hy - 64}" fill="none"/><ellipse fill="#f1c40f" cx="88" cy="${hy - 66}" rx="12" ry="4.5"/><ellipse fill="#f1c40f" cx="112" cy="${hy - 66}" rx="12" ry="4.5"/><circle fill="${c}" cx="100" cy="${hy - 66}" r="3.5"/>`;
+		{
+			// A propeller beanie: a small striped skullcap with a propeller spinning on a stalk.
+			const cw = hw * 0.85;
+			h = 38;
+			let panels = "";
+			for (const [a, b] of [
+				[-0.6, -0.2],
+				[0.2, 0.6],
+			] as const)
+				panels += `<path fill="#f1c40f" d="M${N1(cw * a)} 1 Q${N1(cw * a * 0.9)} -18 0 -23 Q${N1(cw * b * 0.9)} -18 ${N1(cw * b)} 1Z"/>`;
+			d =
+				`<path fill="${c}" d="M${N1(-cw)} 1 Q${N1(-cw)} -23 0 -23 Q${N1(cw)} -23 ${N1(cw)} 1Z"/>` +
+				panels +
+				`<path fill="none" d="M0 -23 L0 -31"/><path fill="${c}" d="M0 -32 Q-10 -40 -20 -34 Q-10 -29 0 -32Z M0 -32 Q10 -24 20 -30 Q10 -35 0 -32Z"/><circle fill="#f1c40f" cx="0" cy="-32" r="3"/>`;
+			break;
+		}
 		case 8:
-			return `<ellipse fill="#9a7650" cx="100" cy="${hy}" rx="${hw + 20}" ry="8"/><path fill="#9a7650" d="M${N1(100 - hw * 0.78)} ${hy} Q${N1(100 - hw * 0.86)} ${hy - 42} ${N1(100 - hw * 0.38)} ${hy - 48} Q100 ${hy - 36} ${N1(100 + hw * 0.38)} ${hy - 48} Q${N1(100 + hw * 0.86)} ${hy - 42} ${N1(100 + hw * 0.78)} ${hy}Z"/><path fill="${c}" d="M${N1(100 - hw * 0.8)} ${hy - 15} L${N1(100 + hw * 0.8)} ${hy - 15} L${N1(100 + hw * 0.78)} ${hy - 3} L${N1(100 - hw * 0.78)} ${hy - 3}Z"/>`;
-		case 9:
-			return `<path fill="${c}" d="M${100 - hw - 10} ${hy - 8} Q${100 - hw - 6} ${hy - 48} 104 ${hy - 45} Q${100 + hw + 24} ${hy - 42} ${100 + hw + 13} ${hy - 6} Q100 ${hy + 4} ${100 - hw - 10} ${hy - 8}Z"/><path fill="${shade(c, -0.2)}" d="M${100 - hw + 2} ${hy - 6} Q100 ${hy + 6} ${100 + hw - 2} ${hy - 4} L${100 + hw - 2} ${hy + 3} Q100 ${hy + 13} ${100 - hw + 2} ${hy + 1}Z"/><path fill="none" d="M105 ${hy - 45} l4 -11"/>`;
+		{
+			// A fedora: a pinched crown over a wide, flat brim.
+			const cw = hw * 0.7;
+			h = 30;
+			d =
+				`<ellipse fill="#9a7650" cx="0" cy="0" rx="${N1(hw + 16)}" ry="6"/>` +
+				`<path fill="#9a7650" d="M${N1(-cw)} 0 Q${N1(-cw * 1.05)} -26 ${N1(-cw * 0.45)} -29 Q0 -21 ${N1(cw * 0.45)} -29 Q${N1(cw * 1.05)} -26 ${N1(cw)} 0Z"/>` +
+				`<path fill="${c}" d="M${N1(-cw - 1)} -11 L${N1(cw + 1)} -11 L${N1(cw)} -2 L${N1(-cw)} -2Z"/>`;
+			break;
+		}
+		default:
+		{
+			// A beret: a wide, flat disc tipped to one side, with a stalk on top.
+			h = 24;
+			d =
+				`<g transform="rotate(-9)"><ellipse fill="${c}" cx="6" cy="-10" rx="${N1(hw + 12)}" ry="11"/>` +
+				`<path fill="${dark}" d="M${N1(-hw * 0.7)} -3 Q0 3 ${N1(hw * 0.7)} -3 L${N1(hw * 0.7)} 2 Q0 8 ${N1(-hw * 0.7)} 2Z"/>` +
+				`<path fill="none" d="M8 -21 l2 -5"/></g>`;
+			break;
+		}
+	}
+	const k = Math.min(1, (hy - (t - HAT_CEILING)) / h);
+	return `<g transform="translate(100 ${N1(hy)}) scale(${k === 1 ? 1 : k.toFixed(3)})">${d}</g>`;
+}
+// The top of the hair in the middle, where a headband or headphone band rests.
+function bandTop(f: Face, g: Geo): number
+{
+	return f.hairStyle === 4 ? g.t - 6 : g.t - (HAIR_TOP[f.hairStyle] ?? 0) + 2;
+}
+// A band that runs from the sides of the head at height y over the top of the hair, peaking at the given height.
+function bandPath(g: Geo, y: number, peak: number, out: number): string
+{
+	const {L, R} = g;
+	const cy = N1((peak - 0.25 * y) / 0.75);
+	return `M${L - out} ${N1(y)} C${L - out - 4} ${cy} ${R + out + 4} ${cy} ${R + out} ${N1(y)}`;
+}
+function hat(f: Face, g: Geo): string
+{
+	if (!f.hat) return "";
+	const {w, ey, L, R} = g;
+	const c = HATC[f.hatColor]!;
+	switch (f.hat)
+	{
+		case HEADPHONES:
+		{
+			// A band over the top of the hair and a big cup over each ear.
+			// The band lies on top of the hair, inside its outline. On a bare top it arches clear of the head, so it stays
+			// off tufts over the ears and the shine on the scalp.
+			const bare = !HAIR_TOP[f.hairStyle] && f.hairStyle !== 4;
+			const band = bare ? bandPath(g, ey, g.t - 14, 10) : bandPath(g, ey, Math.max(g.t - 18, bandTop(f, g)), 4);
+			const cup = (x: number): string =>
+				`<rect fill="${c}" x="${x - 11}" y="${N1(ey - 2)}" width="22" height="28" rx="10"/><rect fill="${shade(c, -0.3)}" x="${x - 4.5}" y="${N1(ey + 4)}" width="9" height="16" rx="4.5"/>`;
+			return `<path d="${band}" fill="none" stroke-width="8.5"/><path d="${band}" fill="none" stroke="${c}" stroke-width="5"/>${cup(L - 4)}${cup(R + 4)}`;
+		}
+		case 5:
 		case 10:
 		case 11:
 		{
-			const band = `M${100 - w - 2} ${N1(ey - 4)} C${100 - w - 6} ${t - 24} ${100 + w + 6} ${t - 24} ${100 + w + 2} ${N1(ey - 4)}`;
-			const by = t + 6 - (afro ? 20 : lift);
+			// Headbands: a thin band over the top of the hair, with a bow, cat ears or devil horns on it.
+			const peak = bandTop(f, g);
+			const band = bandPath(g, ey - 16, peak, 2);
+			const by = peak + 5;
 			const cat = f.hat === 10,
-				col = cat ? "#2b2b2b" : "#d92b2b";
+				col = f.hat === 5 ? c : cat ? "#2b2b2b" : "#d92b2b";
+			const thin = `<path d="${band}" fill="none" stroke-width="8"/><path d="${band}" fill="none" stroke="${col}" stroke-width="4.5"/>`;
+			if (f.hat === 5)
+			{
+				const bx = Number(N1(100 + w * 0.45));
+				return `${thin}<path fill="${c}" d="M${bx} ${by} L${bx - 18} ${by - 13} L${bx - 18} ${by + 13}Z M${bx} ${by} L${bx + 18} ${by - 13} L${bx + 18} ${by + 13}Z"/><circle fill="${c}" cx="${bx}" cy="${by}" r="5.5"/>`;
+			}
 			const ear = (s: number): string =>
 			{
-				const x = Number(N1(100 + s * w * 0.55));
+				const x = Number(N1(100 + s * w * 0.5));
 				return cat
-					? `<path fill="${col}" d="M${x - 21} ${by + 6} L${x + s * 6} ${by - 44} L${x + 21} ${by + 6}Z"/><path fill="#ffb3c7" stroke="none" d="M${x - 10} ${by + 1} L${x + s * 5} ${by - 27} L${x + 11} ${by + 1}Z"/>`
-					: `<path fill="${col}" d="M${x - 10} ${by + 5} Q${x - s * 6} ${by - 22} ${x + s * 20} ${by - 38} Q${x + s * 16} ${by - 8} ${x + 10} ${by + 5}Z"/>`;
+					? `<path fill="${col}" d="M${x - 15} ${by + 6} L${x + s * 6} ${by - 34} L${x + 15} ${by + 6}Z"/><path fill="#ffb3c7" stroke="none" d="M${x - 7} ${by + 1} L${x + s * 5} ${by - 20} L${x + 8} ${by + 1}Z"/>`
+					: `<path fill="${col}" d="M${x - 8} ${by + 5} Q${x - s * 5} ${by - 18} ${x + s * 16} ${by - 30} Q${x + s * 13} ${by - 6} ${x + 8} ${by + 5}Z"/>`;
 			};
-			return `${ear(-1)}${ear(1)}<path d="${band}" fill="none" stroke-width="10"/><path d="${band}" fill="none" stroke="${col}" stroke-width="6"/>`;
+			return `${ear(-1)}${ear(1)}${thin}`;
 		}
 	}
-	return "";
+	return perched(f, g, c);
 }
 // Where the chin crosses the neck there is skin on both sides of the outline, so on the darkest skins that stretch is
 // redrawn in the face line.

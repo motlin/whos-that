@@ -4,7 +4,7 @@ import type {Face, FeatureKey} from "./faces.ts";
 // style drew the face.
 export const INK = "#2a2522";
 // The hat value that is a pair of headphones rather than something worn on the crown.
-const HEADPHONES = 2;
+export const HEADPHONES = 2;
 const SHAPES = [
 	{
 		w: 60,
