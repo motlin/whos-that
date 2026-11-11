@@ -722,9 +722,9 @@ function eyes(a: Art): void
 // Eyebrows as drawn over the right eye, inner end first. H is hair and R the rim under it.
 const BROWS: readonly (readonly string[])[] = [
 	[".HHHHH.", "HRRRRRH", "R.....R"],
-	["HHHHHHH", "HHHHHHH", "RRRRRRR"],
+	["HHHHHHHH", "HHHHHHHH", "HHHHHHHH", "RRRRRRRR"],
 	["....HHH", "..HHRRR", "HHRR...", "RR....."],
-	["HHH....", "RRRHH..", "...RRHH", ".....RR"],
+	["HHHH....", "RRHHHH..", "..RRHHHH", "....RRHH", "......RR"],
 ];
 
 function brows(a: Art): void
@@ -867,13 +867,7 @@ function beard(a: Art): void
 				(X, Y) =>
 				{
 					const [i, j] = [cellCol(X), cellRow(Y)];
-					return (
-						j % 2 === 0 &&
-						(i + j) % 4 === 0 &&
-						Y > my - 12 &&
-						a.head(X, Y, -5) &&
-						!(u(X) < 6 && v(Y) > -2 && v(Y) < 4)
-					);
+					return (i + j) % 2 === 0 && Y > my - 12 && a.head(X, Y, -5) && !(u(X) < 6 && v(Y) > -2 && v(Y) < 4);
 				},
 				speck,
 			);
@@ -981,7 +975,7 @@ function cheeks(a: Art): void
 				px,
 				MID + dx - 4,
 				top,
-				["F..F..F", "..F..F.", "F..F..F", ".F..F.."],
+				["F.F..F.F", "..F.F..F", "F..F.F..", ".F..F.F.", "F.F..F.F"],
 				{
 					F: mix(sk, a.line, 0.75),
 				},
@@ -993,7 +987,7 @@ function cheeks(a: Art): void
 				px,
 				MID + dx - 3,
 				top,
-				["BBBBBB", "......", "BBBBBB"],
+				["BBBBBBBB", "........", "BBBBBBBB", "........", "BBBBBBBB"],
 				{
 					B: "#3a78f2",
 				},
