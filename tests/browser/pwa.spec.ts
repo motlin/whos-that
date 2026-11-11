@@ -111,7 +111,7 @@ test("offline, a reload still shows the title screen and starts a game", async (
 	await context.setOffline(true);
 	expect(
 		await page.evaluate(async () =>
-			fetch("/og.png").then(
+			fetch("/og.jpg").then(
 				() => "online",
 				() => "offline",
 			),

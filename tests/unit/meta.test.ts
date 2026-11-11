@@ -12,6 +12,15 @@ function pngSize(path: string): [number, number]
 	return [png.readUInt32BE(16), png.readUInt32BE(20)];
 }
 
+// A JPEG's height and width follow the start-of-frame marker; markers before it carry their own lengths.
+function jpegSize(path: string): [number, number]
+{
+	const jpeg = read(path);
+	let i = 2;
+	while (jpeg[i + 1] !== 0xc0 && jpeg[i + 1] !== 0xc2) i += 2 + jpeg.readUInt16BE(i + 2);
+	return [jpeg.readUInt16BE(i + 7), jpeg.readUInt16BE(i + 5)];
+}
+
 function head(): string[]
 {
 	const html = read("index.html").toString("utf8");
@@ -33,14 +42,14 @@ it("gives link previews a title, description and an absolute image URL, and link
 		`<meta property="og:title" content="Who's That? A face-memory game">`,
 		`<meta property="og:description" content="${DESCRIPTION}">`,
 		`<meta property="og:url" content="https://whos-that.motlin.com/">`,
-		`<meta property="og:image" content="https://whos-that.motlin.com/og.png">`,
+		`<meta property="og:image" content="https://whos-that.motlin.com/og.jpg">`,
 		`<meta property="og:image:width" content="1200">`,
 		`<meta property="og:image:height" content="630">`,
 		`<meta property="og:image:alt" content="The words Who's That? in chunky cream letters beside a cut-paper face of a smiling woman with a gray afro, a star on her cheek and blue earrings, on a teal board">`,
 		`<meta name="twitter:card" content="summary_large_image">`,
 		`<meta name="twitter:title" content="Who's That? A face-memory game">`,
 		`<meta name="twitter:description" content="${DESCRIPTION}">`,
-		`<meta name="twitter:image" content="https://whos-that.motlin.com/og.png">`,
+		`<meta name="twitter:image" content="https://whos-that.motlin.com/og.jpg">`,
 		`<meta name="theme-color" content="#1f6f6b">`,
 		`<meta name="mobile-web-app-capable" content="yes">`,
 		`<meta name="apple-mobile-web-app-capable" content="yes">`,
@@ -51,9 +60,22 @@ it("gives link previews a title, description and an absolute image URL, and link
 	]);
 });
 
+// WhatsApp is reported to drop preview images over 300KB.
+const MAX_PREVIEW_BYTES = 300_000;
+
 it("ships the preview card at 1200x630 and the icons the page links", () =>
 {
-	expect(pngSize("public/og.png")).toStrictEqual([1200, 630]);
+	expect(
+		{
+			size: jpegSize("public/og.jpg"),
+			small: read("public/og.jpg").length <= MAX_PREVIEW_BYTES,
+		},
+	).toStrictEqual(
+		{
+			size: [1200, 630],
+			small: true,
+		},
+	);
 	expect(pngSize("public/icons/apple-touch-icon.png")).toStrictEqual([180, 180]);
 	const favicon = read("public/favicon.svg").toString("utf8");
 	expect(favicon.startsWith("<svg ")).toBe(true);

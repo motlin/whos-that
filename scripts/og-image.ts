@@ -1,12 +1,15 @@
 import {readFile} from "node:fs/promises";
 import {extname, join} from "node:path";
 import {chromium} from "@playwright/test";
+import {serveFonts} from "../tests/browser/harness/fonts.ts";
 
-// Renders public/og.png, the 1200x630 image link previews show, from the built title screen itself: its logo, its
+// Renders public/og.jpg, the 1200x630 image link previews show, from the built title screen itself: its logo, its
 // tagline and its hero face in the default art style, with the mode buttons, the high-score button and the corner buttons
-// hidden. The fonts come from Google Fonts, so this needs the network. Run it with `just og-image` after changing the
-// title screen.
-const OUT = "public/og.png";
+// hidden. The fonts come from the copies in tests/fixtures/fonts, so it needs no network. Run it with `just og-image`
+// after changing the title screen.
+const OUT = "public/og.jpg";
+// The paper grain makes a PNG of the card about 500KB, over what some apps fetch for a preview, so it is a JPEG.
+const QUALITY = 85;
 // The built page links its assets from the site root, so it loads under the real origin with each request answered from
 // dist/ rather than from file://.
 const ORIGIN = "https://whos-that.motlin.com";
@@ -59,6 +62,7 @@ try
 		},
 	);
 	await page.addInitScript(seedRandom, SEED);
+	await serveFonts(page);
 	await page.route(`${ORIGIN}/**`, async (route) =>
 	{
 		const path = new URL(route.request().url()).pathname;
@@ -89,10 +93,12 @@ try
 		);
 		return faces.every((face) => face.length > 0);
 	});
-	if (!loaded) throw new Error("A Google font did not load, so the card would show a fallback font");
+	if (!loaded) throw new Error("A font did not load, so the card would show a fallback font");
 	await page.screenshot(
 		{
 			path: OUT,
+			type: "jpeg",
+			quality: QUALITY,
 		},
 	);
 	console.log(`wrote ${OUT}`);

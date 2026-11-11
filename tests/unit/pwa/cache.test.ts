@@ -156,14 +156,14 @@ test("kept files come from the cache, and anything else goes to the network", as
 	);
 	expect(fromCache).toStrictEqual(["body of /icons/icon-192.png", "body of /assets/index-abc123.js"]);
 	const other = respond(
-		new Request(`${ORIGIN}/og.png`),
+		new Request(`${ORIGIN}/og.jpg`),
 		ORIGIN,
 		caches as unknown as CacheStorage,
 		"v1",
 		FILES,
 		online,
 	);
-	expect(await text(await other)).toBe("network /og.png");
+	expect(await text(await other)).toBe("network /og.jpg");
 });
 
 test("the worker leaves the leaderboard API, other origins and other methods to the browser", () =>

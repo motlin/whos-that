@@ -62,7 +62,7 @@ icons: install
     rsvg-convert -w 512 -h 512 scripts/icons/icon-maskable.svg -o public/icons/icon-maskable-512.png
     rsvg-convert -w 180 -h 180 scripts/icons/apple-touch-icon.svg -o public/icons/apple-touch-icon.png
 
-# Render the link preview image public/og.png from the built title screen (needs the network for Google Fonts)
+# Render the link preview image public/og.jpg from the built title screen
 og-image: build
     node scripts/og-image.ts
 
