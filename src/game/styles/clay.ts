@@ -866,7 +866,7 @@ function glasses(f: Face, g: Geo): string
 	return "";
 }
 
-// How far a hat rides up on the taller hair styles.
+// How far a headband rides up on the taller hair styles.
 const LIFT: Record<number, number> =
 {
 	1: 10,
@@ -876,14 +876,32 @@ const LIFT: Record<number, number> =
 	12: 8,
 	13: 4,
 };
+// How far a hat on the crown perches up on each hair style, so it sits on the hair rather than sinking into it.
+const PERCH: Record<number, number> =
+{
+	1: 22,
+	2: 12,
+	3: 11,
+	5: 12,
+	7: 12,
+	8: 16,
+	10: 20,
+	11: 12,
+	12: 22,
+	13: 14,
+};
+// A gore of a beanie: a stripe from the base up to the top, between two fractions of the half width.
+const gore = (hy: number, hw: number, h: number, a: number, b: number): string =>
+	svg`M${100 + a * hw} ${hy} Q${100 + a * hw * 0.92} ${hy - h * 0.8} 100 ${hy - h} Q${100 + b * hw * 0.92} ${hy - h * 0.8} ${100 + b * hw} ${hy}Z`;
 function hat(f: Face, g: Geo): string
 {
 	if (!f.hat) return "";
 	const {w, t, ey, L, R} = g;
 	const afro = f.hairStyle === 4;
 	const lift = LIFT[f.hairStyle] ?? 0;
-	const hy = afro ? t + 34 - (w + 20) + 30 : t + 16 - lift;
-	const hw = w + (afro ? 22 : 5);
+	// The hats that cover the crown are small and perched on top, so the hairline and the sides of the hair show.
+	const hy = afro ? t - 10 : t + 12 - (PERCH[f.hairStyle] ?? 0);
+	const hw = w * 0.66 + 4;
 	const c = HATC[f.hatColor]!;
 	const dome = (h: number): string =>
 		svg`<path fill="${c}" d="M${100 - hw} ${hy} Q${100 - hw} ${hy - h} 100 ${hy - h - 2} Q${100 + hw} ${hy - h} ${100 + hw} ${hy}Z"/>`;
@@ -891,46 +909,59 @@ function hat(f: Face, g: Geo): string
 	switch (f.hat)
 	{
 		case 1:
+			// A baseball cap: a round crown with its seams and button, and a long bill sticking out to one side.
 			return (
-				big(dome(48)) +
 				big(
-					svg`<path fill="#fffdf6" d="M${100 - hw * 0.5} ${hy} Q${100 - hw * 0.5} ${hy - 44} 100 ${hy - 50} Q${100 + hw * 0.5} ${hy - 44} ${100 + hw * 0.5} ${hy}Z"/>`,
+					svg`<path fill="${shade(c, -0.22)}" d="M${100 - hw * 0.2} ${hy - 6} Q${100 + hw + 30} ${hy - 12} ${100 + hw + 32} ${hy + 1} Q${100 + hw + 22} ${hy + 8} ${100 - hw * 0.2} ${hy + 4}Z"/>`,
 				) +
-				small(ball(100, hy - 50, 5, shade(c, -0.2))) +
-				big(
-					svg`<path fill="${shade(c, -0.2)}" d="M${100 - hw + 2} ${hy - 2} Q100 ${hy - 10} ${100 + hw - 2} ${hy - 2} Q${100 + hw + 6} ${hy + 13} 100 ${hy + 15} Q${100 - hw - 6} ${hy + 13} ${100 - hw + 2} ${hy - 2}Z"/>`,
-				)
+				big(dome(30)) +
+				sausage(
+					svg`M100 ${hy - 31} Q${100 - hw * 0.4} ${hy - 22} ${100 - hw * 0.45} ${hy - 1} M100 ${hy - 31} Q${100 + hw * 0.4} ${hy - 22} ${100 + hw * 0.45} ${hy - 1}`,
+					deep(c),
+					1.8,
+				) +
+				small(ball(100, hy - 32, 4.5, shade(c, -0.2)))
 			);
 		case 2:
-			return (
-				big(dome(52)) +
-				big(
-					svg`<rect fill="${shade(c, -0.18)}" x="${100 - hw - 3}" y="${hy - 13}" width="${2 * hw + 6}" height="17" rx="8"/>`,
-				) +
-				small(ball(100, hy - 59, 12, POMPOM))
+		{
+			// Headphones: a thin band over the top of the head and a big cup over each ear, ending above the earrings.
+			const cy = ey + 12;
+			const top = Math.min(hy - 18, t - 12);
+			let o = small(
+				sausage(
+					svg`M${L - 5} ${cy - 8} C${L - 14} ${top - 4} ${R + 14} ${top - 4} ${R + 5} ${cy - 8}`,
+					shade(c, -0.25),
+					6,
+				),
 			);
+			for (const x of [L - 4, R + 4])
+				o +=
+					big(svg`<rect fill="${c}" x="${x - 12}" y="${cy - 19}" width="24" height="31" rx="11"/>`) +
+					small(svg`<rect fill="#3a3a44" x="${x - 5.5}" y="${cy - 13}" width="11" height="19" rx="5.5"/>`);
+			return o;
+		}
 		case 3:
 			return (
 				big(
-					svg`<rect fill="#30303a" x="${100 - hw * 0.72}" y="${hy - 61}" width="${hw * 1.44}" height="63" rx="6"/>`,
+					svg`<rect fill="#30303a" x="${100 - hw * 0.62}" y="${hy - 40}" width="${hw * 1.24}" height="41" rx="5"/>`,
 				) +
 				small(
-					svg`<rect fill="${c}" x="${100 - hw * 0.72 - 1}" y="${hy - 21}" width="${hw * 1.44 + 2}" height="13" rx="3"/>`,
+					svg`<rect fill="${c}" x="${100 - hw * 0.62 - 1}" y="${hy - 13}" width="${hw * 1.24 + 2}" height="9" rx="3"/>`,
 				) +
-				big(svg`<ellipse fill="#30303a" cx="100" cy="${hy}" rx="${hw + 14}" ry="8.5"/>`)
+				big(svg`<ellipse fill="#30303a" cx="100" cy="${hy}" rx="${hw + 10}" ry="5.5"/>`)
 			);
 		case 4:
 			return (
 				big(
 					slab(
-						svg`M${100 - hw * 0.8} ${hy + 2} L${100 - hw * 0.86} ${hy - 35} L${100 - hw * 0.45} ${hy - 16} L100 ${hy - 43} L${100 + hw * 0.45} ${hy - 16} L${100 + hw * 0.86} ${hy - 35} L${100 + hw * 0.8} ${hy + 2}Z`,
+						svg`M${100 - hw * 0.72} ${hy + 2} L${100 - hw * 0.78} ${hy - 24} L${100 - hw * 0.4} ${hy - 10} L100 ${hy - 30} L${100 + hw * 0.4} ${hy - 10} L${100 + hw * 0.78} ${hy - 24} L${100 + hw * 0.72} ${hy + 2}Z`,
 						"#f5c542",
 					),
 				) +
 				small(
-					ball(100, hy - 10, 5.5, "#e74c3c") +
-						ball(100 - hw * 0.45, hy - 6, 4.5, "#3498db") +
-						ball(100 + hw * 0.45, hy - 6, 4.5, "#3498db"),
+					ball(100, hy - 6, 4.5, "#e74c3c") +
+						ball(100 - hw * 0.42, hy - 3, 3.8, "#3498db") +
+						ball(100 + hw * 0.42, hy - 3, 3.8, "#3498db"),
 				)
 			);
 		case 5:
@@ -950,46 +981,45 @@ function hat(f: Face, g: Geo): string
 		}
 		case 6:
 			return (
-				big(slab(svg`M75 ${hy} L106 ${hy - 65} L129 ${hy + 1}Z`, c)) +
+				big(slab(svg`M82 ${hy} L104 ${hy - 37} L122 ${hy + 1}Z`, c)) +
 				small(
-					ball(96, hy - 14, 3.8, "#fff") +
-						ball(110, hy - 30, 3.8, "#fff") +
-						ball(104, hy - 48, 3.2, "#fff") +
-						ball(116, hy - 10, 3.8, "#fff") +
-						ball(86, hy - 4, 3.2, "#fff"),
+					ball(97, hy - 10, 3.2, "#fff") +
+						ball(108, hy - 22, 3.2, "#fff") +
+						ball(114, hy - 6, 3.2, "#fff") +
+						ball(90, hy - 2, 2.8, "#fff"),
 				) +
-				small(ball(106, hy - 68, 8, POMPOM))
+				small(ball(104, hy - 39, 6.5, POMPOM))
 			);
 		case 7:
+			// A propeller beanie: a striped dome with a yellow propeller spinning on a stalk.
 			return (
-				big(dome(50)) +
+				big(dome(28)) +
+				svg`<path fill="#f1c40f" d="${gore(hy, hw, 30, -0.86, -0.5) + gore(hy, hw, 30, -0.16, 0.16) + gore(hy, hw, 30, 0.5, 0.86)}"/>` +
 				small(
-					svg`<path fill="#f1c40f" d="M92 ${hy} Q93 ${hy - 40} 100 ${hy - 52} Q107 ${hy - 40} 108 ${hy}Z"/>`,
-				) +
-				small(
-					sausage(svg`M100 ${hy - 52} L100 ${hy - 64}`, "#5c5c68", 3.4) +
-						svg`<ellipse fill="#f1c40f" cx="88" cy="${hy - 66}" rx="12.5" ry="5"/><ellipse fill="#f1c40f" cx="112" cy="${hy - 66}" rx="12.5" ry="5"/>` +
-						ball(100, hy - 66, 4, c),
+					sausage(svg`M100 ${hy - 30} L100 ${hy - 36}`, "#5c5c68", 3) +
+						svg`<ellipse fill="#f1c40f" cx="89" cy="${hy - 38}" rx="11" ry="4"/><ellipse fill="#f1c40f" cx="111" cy="${hy - 38}" rx="11" ry="4"/>` +
+						ball(100, hy - 38, 3.6, c),
 				)
 			);
 		case 8:
 			return (
-				big(svg`<ellipse fill="#9a7650" cx="100" cy="${hy}" rx="${hw + 20}" ry="8.5"/>`) +
+				big(svg`<ellipse fill="#9a7650" cx="100" cy="${hy}" rx="${hw + 16}" ry="6"/>`) +
 				big(
-					svg`<path fill="#a9855c" d="M${100 - hw * 0.78} ${hy} Q${100 - hw * 0.86} ${hy - 42} ${100 - hw * 0.38} ${hy - 48} Q100 ${hy - 36} ${100 + hw * 0.38} ${hy - 48} Q${100 + hw * 0.86} ${hy - 42} ${100 + hw * 0.78} ${hy}Z"/>`,
+					svg`<path fill="#a9855c" d="M${100 - hw * 0.7} ${hy} Q${100 - hw * 0.78} ${hy - 28} ${100 - hw * 0.34} ${hy - 32} Q100 ${hy - 23} ${100 + hw * 0.34} ${hy - 32} Q${100 + hw * 0.78} ${hy - 28} ${100 + hw * 0.7} ${hy}Z"/>`,
 				) +
 				small(
-					svg`<path fill="${c}" d="M${100 - hw * 0.8} ${hy - 15} L${100 + hw * 0.8} ${hy - 15} L${100 + hw * 0.78} ${hy - 3} L${100 - hw * 0.78} ${hy - 3}Z"/>`,
+					svg`<path fill="${c}" d="M${100 - hw * 0.72} ${hy - 10} L${100 + hw * 0.72} ${hy - 10} L${100 + hw * 0.7} ${hy - 2} L${100 - hw * 0.7} ${hy - 2}Z"/>`,
 				)
 			);
 		case 9:
+			// A beret: a flat, wide disc tipped down to one side, with a stalk on top.
 			return (
-				small(sausage(svg`M105 ${hy - 44} l4 -11`, shade(c, -0.25), 4.5)) +
+				small(sausage(svg`M102 ${hy - 12} l3 -8`, shade(c, -0.25), 4)) +
 				big(
-					svg`<path fill="${c}" d="M${100 - hw - 10} ${hy - 8} Q${100 - hw - 6} ${hy - 48} 104 ${hy - 45} Q${100 + hw + 24} ${hy - 42} ${100 + hw + 13} ${hy - 6} Q100 ${hy + 4} ${100 - hw - 10} ${hy - 8}Z"/>`,
+					svg`<ellipse fill="${c}" cx="105" cy="${hy - 5}" rx="${hw + 18}" ry="10" transform="rotate(9 105 ${hy - 5})"/>`,
 				) +
-				big(
-					svg`<path fill="${shade(c, -0.22)}" d="M${100 - hw + 2} ${hy - 6} Q100 ${hy + 6} ${100 + hw - 2} ${hy - 4} L${100 + hw - 2} ${hy + 3} Q100 ${hy + 13} ${100 - hw + 2} ${hy + 1}Z"/>`,
+				small(
+					svg`<ellipse fill="${shade(c, -0.22)}" cx="100" cy="${hy}" rx="${hw * 0.78}" ry="3.6" transform="rotate(4 100 ${hy})"/>`,
 				)
 			);
 		case 10:
