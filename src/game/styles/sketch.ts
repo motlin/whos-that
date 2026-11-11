@@ -179,10 +179,10 @@ function ears(f: Face, g: Geo, sk: string): string
 			const ex = x + s * dx,
 				ey2 = y + dy;
 			o += [
-				`<circle cx="${ex}" cy="${ey2 + 7}" r="7.5" fill="none" stroke="#d4a017" stroke-width="3.6"/>`,
-				`<path d="M${ex} ${ey2 - 1} v4" fill="none" stroke-width="2"/><path d="M${ex} ${ey2 + 2} q-10 13 0 17 q10 -4 0 -17Z" fill="#35c4f0" stroke-width="1.8"/>`,
-				`<circle cx="${ex}" cy="${ey2 + 6}" r="7.5" fill="#e5484d" stroke-width="1.8"/>`,
-				`<path d="M${ex} ${ey2 - 1} l-8.5 19 h17Z" fill="#3fbf6f" stroke-width="1.8"/>`,
+				`<circle cx="${ex}" cy="${ey2 + 9}" r="9.5" fill="none" stroke-width="8"/><circle cx="${ex}" cy="${ey2 + 9}" r="9.5" fill="none" stroke="#d4a017" stroke-width="5"/>`,
+				`<path d="M${ex} ${ey2 - 1} v4" fill="none" stroke-width="2.4"/><path d="M${ex} ${ey2 + 2} q-14 16 0 22 q14 -6 0 -22Z" fill="#35c4f0" stroke-width="2.4"/>`,
+				`<circle cx="${ex}" cy="${ey2 + 7}" r="9.5" fill="#e5484d" stroke-width="2.4"/><circle cx="${ex - 3}" cy="${ey2 + 4}" r="2.4" fill="#fff" stroke="none"/>`,
+				`<path d="M${ex} ${ey2 - 2} l-11.5 23 h23Z" fill="#3fbf6f" stroke-width="2.4"/>`,
 			][f.earrings - 1]!;
 		}
 	}
@@ -205,7 +205,7 @@ function eye(st: number, x: number, y: number, ic: string, s: number, sk: string
 		case 4:
 			return (
 				base(10, 6.8, 3) +
-				`<path fill="none" stroke-width="4" d="M${x - 10} ${y - 2} A10.2 10.2 0 0 1 ${x + 10} ${y - 2}"/><path fill="none" stroke="${line}" stroke-width="3" d="M${x + s * 4} ${y - 10} l${s * 4} -6 M${x + s * 8} ${y - 7} l${s * 8} -4 M${x + s * 10} ${y - 2} l${s * 9} 0 M${x - s * 2} ${y - 11} l0 -6"/>`
+				`<path fill="none" stroke-width="5" d="M${x - 11} ${y - 1} A11 11 0 0 1 ${x + 11} ${y - 1}"/><path fill="none" stroke="${line}" stroke-width="3.6" d="M${x + s * 4} ${y - 11} l${s * 5} -8 M${x + s * 9} ${y - 7} l${s * 10} -5 M${x + s * 11} ${y - 1} l${s * 11} 0 M${x - s * 2} ${y - 12} l${-s} -8 M${x - s * 8} ${y - 8} l${-s * 4} -6"/>`
 			);
 		case 5:
 			return base(11, 7, 3, 4);
@@ -363,7 +363,7 @@ function mustache(f: Face, g: Geo, hc: string): string
 {
 	const y = Number(N1(g.my));
 	if (f.facialHair === 1)
-		return `<path fill="${hc}" d="M83 ${y - 3} Q90 ${y - 14} 100 ${y - 7} Q110 ${y - 14} 117 ${y - 3} Q108 ${y - 3} 100 ${y - 4} Q92 ${y - 3} 83 ${y - 3}Z"/>`;
+		return `<path fill="${hc}" d="M79 ${y - 1} Q84 ${y - 19} 100 ${y - 11} Q116 ${y - 19} 121 ${y - 1} Q110 ${y - 3} 100 ${y - 3} Q90 ${y - 3} 79 ${y - 1}Z"/>`;
 	if (f.facialHair === 2)
 	{
 		// A handlebar: wide, with both ends curled up.
@@ -388,15 +388,17 @@ function cheeks(f: Face, g: Geo, sk: string): string
 			for (const x of [lx, rx])
 			{
 				for (const [a, c] of [
-					[-8, -3],
-					[-2, -5],
-					[5, -3],
-					[-5, 2],
-					[1, 1],
-					[8, 3],
-					[-1, 6],
+					[-11, -4],
+					[-4, -7],
+					[4, -6],
+					[11, -2],
+					[-8, 3],
+					[0, 0],
+					[7, 5],
+					[-2, 8],
+					[-13, 9],
 				] as const)
-					s += `<circle cx="${x + a}" cy="${cy + c}" r="2.2"/>`;
+					s += `<circle cx="${x + a}" cy="${cy + c}" r="3"/>`;
 			}
 			return `<g fill="${darkSkin(f) ? shade(sk, 0.5) : shade(sk, -0.5)}" stroke="none">${s}</g>`;
 		}
@@ -408,9 +410,9 @@ function cheeks(f: Face, g: Geo, sk: string): string
 			return `<path fill="none" stroke="#3a78f2" stroke-width="5" d="${stripes(lx, -1)} ${stripes(rx, 1)}"/>`;
 		}
 		case 4:
-			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="#f3c999" stroke="${INK}" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="#e2a96f" stroke="none"/></g>`;
+			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 17}" y="${cy - 7}" width="34" height="14" rx="5" fill="#f3c999" stroke="${INK}" stroke-width="2.4"/><rect x="${lx - 6}" y="${cy - 5.5}" width="12" height="11" fill="#e2a96f" stroke="none"/></g>`;
 		case 5:
-			return `<path d="${star(rx, cy, 12, 5.4)}" fill="#ffd23f" stroke="${INK}" stroke-width="2"/>`;
+			return `<path d="${star(rx, cy, 17, 7.8)}" fill="#ffd23f" stroke="${INK}" stroke-width="2.4"/>`;
 	}
 	return "";
 }
