@@ -1,4 +1,4 @@
-import {CLOTH, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
+import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
 import {geo, type Geo, headHalf, shade, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
@@ -55,6 +55,22 @@ const channels = (hex: string): number[] =>
 };
 // The color of a groove pressed into a piece: darker, or lighter when the piece is nearly black.
 const deep = (c: string): string => shade(c, channels(c).reduce((sum, v) => sum + v, 0) < 200 ? 0.24 : -0.2);
+// How far apart, summed over red, green and blue, a hat must stand from the hair or bare head under it, or it melts in.
+const MELT = 110;
+const apart = (a: string, b: string): number =>
+{
+	const y = channels(b);
+	return channels(a).reduce((sum, v, i) => sum + Math.abs(v - y[i]!), 0);
+};
+const melts = (f: Face, color: string): boolean => apart(color, crownColor(f)) < MELT;
+// A piece of a hat in its own color, or in another tone where the crown under it is close to that color.
+const against = (f: Face, color: string, other: string): string => (melts(f, color) ? other : color);
+// The rim pressed around a hat that had to change tone to stand out from the crown under it.
+const HAT_RIM = "#f6f1e7";
+const TOP_HAT = "#30303a";
+const GOLD_CROWN = "#f5c542";
+const CAT_EARS = "#26262e";
+const HORNS = "#d92b2b";
 // Hair that lies on the skin. Where its color is close to the skin's (always, on the two darkest skins) it sits on a
 // thin bed of the crease color, or it would vanish.
 function bedded(f: Face, color: string): boolean
@@ -930,7 +946,7 @@ function hat(f: Face, g: Geo): string
 			let o = small(
 				sausage(
 					svg`M${L - 5} ${cy - 8} C${L - 14} ${top - 4} ${R + 14} ${top - 4} ${R + 5} ${cy - 8}`,
-					shade(c, -0.25),
+					against(f, shade(c, -0.25), shade(c, 0.45)),
 					6,
 				),
 			);
@@ -941,21 +957,30 @@ function hat(f: Face, g: Geo): string
 			return o;
 		}
 		case 3:
+		{
+			// A black top hat, or a light grey one with a pale rim on black hair or the darkest skin.
+			const pale = melts(f, TOP_HAT),
+				felt = pale ? "#c4c4ce" : TOP_HAT,
+				rim = pale ? 3 : 0;
+			const crown = (fill: string, grow: number): string =>
+				svg`<rect fill="${fill}" x="${100 - hw * 0.62 - grow}" y="${hy - 40 - grow}" width="${hw * 1.24 + 2 * grow}" height="${41 + 2 * grow}" rx="${5 + grow}"/>`;
+			const brim = (fill: string, grow: number): string =>
+				svg`<ellipse fill="${fill}" cx="100" cy="${hy}" rx="${hw + 10 + grow}" ry="${5.5 + grow}"/>`;
 			return (
-				big(
-					svg`<rect fill="#30303a" x="${100 - hw * 0.62}" y="${hy - 40}" width="${hw * 1.24}" height="41" rx="5"/>`,
-				) +
+				big((rim ? crown(HAT_RIM, rim) : "") + crown(felt, 0)) +
 				small(
 					svg`<rect fill="${c}" x="${100 - hw * 0.62 - 1}" y="${hy - 13}" width="${hw * 1.24 + 2}" height="9" rx="3"/>`,
 				) +
-				big(svg`<ellipse fill="#30303a" cx="100" cy="${hy}" rx="${hw + 10}" ry="5.5"/>`)
+				big((rim ? brim(HAT_RIM, rim) : "") + brim(felt, 0))
 			);
+		}
 		case 4:
 			return (
 				big(
 					slab(
 						svg`M${100 - hw * 0.72} ${hy + 2} L${100 - hw * 0.78} ${hy - 24} L${100 - hw * 0.4} ${hy - 10} L100 ${hy - 30} L${100 + hw * 0.4} ${hy - 10} L${100 + hw * 0.78} ${hy - 24} L${100 + hw * 0.72} ${hy + 2}Z`,
-						"#f5c542",
+						// Gold, or old gold on blonde hair and skin of nearly its color.
+						against(f, GOLD_CROWN, "#b8860b"),
 					),
 				) +
 				small(
@@ -1002,15 +1027,19 @@ function hat(f: Face, g: Geo): string
 				)
 			);
 		case 8:
+		{
+			// Tan leather, or dark leather on hair or skin of nearly its color.
+			const dark = melts(f, "#a9855c");
 			return (
-				big(svg`<ellipse fill="#9a7650" cx="100" cy="${hy}" rx="${hw + 16}" ry="6"/>`) +
+				big(svg`<ellipse fill="${dark ? "#4e3420" : "#9a7650"}" cx="100" cy="${hy}" rx="${hw + 16}" ry="6"/>`) +
 				big(
-					svg`<path fill="#a9855c" d="M${100 - hw * 0.7} ${hy} Q${100 - hw * 0.78} ${hy - 28} ${100 - hw * 0.34} ${hy - 32} Q100 ${hy - 23} ${100 + hw * 0.34} ${hy - 32} Q${100 + hw * 0.78} ${hy - 28} ${100 + hw * 0.7} ${hy}Z"/>`,
+					svg`<path fill="${dark ? "#5e4026" : "#a9855c"}" d="M${100 - hw * 0.7} ${hy} Q${100 - hw * 0.78} ${hy - 28} ${100 - hw * 0.34} ${hy - 32} Q100 ${hy - 23} ${100 + hw * 0.34} ${hy - 32} Q${100 + hw * 0.78} ${hy - 28} ${100 + hw * 0.7} ${hy}Z"/>`,
 				) +
 				small(
 					svg`<path fill="${c}" d="M${100 - hw * 0.72} ${hy - 10} L${100 + hw * 0.72} ${hy - 10} L${100 + hw * 0.7} ${hy - 2} L${100 - hw * 0.7} ${hy - 2}Z"/>`,
 				)
 			);
+		}
 		case 9:
 			// A beret: a flat, wide disc tipped down to one side, with a stalk on top.
 			return (
@@ -1019,7 +1048,7 @@ function hat(f: Face, g: Geo): string
 					svg`<ellipse fill="${c}" cx="105" cy="${hy - 5}" rx="${hw + 18}" ry="10" transform="rotate(9 105 ${hy - 5})"/>`,
 				) +
 				small(
-					svg`<ellipse fill="${shade(c, -0.22)}" cx="100" cy="${hy}" rx="${hw * 0.78}" ry="3.6" transform="rotate(4 100 ${hy})"/>`,
+					svg`<ellipse fill="${against(f, shade(c, -0.22), shade(c, 0.45))}" cx="100" cy="${hy}" rx="${hw * 0.78}" ry="3.6" transform="rotate(4 100 ${hy})"/>`,
 				)
 			);
 		case 10:
@@ -1027,23 +1056,32 @@ function hat(f: Face, g: Geo): string
 		{
 			const by = t + 6 - (afro ? 20 : lift);
 			const cat = f.hat === 10,
-				col = cat ? "#26262e" : "#d92b2b";
+				own = cat ? CAT_EARS : HORNS,
+				// On a crown of nearly their color, the ears go light grey and the horns deep maroon, both with a pale rim.
+				changed = melts(f, own),
+				col = changed ? (cat ? "#c4c4ce" : "#6a1426") : own,
+				rim = changed ? 1.5 : 0;
+			// A cat's ear: a tall triangle leaning out, with a pink inside.
+			const ear = (X: (dx: number) => number): string =>
+				svg`M${X(-20)} ${by + 5} L${X(6)} ${by - 42} L${X(20)} ${by + 5}Z`;
+			const inside = (X: (dx: number) => number): string =>
+				svg`M${X(-10.5)} ${by + 1} L${X(5)} ${by - 27} L${X(10.5)} ${by + 1}Z`;
+			// A devil's horn: a thick base on the band that bulges out and curves back in to a sharp tip pointing up.
+			const horn = (X: (dx: number) => number): string =>
+				svg`M${X(-15)} ${by + 5} C${X(-7)} ${by - 4} ${X(-1)} ${by - 24} ${X(-1)} ${by - 48} C${X(22)} ${by - 36} ${X(32)} ${by - 12} ${X(17)} ${by + 5}Z`;
 			let o = "";
+			// Both sides are drawn from one outline, with every offset from the side's middle flipped on the left, so
+			// the left ear or horn is the right one's mirror image.
 			for (const s of [-1, 1])
 			{
-				const x = 100 + s * w * 0.55;
-				o += cat
-					? big(
-							slab(svg`M${x - 20} ${by + 5} L${x + s * 6} ${by - 42} L${x + 20} ${by + 5}Z`, col) +
-								svg`<path fill="#ffb3c7" d="M${x - 10} ${by + 1} L${x + s * 5} ${by - 27} L${x + 11} ${by + 1}Z"/>`,
-						)
-					: big(
-							slab(
-								svg`M${x - 10} ${by + 5} Q${x - s * 6} ${by - 22} ${x + s * 20} ${by - 37} Q${x + s * 16} ${by - 8} ${x + 10} ${by + 5}Z`,
-								col,
-								2,
-							),
-						);
+				const X = (dx: number): number => 100 + s * (w * 0.55 + dx),
+					d = cat ? ear(X) : horn(X),
+					round = cat ? 3 : 2;
+				o += big(
+					(rim ? slab(d, HAT_RIM, round + 2 * rim) : "") +
+						slab(d, col, round) +
+						(cat ? svg`<path fill="#ffb3c7" d="${inside(X)}"/>` : ""),
+				);
 			}
 			return o + small(sausage(band, col, 7));
 		}
