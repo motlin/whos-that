@@ -14,6 +14,11 @@ export const stage = (L: number): number => (L <= 4 ? 0 : L <= 6 ? 1 : L <= 8 ? 
 // shrink, a second every few levels.
 const FULL = 12;
 const MEM_STEP = 3;
+// The most time to memorize and to answer, which shrink a second at a time down to the hardest levels' floor.
+const MEM = 12;
+const MIN_MEM = 5;
+const PICK = 22;
+const MIN_PICK = 6;
 
 export interface LevelConfig
 {
@@ -27,11 +32,11 @@ export interface LevelConfig
 export function cfg(L: number): LevelConfig
 {
 	return {
-		mem: L <= FULL ? 10 : Math.max(5, 9 - Math.floor((L - FULL - 1) / MEM_STEP)),
+		mem: L <= FULL ? MEM : Math.max(MIN_MEM, MEM - 1 - Math.floor((L - FULL - 1) / MEM_STEP)),
 		choices: Math.min(8, 3 + Math.floor((L - 1) / 2)),
 		changes: L <= 4 ? 3 : L <= 8 ? 2 : 1,
 		pool: POOLS[stage(L)]!,
-		pick: Math.max(6, 20 - (L - 1)),
+		pick: Math.max(MIN_PICK, PICK - (L - 1)),
 	};
 }
 
