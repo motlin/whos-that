@@ -30,7 +30,14 @@ export type FeatureKey =
 	| "neckwear"
 	| "shirt"
 	| "shirtStyle";
-export type Face = Record<FeatureKey, number>;
+// A face is its features, and the gender it was drawn for, which shapes what it is likely to wear but is never asked
+// about.
+export type Face = Record<FeatureKey, number> &
+{
+	gender?: number;
+};
+export const FEMALE = 0;
+export const MALE = 1;
 interface Feature
 {
 	n: number;
@@ -59,6 +66,8 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	{
 		n: 6,
 		label: "hair color",
+		// Black and brown are common, red is rare.
+		w: [6, 6, 4, 1.2, 2, 1.5],
 	},
 	hairDye:
 	{
@@ -80,6 +89,8 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	{
 		n: 5,
 		label: "eye color",
+		// Brown is common, violet is rare.
+		w: [10, 5, 3, 2, 0.5],
 	},
 	nose:
 	{
@@ -150,6 +161,34 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 };
 export const KEYS = Object.keys(FEATURES) as FeatureKey[];
+// How likely each value is for women and for men, where the two differ: women seldom wear men's haircuts or facial
+// hair, and men seldom wear women's haircuts or earrings.
+const GENDERED: Partial<Record<FeatureKey, readonly [readonly number[], readonly number[]]>> =
+{
+	// Bald, spiky, bob, long, afro, ponytail, mohawk, buns, short curls, balding, swept, pigtails, flat-top, bowl.
+	hairStyle: [
+		[0.6, 1, 3, 4, 2, 3, 0.6, 3, 1.5, 0.4, 2, 3, 0.8, 1],
+		[3, 3, 1, 1.2, 2, 0.8, 1.5, 0.8, 2.5, 2, 2.5, 0.6, 2, 1.5],
+	],
+	facialHair: [
+		[95, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+		[10, 2, 1.5, 2, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
+	],
+	earrings: [
+		[2, 1.5, 1.5, 1.5, 1.5],
+		[4, 0.25, 0.25, 0.25, 0.25],
+	],
+};
+const weights = (k: FeatureKey, gender?: number): readonly number[] =>
+	(gender === undefined ? undefined : GENDERED[k]?.[gender]) ?? FEATURES[k].w ?? Array<number>(FEATURES[k].n).fill(1);
+// A lineup never turns on a feature one value of which this share of faces of that gender have, since the other
+// value would mark its face as a fake.
+const MAX_CONTESTED_SHARE = 0.85;
+const contestable = (t: Face, k: FeatureKey): boolean =>
+{
+	const w = weights(k, t.gender);
+	return Math.max(...w) / w.reduce((a, b) => a + b) < MAX_CONTESTED_SHARE;
+};
 const HAT_COLORED = new Set([1, 2, 3, 5, 6, 7, 8, 9]);
 
 function visible(f: Face, k: FeatureKey): boolean
@@ -190,19 +229,16 @@ function weighted(w: readonly number[]): number
 	return w.findLastIndex((x) => x > 0);
 }
 
-function randFeat(k: FeatureKey): number
-{
-	const F = FEATURES[k];
-	return F.w ? weighted(F.w) : rnd(F.n);
-}
-
-export function randomFace(): Face
+export function randomFace(gender = rnd(2)): Face
 {
 	let f: Face;
 	do
 	{
-		f = {} as Face;
-		for (const k of KEYS) f[k] = randFeat(k);
+		f =
+		{
+			gender,
+		} as Face;
+		for (const k of KEYS) f[k] = weighted(weights(k, gender));
 	}
 	while (!valid(f));
 	return f;
@@ -263,7 +299,7 @@ export function makeLineup(t: Face, size: number, d: number, pool: readonly Feat
 {
 	if (size < 2) return [];
 	const base = Math.max(d, Math.ceil(Math.log2(size)));
-	const keys = [...new Set(pool)].filter((k) => visible(t, k));
+	const keys = [...new Set(pool)].filter((k) => visible(t, k) && contestable(t, k));
 	for (let tries = 0; tries < LINEUP_TRIES; tries++)
 	{
 		const m = Math.min(keys.length, base + Math.floor(tries / TRIES_PER_FEATURE));
@@ -306,6 +342,5 @@ export function makeLineup(t: Face, size: number, d: number, pool: readonly Feat
 // A value of k other than t's, as likely as it would be on a new face.
 function otherValue(t: Face, k: FeatureKey): number
 {
-	const w = FEATURES[k].w ?? Array<number>(FEATURES[k].n).fill(1);
-	return weighted(w.map((x, v) => (v === t[k] ? 0 : x)));
+	return weighted(weights(k, t.gender).map((x, v) => (v === t[k] ? 0 : x)));
 }
