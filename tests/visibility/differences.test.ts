@@ -1,33 +1,12 @@
-import {Resvg} from "@resvg/resvg-js";
+import {availableParallelism} from "node:os";
 import {setImmediate} from "node:timers/promises";
+import {Worker} from "node:worker_threads";
 import {expect, it} from "vite-plus/test";
-import {faceSVG} from "../../src/game/draw.ts";
 import {regions, VB} from "../../src/game/geometry.ts";
-import {DEFAULT_STYLE, styleOf} from "../../src/game/styles/index.ts";
-import type {StyleId} from "../../src/game/styles/style.ts";
-import
-{
-	CLOTH,
-	diffKeys,
-	DYEC,
-	EYEC,
-	type Face,
-	FEATURES,
-	type FeatureKey,
-	HAIRC,
-	HATC,
-	KEYS,
-	SKIN,
-	valid,
-} from "../../src/game/faces.ts";
+import {CLOTH, DYEC, EYEC, type Face, type FeatureKey, HAIRC, HATC, KEYS, SKIN, valid} from "../../src/game/faces.ts";
+import type {Pair, PairResult} from "./pairs.ts";
+import {BASE, changedPixels, colorDistance, MIN_COLOR_DISTANCE, render, values, WIDTH} from "./render.ts";
 
-// The style under test: `STYLE=paper just test-visibility` checks one, and `just test-visibility-all` every one.
-const STYLE = styleOf((process.env["STYLE"] ?? DEFAULT_STYLE) as StyleId);
-// A card-sized render, without any style's filters so the same face always gives the same pixels.
-const WIDTH = 200;
-// A change is visible when it alters this many pixels, or the other features leave at least this share of what it alters on an unobstructed face.
-const MIN_PIXELS = 150;
-const MIN_SHARE = 0.5;
 // How far past its box, in card units, a hat or earring or its shadow may reach, and how many pixels may stray further.
 const BOX_MARGIN = 4;
 const MAX_PIXELS_OUTSIDE = 20;
@@ -43,8 +22,6 @@ const MIN_HORN_SHARE = 0.8;
 // How far a hat's pixels must stand from what they cover, and how much of its best showing it must keep on any hair.
 const MIN_HAT_CONTRAST = 60;
 const MIN_HAT_CONTRAST_SHARE = 0.75;
-// How far apart two pixels' colors must be, summed over red, green and blue, to count as changed.
-const MIN_COLOR_DISTANCE = 16;
 // How much of an eye color change's total color difference must show through glasses.
 const MIN_UNTINTED_SHARE = 0.999;
 // How many pixels any two values of one feature must differ by on a bare face, so no two options read as the same one.
@@ -67,58 +44,15 @@ const PALETTES: Partial<Record<FeatureKey, readonly string[]>> =
 	hatColor: HATC,
 };
 
-const BASE = Object.fromEntries(KEYS.map((k) => [k, 0])) as Face;
-const values = (k: FeatureKey): number[] =>
-	Array.from(
-		{
-			length: FEATURES[k].n,
-		},
-		(_, v) => v,
-	);
-
 // resvg frees a render's memory only from a callback that runs once the event loop turns, so a loop that renders
 // without yielding holds every render it made: thousands of them outgrow a CI runner. Each test awaits breathe() as it
 // goes.
 const breathe = async (): Promise<void> => setImmediate();
-function render(f: Face, background = "#fff"): Uint8Array
-{
-	const svg = faceSVG(f, {}, STYLE).replaceAll(/ filter="url\(#[\w-]+\)"/g, "");
-	return new Resvg(
-		svg,
-		{
-			fitTo:
-			{
-				mode: "width",
-				value: WIDTH,
-			},
-			background,
-			font:
-			{
-				loadSystemFonts: false,
-			},
-		},
-	).render().pixels;
-}
-
-function colorDistance(a: Uint8Array, b: Uint8Array, i: number): number
-{
-	return Math.abs(a[i]! - b[i]!) + Math.abs(a[i + 1]! - b[i + 1]!) + Math.abs(a[i + 2]! - b[i + 2]!);
-}
 
 function totalDistance(a: Uint8Array, b: Uint8Array): number
 {
 	let n = 0;
 	for (let i = 0; i < a.length; i += 4) n += colorDistance(a, b, i);
-	return n;
-}
-
-function changedPixels(a: Uint8Array, b: Uint8Array): number
-{
-	let n = 0;
-	for (let i = 0; i < a.length; i += 4)
-	{
-		if (colorDistance(a, b, i) > MIN_COLOR_DISTANCE) n++;
-	}
 	return n;
 }
 
@@ -133,94 +67,66 @@ function strongPixels(a: Uint8Array, b: Uint8Array): number
 	return n;
 }
 
-const unobstructed = new Map<string, number>();
-function unobstructedPixels(k: FeatureKey, a: number, b: number, shape: number): number
+// Every check of the pairwise test, the slowest first so the threads finish together.
+const PAIRS: Pair[] = KEYS.flatMap((k, i) =>
+	KEYS.slice(i + 1).flatMap((c) =>
+		(k === "faceShape" || c === "faceShape" ? [BASE.faceShape] : values("faceShape")).map((shape) => (
+		{
+			k,
+			c,
+			shape,
+		})),
+	),
+).toSorted((a, b) => values(b.k).length * values(b.c).length - values(a.k).length * values(a.c).length);
+
+// Runs every check on its own thread, as many threads as the machine has cores.
+async function checkPairs(): Promise<PairResult[]>
 {
-	const id = `${k} ${a} ${b} ${shape}`;
-	let n = unobstructed.get(id);
-	if (n === undefined)
+	const results: PairResult[] = [];
+	let next = 0;
+	const thread = async (): Promise<void> =>
 	{
-		n = changedPixels(
-			render(
-				{
-					...BASE,
-					faceShape: shape,
-					[k]: a,
-				},
-			),
-			render(
-				{
-					...BASE,
-					faceShape: shape,
-					[k]: b,
-				},
-			),
-		);
-		unobstructed.set(id, n);
-	}
-	return n;
+		const worker = new Worker(new URL("pair-worker.ts", import.meta.url));
+		try
+		{
+			while (next < PAIRS.length)
+			{
+				const pair = PAIRS[next++]!;
+				results.push(
+					await new Promise<PairResult>((resolve, reject) =>
+					{
+						worker.once("message", resolve);
+						worker.once("error", reject);
+						worker.postMessage(pair);
+					}),
+				);
+				worker.removeAllListeners("error");
+			}
+		}
+		finally
+		{
+			await worker.terminate();
+		}
+	};
+	await Promise.all(
+		Array.from(
+			{
+				length: Math.min(availableParallelism(), PAIRS.length),
+			},
+			thread,
+		),
+	);
+	return results;
 }
 
 // Every change of one feature, next to every value of one other feature, on every face shape.
 it("draws every difference the game counts so that it can be seen", async () =>
 {
-	const hidden = new Set<string>();
-	const uncounted = new Set<FeatureKey>();
-	for (const [i, k] of KEYS.entries())
-	{
-		for (const c of KEYS.slice(i + 1))
-		{
-			const shapes = k === "faceShape" || c === "faceShape" ? [BASE.faceShape] : values("faceShape");
-			for (const shape of shapes)
-			{
-				await breathe();
-				const face = (kv: number, cv: number): Face => (
-				{
-					...BASE,
-					faceShape: shape,
-					[k]: kv,
-					[c]: cv,
-				});
-				const pixels = values(k).map((kv) =>
-					values(c).map((cv) => (valid(face(kv, cv)) ? render(face(kv, cv)) : null)),
-				);
-				const compare = (
-					changed: FeatureKey,
-					a: number,
-					b: number,
-					other: FeatureKey,
-					ov: number,
-					pa: Uint8Array | null,
-					pb: Uint8Array | null,
-				): void =>
-				{
-					if (!pa || !pb) return;
-					const fa = changed === k ? face(a, ov) : face(ov, a);
-					const fb = changed === k ? face(b, ov) : face(ov, b);
-					if (diffKeys(fa, fb).length === 0)
-					{
-						uncounted.add(changed);
-						return;
-					}
-					const n = changedPixels(pa, pb);
-					if (n < MIN_PIXELS && n < MIN_SHARE * unobstructedPixels(changed, a, b, fa.faceShape))
-						hidden.add(`${changed} ${a}→${b} with ${other} ${ov}`);
-				};
-				for (const [ci, cv] of values(c).entries())
-					for (const [ai, a] of values(k).entries())
-						for (const b of values(k).slice(ai + 1))
-							compare(k, a, b, c, cv, pixels[ai]![ci]!, pixels[b]![ci]!);
-				for (const [ki, kv] of values(k).entries())
-					for (const [ai, a] of values(c).entries())
-						for (const b of values(c).slice(ai + 1))
-							compare(c, a, b, k, kv, pixels[ki]![ai]!, pixels[ki]![b]!);
-			}
-		}
-	}
+	const results = await checkPairs();
 	expect(
 		{
-			hidden: [...hidden].toSorted(),
-			uncounted,
+			hidden: [...new Set(results.flatMap((r) => r.hidden))].toSorted(),
+			uncounted: new Set(results.flatMap((r) => r.uncounted)),
 		},
 	).toStrictEqual(
 		{
@@ -336,21 +242,21 @@ it("draws every value of a feature unlike its other values", async () =>
 
 // A hat sits up on the crown, so the hairline, fringe and sides show under it: whatever hair style changes, most of the
 // change still shows with any hat on.
+const hatted = (hairStyle: number, hat: number): Face => (
+{
+	...BASE,
+	hairStyle,
+	hat,
+});
 it("shows most of every hair style change under every hat", async () =>
 {
 	const hidden: string[] = [];
 	for (const hat of values("hat").slice(1))
 	{
 		await breathe();
-		const face = (hairStyle: number, h: number): Face => (
-		{
-			...BASE,
-			hairStyle,
-			hat: h,
-		});
-		const styles = values("hairStyle").filter((v) => valid(face(v, hat)));
-		const bare = styles.map((v) => render(face(v, 0)));
-		const worn = styles.map((v) => render(face(v, hat)));
+		const styles = values("hairStyle").filter((v) => valid(hatted(v, hat)));
+		const bare = styles.map((v) => render(hatted(v, 0)));
+		const worn = styles.map((v) => render(hatted(v, hat)));
 		for (const [i, a] of styles.entries())
 		{
 			for (const [j, b] of styles.entries())

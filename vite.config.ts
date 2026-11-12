@@ -206,7 +206,12 @@ export default defineConfig(
 					},
 				},
 				{
-					files: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "tests/support/**/*.ts"],
+					files: [
+						"**/*.test.{ts,tsx}",
+						"**/*.spec.{ts,tsx}",
+						"tests/support/**/*.ts",
+						"tests/visibility/**/*.ts",
+					],
 					rules:
 					{
 						"@typescript-eslint/no-explicit-any": "off",
@@ -235,6 +240,14 @@ export default defineConfig(
 					rules:
 					{
 						"no-await-in-loop": "off",
+					},
+				},
+				// The visibility checks post to Node worker threads, which take no target origin.
+				{
+					files: ["tests/visibility/**/*.ts"],
+					rules:
+					{
+						"unicorn/require-post-message-target-origin": "off",
 					},
 				},
 			],
