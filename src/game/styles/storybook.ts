@@ -1,4 +1,4 @@
-import {CLOTH, DYEC, EYEC, type Face, HAIRC, HATC, KEYS, SKIN} from "../faces.ts";
+import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, KEYS, SKIN} from "../faces.ts";
 import {geo, type Geo, shade, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
@@ -15,6 +15,11 @@ const UNION = 6.4;
 const CREAM = "#fffaf0";
 const RED = "#ff4d6d";
 const GOLD = "#e6b422";
+// How close a hat's fixed tone may come to the hair or bare head under it before it switches; the ink outline, which
+// is thin and so needs more room, switches to a pale one sooner, on dark and brown hair.
+const NEAR = 100;
+const INK_NEAR = 120;
+const PALE_INK = "#f3e6d2";
 const darkSkin = (f: Face): boolean => f.skin >= 3;
 
 // Builds markup with every number rounded to one decimal.
@@ -46,6 +51,12 @@ function mix(a: string, b: string, t: number): string
 	);
 }
 const light = (c: string, t: number): string => mix(c, "#fff8e8", t);
+// How far apart two colors are, summed over red, green and blue.
+const distance = (a: string, b: string): number =>
+{
+	const y = channels(b);
+	return channels(a).reduce((n, v, i) => n + Math.abs(v - y[i]!), 0);
+};
 const line = (d: string, color: string, width: number): string =>
 	`<path fill="none" stroke="${color}" stroke-width="${width}" d="${d}"/>`;
 const path = (d: string): string => `<path d="${d}"/>`;
@@ -1089,9 +1100,19 @@ function hatShadow(f: Face, g: Geo): string
 function hat(f: Face, g: Geo): string
 {
 	if (!f.hat) return "";
+	const body = hatBody(f, g);
+	return distance(LINE, crownColor(f)) < INK_NEAR ? `<g stroke="${PALE_INK}">${body}</g>` : body;
+}
+function hatBody(f: Face, g: Geo): string
+{
 	const {w, t, ey, L, R} = g;
 	const {afro, lift, hy, hw} = hatSeat(f, g);
 	const c = HATC[f.hatColor]!;
+	// A hat of a fixed tone switches to a contrasting one on hair or a bare head close to its color, the way skin has
+	// light and dark variants. A hat colored by the hat color keeps its hue, and on dark hair takes a pale outline.
+	const crown = crownColor(f);
+	const near = (a: string): boolean => distance(a, crown) < NEAR;
+	const tone = (usual: string, alt: string): string => (near(usual) ? alt : usual);
 	const dim = shade(c, -0.2),
 		deep = shade(c, -0.45),
 		lit = light(c, 0.5);
@@ -1149,7 +1170,7 @@ function hat(f: Face, g: Geo): string
 				cy = ey + 6;
 			const arc = p`M${lx - 4} ${cy - 13} C${lx - 14} ${top} ${rx + 14} ${top} ${rx + 4} ${cy - 13}`;
 			const cup = (x: number, s: number): string =>
-				p`<rect fill="#3a3330" stroke-width="2.6" x="${x + s * 5 - 4}" y="${cy - 14}" width="8" height="28" rx="4"/>` +
+				p`<rect fill="${tone("#3a3330", "#cfc6bd")}" stroke-width="2.6" x="${x + s * 5 - 4}" y="${cy - 14}" width="8" height="28" rx="4"/>` +
 				p`<ellipse fill="${c}" ${big} cx="${x - s * 2}" cy="${cy}" rx="11" ry="16"/>` +
 				p`<ellipse fill="${dim}" stroke="none" cx="${x - s * 4}" cy="${cy + 2}" rx="5.5" ry="10"/>` +
 				line(p`M${x - 7} ${cy - 6} Q${x - 5} ${cy - 12} ${x} ${cy - 13}`, lit, 2.2);
@@ -1162,34 +1183,45 @@ function hat(f: Face, g: Geo): string
 			);
 		}
 		case 3:
+		{
+			const felt = tone("#2f2a28", "#d6d0ca"),
+				glint = near("#2f2a28") ? "#ffffff" : "#6f6660";
 			return (
-				p`<path fill="#2f2a28" ${big} d="M${100 - hw * 0.62} ${hy} L${100 - hw * 0.68} ${hy - 44} Q100 ${hy - 48} ${100 + hw * 0.68} ${hy - 44} L${100 + hw * 0.62} ${hy}Z"/>` +
-				line(p`M${100 - hw * 0.46} ${hy - 38} L${100 - hw * 0.44} ${hy - 20}`, "#6f6660", 3) +
+				p`<path fill="${felt}" ${big} d="M${100 - hw * 0.62} ${hy} L${100 - hw * 0.68} ${hy - 44} Q100 ${hy - 48} ${100 + hw * 0.68} ${hy - 44} L${100 + hw * 0.62} ${hy}Z"/>` +
+				line(p`M${100 - hw * 0.46} ${hy - 38} L${100 - hw * 0.44} ${hy - 20}`, glint, 3) +
 				p`<path fill="${c}" d="M${100 - hw * 0.64} ${hy - 15} L${100 + hw * 0.64} ${hy - 15} L${100 + hw * 0.63} ${hy - 6} L${100 - hw * 0.63} ${hy - 6}Z"/>` +
 				line(p`M${100 - hw * 0.54} ${hy - 12.4} H${100 + hw * 0.2}`, lit, 1.4) +
-				p`<ellipse fill="#2f2a28" ${big} cx="100" cy="${hy}" rx="${hw + 10}" ry="6"/>` +
+				p`<ellipse fill="${felt}" ${big} cx="100" cy="${hy}" rx="${hw + 10}" ry="6"/>` +
 				line(
 					p`M${100 - hw - 3} ${hy - 1} Q${100 - hw * 0.4} ${hy - 4} ${100 + hw * 0.1} ${hy - 3.6}`,
-					"#6f6660",
+					glint,
 					1.8,
 				)
 			);
+		}
 		case 4:
 		{
+			// A gold crown, or a silver one on hair of nearly its color.
+			const silver = near("#f5c542"),
+				metal = silver ? "#d4d9e0" : "#f5c542";
 			const tips = [-0.82, 0, 0.82]
 				.map(
 					(u) =>
-						p`<circle fill="#f5c542" stroke-width="2" cx="${100 + hw * u}" cy="${hy - (u ? 28 : 34)}" r="3.6"/>`,
+						p`<circle fill="${metal}" stroke-width="2" cx="${100 + hw * u}" cy="${hy - (u ? 28 : 34)}" r="3.6"/>`,
 				)
 				.join("");
 			return (
-				p`<path fill="#f5c542" ${big} d="M${100 - hw * 0.76} ${hy + 1} L${100 - hw * 0.82} ${hy - 27} L${100 - hw * 0.42} ${hy - 12} L100 ${hy - 33} L${100 + hw * 0.42} ${hy - 12} L${100 + hw * 0.82} ${hy - 27} L${100 + hw * 0.76} ${hy + 1}Z"/>` +
+				p`<path fill="${metal}" ${big} d="M${100 - hw * 0.76} ${hy + 1} L${100 - hw * 0.82} ${hy - 27} L${100 - hw * 0.42} ${hy - 12} L100 ${hy - 33} L${100 + hw * 0.42} ${hy - 12} L${100 + hw * 0.82} ${hy - 27} L${100 + hw * 0.76} ${hy + 1}Z"/>` +
 				flat(
 					p`M${100 + hw * 0.48} ${hy - 10} L${100 + hw * 0.8} ${hy - 22} L${100 + hw * 0.75} ${hy} L${100 + hw * 0.48} ${hy}Z`,
-					"#dfa326",
+					silver ? "#a9b0bb" : "#dfa326",
 				) +
-				line(p`M${100 - hw * 0.72} ${hy - 8} L${100 - hw * 0.76} ${hy - 20}`, "#fff0a6", 2.4) +
-				line(p`M${100 - hw * 0.77} ${hy - 10} H${100 + hw * 0.77}`, "#b97f14", 1.4) +
+				line(
+					p`M${100 - hw * 0.72} ${hy - 8} L${100 - hw * 0.76} ${hy - 20}`,
+					silver ? "#ffffff" : "#fff0a6",
+					2.4,
+				) +
+				line(p`M${100 - hw * 0.77} ${hy - 10} H${100 + hw * 0.77}`, silver ? "#7d8592" : "#b97f14", 1.4) +
 				tips +
 				p`<circle cx="100" cy="${hy - 4.5}" r="4" fill="#e74c3c" stroke-width="2"/><circle cx="${100 - hw * 0.45}" cy="${hy - 4.5}" r="3.2" fill="#3498db" stroke-width="2"/><circle cx="${100 + hw * 0.45}" cy="${hy - 4.5}" r="3.2" fill="#3498db" stroke-width="2"/>` +
 				p`<g fill="#fff" stroke="none" opacity=".8"><circle cx="98.6" cy="${hy - 5.8}" r="1.2"/><circle cx="${100 - hw * 0.45 - 1}" cy="${hy - 5.6}" r="1"/><circle cx="${100 + hw * 0.45 - 1}" cy="${hy - 5.6}" r="1"/></g>`
@@ -1239,27 +1271,32 @@ function hat(f: Face, g: Geo): string
 			);
 		}
 		case 8:
+		{
+			// Brown leather, or pale straw on hair or skin of nearly its color.
+			const straw = near("#9a7650"),
+				hide = straw ? "#e3c98f" : "#9a7650";
 			return (
-				p`<ellipse fill="#9a7650" ${big} cx="100" cy="${hy}" rx="${hw + 16}" ry="6.5"/>` +
-				p`<path fill="#9a7650" ${big} d="M${100 - hw * 0.74} ${hy} Q${100 - hw * 0.82} ${hy - 32} ${100 - hw * 0.36} ${hy - 36} Q100 ${hy - 27} ${100 + hw * 0.36} ${hy - 36} Q${100 + hw * 0.82} ${hy - 32} ${100 + hw * 0.74} ${hy}Z"/>` +
+				p`<ellipse fill="${hide}" ${big} cx="100" cy="${hy}" rx="${hw + 16}" ry="6.5"/>` +
+				p`<path fill="${hide}" ${big} d="M${100 - hw * 0.74} ${hy} Q${100 - hw * 0.82} ${hy - 32} ${100 - hw * 0.36} ${hy - 36} Q100 ${hy - 27} ${100 + hw * 0.36} ${hy - 36} Q${100 + hw * 0.82} ${hy - 32} ${100 + hw * 0.74} ${hy}Z"/>` +
 				flat(
 					p`M${100 + hw * 0.4} ${hy - 33} Q${100 + hw * 0.76} ${hy - 30} ${100 + hw * 0.7} ${hy - 12} L${100 + hw * 0.44} ${hy - 12} Q${100 + hw * 0.54} ${hy - 24} ${100 + hw * 0.4} ${hy - 33}Z`,
-					"#7f5f3e",
+					straw ? "#c9a96a" : "#7f5f3e",
 				) +
-				line(p`M100 ${hy - 29} q-2 7 0 13`, "#6b4e31", FINE) +
+				line(p`M100 ${hy - 29} q-2 7 0 13`, straw ? "#a7854f" : "#6b4e31", FINE) +
 				line(
 					p`M${100 - hw * 0.62} ${hy - 16} Q${100 - hw * 0.64} ${hy - 28} ${100 - hw * 0.38} ${hy - 31}`,
-					"#c4a078",
+					straw ? "#fff3d0" : "#c4a078",
 					2.6,
 				) +
 				p`<path fill="${c}" d="M${100 - hw * 0.76} ${hy - 11} L${100 + hw * 0.76} ${hy - 11} L${100 + hw * 0.75} ${hy - 2.5} L${100 - hw * 0.75} ${hy - 2.5}Z"/>` +
 				line(p`M${100 - hw * 0.66} ${hy - 8.4} H${100 + hw * 0.2}`, lit, 1.4) +
 				line(
 					p`M${100 - hw - 8} ${hy + 2} Q${100 - hw * 0.3} ${hy + 5} ${100 + hw * 0.3} ${hy + 4.2}`,
-					"#c4a078",
+					straw ? "#fff3d0" : "#c4a078",
 					1.6,
 				)
 			);
+		}
 		case 9:
 			// A beret: a wide, flat disc of felt tipped down over one side, with a little stalk in the middle.
 			return (
@@ -1279,22 +1316,39 @@ function hat(f: Face, g: Geo): string
 		case 11:
 		{
 			const by = t + 2 + sink - (afro ? 20 : lift);
-			const cat = f.hat === 10,
-				col = cat ? "#2b2b2b" : "#d92b2b";
-			const ear = (s: number): string =>
+			if (f.hat === 10)
+			{
+				// Black cat ears, or pale grey ones on hair or skin of nearly their color.
+				const col = tone("#2b2b2b", "#c4c4c4");
+				const ear = (s: number): string =>
+				{
+					const x = 100 + s * w * 0.55;
+					return (
+						p`<path fill="${col}" ${big} d="M${x - s * 21} ${by + 6} L${x + s * 6} ${by - 44} L${x + s * 21} ${by + 6}Z"/>` +
+						p`<path fill="#ffb3c7" stroke="none" d="M${x - s * 10.5} ${by + 1} L${x + s * 5} ${by - 27} L${x + s * 10.5} ${by + 1}Z"/>` +
+						line(p`M${x - s * 2} ${by - 1} l${s * 2.5} -8 M${x + s * 4} ${by - 1} l${s} -6`, "#f08aa6", 1.4)
+					);
+				};
+				return ear(-1) + ear(1) + hairband(col);
+			}
+			// Devil horns: a bold horn on each side that sweeps out from the band and hooks up to a point, mirrored
+			// about the middle of the face. On red hair they go a deep crimson with a light rim.
+			const crimson = near("#d92b2b"),
+				col = crimson ? "#7a0d1e" : "#d92b2b",
+				rim = crimson ? "#ffd0c4" : "#ff8f7e";
+			const horn = (s: number): string =>
 			{
 				const x = 100 + s * w * 0.55;
-				return cat
-					? p`<path fill="${col}" ${big} d="M${x - 21} ${by + 6} L${x + s * 6} ${by - 44} L${x + 21} ${by + 6}Z"/><path fill="#ffb3c7" stroke="none" d="M${x - 10} ${by + 1} L${x + s * 5} ${by - 27} L${x + 11} ${by + 1}Z"/>` +
-							line(p`M${x - 2} ${by - 1} l${s * 2.5} -8 M${x + 4} ${by - 1} l${s} -6`, "#f08aa6", 1.4)
-					: p`<path fill="${col}" ${big} d="M${x - 10} ${by + 5} Q${x - s * 6} ${by - 22} ${x + s * 20} ${by - 38} Q${x + s * 16} ${by - 8} ${x + 10} ${by + 5}Z"/>` +
-							line(
-								p`M${x - s * 3} ${by - 4} Q${x + s * 2} ${by - 19} ${x + s * 13} ${by - 29}`,
-								"#ff8f7e",
-								2.2,
-							);
+				return (
+					p`<path fill="${col}" ${big} d="M${x - s * 13} ${by + 5} C${x - s * 9} ${by - 16} ${x + s * 12} ${by - 20} ${x + s * 12} ${by - 49} C${x + s * 26} ${by - 32} ${x + s * 26} ${by - 8} ${x + s * 13} ${by + 5}Z"/>` +
+					line(
+						p`M${x - s * 5} ${by - 3} C${x - s * 1} ${by - 12} ${x + s * 9} ${by - 18} ${x + s * 11} ${by - 38}`,
+						rim,
+						2.6,
+					)
+				);
 			};
-			return ear(-1) + ear(1) + hairband(col);
+			return horn(-1) + horn(1) + hairband(col);
 		}
 	}
 	return "";
