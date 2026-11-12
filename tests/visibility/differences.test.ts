@@ -33,6 +33,16 @@ const BOX_MARGIN = 4;
 const MAX_PIXELS_OUTSIDE = 20;
 // How much of a hair style change must still show under a hat.
 const MIN_HAT_SHARE = 0.6;
+const CAT_EARS = 10;
+const DEVIL_HORNS = 11;
+// How much of what stands above the head must land on its own mirror image, within how many pixels, and how much of the cat ears'
+// pixels the devil horns must change.
+const MIN_MIRROR_SHARE = 0.98;
+const MIRROR_SLACK = 1;
+const MIN_HORN_SHARE = 0.8;
+// How far a hat's pixels must stand from what they cover, and how much of its best showing it must keep on any hair.
+const MIN_HAT_CONTRAST = 60;
+const MIN_HAT_CONTRAST_SHARE = 0.75;
 // How far apart two pixels' colors must be, summed over red, green and blue, to count as changed.
 const MIN_COLOR_DISTANCE = 16;
 // How much of an eye color change's total color difference must show through glasses.
@@ -108,6 +118,17 @@ function changedPixels(a: Uint8Array, b: Uint8Array): number
 	for (let i = 0; i < a.length; i += 4)
 	{
 		if (colorDistance(a, b, i) > MIN_COLOR_DISTANCE) n++;
+	}
+	return n;
+}
+
+// The pixels that change by more than a glance at a dark edge on dark hair would notice.
+function strongPixels(a: Uint8Array, b: Uint8Array): number
+{
+	let n = 0;
+	for (let i = 0; i < a.length; i += 4)
+	{
+		if (colorDistance(a, b, i) > MIN_HAT_CONTRAST) n++;
 	}
 	return n;
 }
@@ -341,6 +362,153 @@ it("shows most of every hair style change under every hat", async () =>
 		}
 	}
 	expect(hidden).toStrictEqual([]);
+});
+
+// A hat the color of the hair or bare head under it melts into it, so each hat stands out as clearly on whatever it is
+// worn over as on the one it shows best on.
+it("draws every hat so it stands out from the hair or head under it", async () =>
+{
+	const unders: Partial<Face>[] = [
+		...values("skin").map((skin) => (
+		{
+			hairStyle: 0,
+			skin,
+		})),
+		...values("hairColor").map((hairColor) => (
+		{
+			hairStyle: 3,
+			hairColor,
+		})),
+		...values("hairDye")
+			.slice(1)
+			.map((hairDye) => (
+			{
+				hairStyle: 3,
+				hairDye,
+			})),
+	];
+	const melted: string[] = [];
+	for (const hat of values("hat").slice(1))
+	{
+		for (const hatColor of values("hatColor"))
+		{
+			await breathe();
+			const worn = unders.filter((u) =>
+				valid(
+					{
+						...BASE,
+						...u,
+						hat,
+						hatColor,
+					},
+				),
+			);
+			const shown = worn.map((u) =>
+			{
+				const bare =
+				{
+					...BASE,
+					...u,
+				};
+				return strongPixels(
+					render(bare),
+					render(
+						{
+							...bare,
+							hat,
+							hatColor,
+						},
+					),
+				);
+			});
+			const best = Math.max(...shown);
+			for (const [i, n] of shown.entries())
+			{
+				if (n < MIN_HAT_CONTRAST_SHARE * best)
+					melted.push(
+						`hat ${hat} color ${hatColor} over ${JSON.stringify(worn[i])}: ${Math.round((n / best) * 100)}%`,
+					);
+			}
+		}
+	}
+	expect(melted).toStrictEqual([]);
+});
+
+// The pixels a change alters, as indexes into the render.
+function changedAt(a: Uint8Array, b: Uint8Array): Set<number>
+{
+	const out = new Set<number>();
+	for (let i = 0; i < a.length; i += 4)
+	{
+		if (colorDistance(a, b, i) > MIN_COLOR_DISTANCE) out.add(i / 4);
+	}
+	return out;
+}
+
+// The middle of the face, X=100 on the card, in render pixels.
+const MIDDLE = ((100 - VB[0]!) * WIDTH) / VB[2]!;
+it("draws the cat ears and devil horns as a mirror image about the middle of the face", async () =>
+{
+	const bare = render(BASE);
+	// Only what stands above the head, so the band they sit on does not outweigh them.
+	const white = (i: number): boolean => bare[i * 4] === 255 && bare[i * 4 + 1] === 255 && bare[i * 4 + 2] === 255;
+	let top = 0;
+	while (
+		Array.from(
+			{
+				length: WIDTH,
+			},
+			(_, x) => top * WIDTH + x,
+		).every(white)
+	)
+		top++;
+	const lopsided: string[] = [];
+	for (const hat of [CAT_EARS, DEVIL_HORNS])
+	{
+		await breathe();
+		const drawn = new Set(
+			[
+				...changedAt(
+					bare,
+					render(
+						{
+							...BASE,
+							hat,
+						},
+					),
+				),
+			].filter((i) => i < top * WIDTH),
+		);
+		// Hand-cut and hand-drawn styles wobble, so a pixel's mirror may sit a pixel or two to the side.
+		const mirrored = [...drawn].filter((i) =>
+		{
+			const x = i % WIDTH,
+				y = Math.floor(i / WIDTH),
+				mx = Math.round(2 * MIDDLE - 1 - x);
+			return [-MIRROR_SLACK, 0, MIRROR_SLACK].some((dx) =>
+				[-MIRROR_SLACK, 0, MIRROR_SLACK].some((dy) => drawn.has((y + dy) * WIDTH + mx + dx)),
+			);
+		});
+		const share = mirrored.length / drawn.size;
+		if (share < MIN_MIRROR_SHARE) lopsided.push(`hat ${hat}: ${Math.round(share * 100)}%`);
+	}
+	expect(lopsided).toStrictEqual([]);
+});
+
+it("draws the devil horns as boldly as the cat ears", () =>
+{
+	const bare = render(BASE);
+	const shown = (hat: number): number =>
+		changedPixels(
+			bare,
+			render(
+				{
+					...BASE,
+					hat,
+				},
+			),
+		);
+	expect(shown(DEVIL_HORNS) / shown(CAT_EARS)).toBeGreaterThanOrEqual(MIN_HORN_SHARE);
 });
 
 // A Spot the Difference choice for the hat or the earrings shows the box around that feature's areas, so every hat and
