@@ -1,4 +1,4 @@
-import {CLOTH, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
+import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
 import {geo, type Geo, HEADPHONES, INK, N1, shade, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
@@ -525,6 +525,20 @@ function glasses(f: Face, g: Geo): string
 	}
 	return "";
 }
+// A hat stands out from the hair or bare head under it. Ink melts into a dark crown, so a hat there is outlined in a pale
+// rim, and a hat tone that isn't the guessed hat color switches to its other tone when it comes too close to the crown.
+const PALE_RIM = "#efe9dc";
+const MIN_TONE_GAP = 90;
+const rgb = (hex: string): number[] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const gap = (a: string, b: string): number => rgb(a).reduce((s, v, i) => s + Math.abs(v - rgb(b)[i]!), 0);
+const luma = (hex: string): number =>
+{
+	const [r, g, b] = rgb(hex) as [number, number, number];
+	return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+};
+const hatRim = (f: Face): string => (luma(crownColor(f)) < 0.35 ? PALE_RIM : INK);
+const tone = (f: Face, usual: string, other: string): string =>
+	gap(usual, crownColor(f)) < MIN_TONE_GAP ? other : usual;
 // How far above the top of the head each hair style rises in the middle, where a hat rests on it.
 const HAIR_TOP: Record<number, number> =
 {
@@ -553,6 +567,7 @@ function perched(f: Face, g: Geo, c: string): string
 	const hw = Number(N1(w * (afro ? 0.85 : 0.72)));
 	const dark = shade(c, -0.25);
 	let d: string, h: number;
+	const white = tone(f, "#fff", "#ffd23f");
 	switch (f.hat)
 	{
 		case 1:
@@ -563,7 +578,7 @@ function perched(f: Face, g: Geo, c: string): string
 			d =
 				`<path fill="${dark}" d="M${N1(cw * 0.5)} -6 Q${N1(cw + 22)} -14 ${N1(cw + 34)} -3 Q${N1(cw + 20)} 4 ${N1(cw * 0.5)} 2Z"/>` +
 				`<path fill="${c}" d="M${N1(-cw)} 2 Q${N1(-cw)} -27 0 -27 Q${N1(cw)} -27 ${N1(cw)} 2Z"/>` +
-				`<path fill="#fff" d="M${N1(-cw * 0.45)} 2 Q${N1(-cw * 0.45)} -24 0 -27 Q${N1(cw * 0.45)} -24 ${N1(cw * 0.45)} 2Z"/>` +
+				`<path fill="${white}" d="M${N1(-cw * 0.45)} 2 Q${N1(-cw * 0.45)} -24 0 -27 Q${N1(cw * 0.45)} -24 ${N1(cw * 0.45)} 2Z"/>` +
 				`<circle fill="${c}" cx="0" cy="-27" r="4"/>`;
 			break;
 		}
@@ -571,11 +586,12 @@ function perched(f: Face, g: Geo, c: string): string
 		{
 			// A top hat: a tall cylinder with a hat-colored band over a narrow brim.
 			const cw = hw * 0.62;
+			const body = tone(f, "#2d2d2d", "#c9c9cf");
 			h = 36;
 			d =
-				`<path fill="#2d2d2d" d="M${N1(-cw)} 0 L${N1(-cw - 3)} -34 L${N1(cw + 3)} -34 L${N1(cw)} 0Z"/>` +
+				`<path fill="${body}" d="M${N1(-cw)} 0 L${N1(-cw - 3)} -34 L${N1(cw + 3)} -34 L${N1(cw)} 0Z"/>` +
 				`<path fill="${c}" d="M${N1(-cw)} -2 L${N1(-cw - 1)} -11 L${N1(cw + 1)} -11 L${N1(cw)} -2Z"/>` +
-				`<ellipse fill="#2d2d2d" cx="0" cy="0" rx="${N1(hw + 8)}" ry="5"/>`;
+				`<ellipse fill="${body}" cx="0" cy="0" rx="${N1(hw + 8)}" ry="5"/>`;
 			break;
 		}
 		case 4:
@@ -583,7 +599,7 @@ function perched(f: Face, g: Geo, c: string): string
 			const cw = hw * 0.8;
 			h = 32;
 			d =
-				`<path fill="#f5c542" d="M${N1(-cw)} 2 L${N1(-cw * 1.08)} -26 L${N1(-cw * 0.52)} -12 L0 -32 L${N1(cw * 0.52)} -12 L${N1(cw * 1.08)} -26 L${N1(cw)} 2Z"/>` +
+				`<path fill="${tone(f, "#f5c542", "#e0812a")}" d="M${N1(-cw)} 2 L${N1(-cw * 1.08)} -26 L${N1(-cw * 0.52)} -12 L0 -32 L${N1(cw * 0.52)} -12 L${N1(cw * 1.08)} -26 L${N1(cw)} 2Z"/>` +
 				`<circle cx="0" cy="-7" r="4.5" fill="#e74c3c" stroke-width="2"/><circle cx="${N1(-cw * 0.55)}" cy="-4" r="3.5" fill="#3498db" stroke-width="2"/><circle cx="${N1(cw * 0.55)}" cy="-4" r="3.5" fill="#3498db" stroke-width="2"/>`;
 			break;
 		}
@@ -601,7 +617,7 @@ function perched(f: Face, g: Geo, c: string): string
 				[-0.6, -0.2],
 				[0.2, 0.6],
 			] as const)
-				panels += `<path fill="#f1c40f" d="M${N1(cw * a)} 1 Q${N1(cw * a * 0.9)} -18 0 -23 Q${N1(cw * b * 0.9)} -18 ${N1(cw * b)} 1Z"/>`;
+				panels += `<path fill="${tone(f, "#f1c40f", "#fff")}" d="M${N1(cw * a)} 1 Q${N1(cw * a * 0.9)} -18 0 -23 Q${N1(cw * b * 0.9)} -18 ${N1(cw * b)} 1Z"/>`;
 			d =
 				`<path fill="${c}" d="M${N1(-cw)} 1 Q${N1(-cw)} -23 0 -23 Q${N1(cw)} -23 ${N1(cw)} 1Z"/>` +
 				panels +
@@ -612,10 +628,11 @@ function perched(f: Face, g: Geo, c: string): string
 		{
 			// A fedora: a pinched crown over a wide, flat brim.
 			const cw = hw * 0.7;
+			const felt = tone(f, "#9a7650", "#4a4a55");
 			h = 30;
 			d =
-				`<ellipse fill="#9a7650" cx="0" cy="0" rx="${N1(hw + 16)}" ry="6"/>` +
-				`<path fill="#9a7650" d="M${N1(-cw)} 0 Q${N1(-cw * 1.05)} -26 ${N1(-cw * 0.45)} -29 Q0 -21 ${N1(cw * 0.45)} -29 Q${N1(cw * 1.05)} -26 ${N1(cw)} 0Z"/>` +
+				`<ellipse fill="${felt}" cx="0" cy="0" rx="${N1(hw + 16)}" ry="6"/>` +
+				`<path fill="${felt}" d="M${N1(-cw)} 0 Q${N1(-cw * 1.05)} -26 ${N1(-cw * 0.45)} -29 Q0 -21 ${N1(cw * 0.45)} -29 Q${N1(cw * 1.05)} -26 ${N1(cw)} 0Z"/>` +
 				`<path fill="${c}" d="M${N1(-cw - 1)} -11 L${N1(cw + 1)} -11 L${N1(cw)} -2 L${N1(-cw)} -2Z"/>`;
 			break;
 		}
@@ -647,7 +664,10 @@ function bandPath(g: Geo, y: number, peak: number, out: number): string
 }
 function hat(f: Face, g: Geo): string
 {
-	if (!f.hat) return "";
+	return f.hat ? `<g stroke="${hatRim(f)}">${hatShape(f, g)}</g>` : "";
+}
+function hatShape(f: Face, g: Geo): string
+{
 	const {w, ey, L, R} = g;
 	const c = HATC[f.hatColor]!;
 	switch (f.hat)
@@ -672,19 +692,28 @@ function hat(f: Face, g: Geo): string
 			const band = bandPath(g, ey - 16, peak, 2);
 			const by = peak + 5;
 			const cat = f.hat === 10,
-				col = f.hat === 5 ? c : cat ? "#2b2b2b" : "#d92b2b";
+				usual = cat ? "#2b2b2b" : "#d92b2b",
+				col = f.hat === 5 ? c : tone(f, usual, cat ? "#c8c8ce" : "#7a0f1f");
 			const thin = `<path d="${band}" fill="none" stroke-width="8"/><path d="${band}" fill="none" stroke="${col}" stroke-width="4.5"/>`;
 			if (f.hat === 5)
 			{
 				const bx = Number(N1(100 + w * 0.45));
 				return `${thin}<path fill="${c}" d="M${bx} ${by} L${bx - 18} ${by - 13} L${bx - 18} ${by + 13}Z M${bx} ${by} L${bx + 18} ${by - 13} L${bx + 18} ${by + 13}Z"/><circle fill="${c}" cx="${bx}" cy="${by}" r="5.5"/>`;
 			}
+			// Each ear or horn is drawn in coordinates that run outward from the middle of the face, so the pair mirrors.
 			const ear = (s: number): string =>
 			{
 				const x = Number(N1(100 + s * w * 0.5));
-				return cat
-					? `<path fill="${col}" d="M${x - 15} ${by + 6} L${x + s * 6} ${by - 34} L${x + 15} ${by + 6}Z"/><path fill="#ffb3c7" stroke="none" d="M${x - 7} ${by + 1} L${x + s * 5} ${by - 20} L${x + 8} ${by + 1}Z"/>`
-					: `<path fill="${col}" d="M${x - 8} ${by + 5} Q${x - s * 5} ${by - 18} ${x + s * 16} ${by - 30} Q${x + s * 13} ${by - 6} ${x + 8} ${by + 5}Z"/>`;
+				const P = (u: number, v: number): string => `${N1(x + s * u)} ${N1(by + v)}`;
+				if (cat)
+					return `<path fill="${col}" d="M${P(-15, 6)} L${P(6, -34)} L${P(15, 6)}Z"/><path fill="#ffb3c7" stroke="none" d="M${P(-7.5, 1)} L${P(5, -20)} L${P(7.5, 1)}Z"/>`;
+				// A devil horn: a broad base that bulges outward and hooks back in to a sharp tip, with a shine along its inner
+				// curve. A horn that went dark to stand out from red hair keeps a pale rim.
+				const rim = col === usual ? "" : ` stroke="${PALE_RIM}"`;
+				return (
+					`<path fill="${col}"${rim} d="M${P(-14, 6)} C${P(2, -6)} ${P(2, -30)} ${P(-5, -46)} C${P(20, -40)} ${P(30, -14)} ${P(14, 6)}Z"/>` +
+					`<path fill="none" stroke="${shade(col, 0.45)}" stroke-width="2.5" d="M${P(5, -2)} C${P(8, -14)} ${P(7, -26)} ${P(2, -36)}"/>`
+				);
 			};
 			return `${ear(-1)}${ear(1)}${thin}`;
 		}

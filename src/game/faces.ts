@@ -207,7 +207,7 @@ const distance = (a: string, b: string): number =>
 	return x.reduce((s, v, i) => s + Math.abs(v - y[i]!), 0);
 };
 // The color of the head's crown: dyed or natural hair, or skin when bald.
-const crownColor = (f: Face): string =>
+export const crownColor = (f: Face): string =>
 	f.hairStyle === 0 ? SKIN[f.skin]! : f.hairDye ? DYEC[f.hairDye]! : HAIRC[f.hairColor]!;
 
 export function valid(f: Face): boolean
