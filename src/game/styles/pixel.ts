@@ -1,4 +1,4 @@
-import {CLOTH, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
+import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
 import {geo, type Geo, headHalf, shade, solve, VB} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
@@ -14,6 +14,9 @@ const OUTLINE = "#1a1626";
 const FRAME = "#23202e";
 const GOLD = "#e6b422";
 const GOLD_DARK = "#a3730c";
+const PALE = "#ece8f4";
+// How far apart, summed over red, green and blue, a hat's tone must be from the crown under it before it swaps.
+const NEAR = 100;
 // Dark lines vanish on the two darkest skins, so whatever is drawn on the skin there uses a warm light tone instead.
 const LINE = ["#9c6247", "#8a5230", "#5a3115", "#e8bd92", "#c9905f"];
 // Shading on the skin is a warmer, darker skin tone rather than a grey.
@@ -71,6 +74,11 @@ const mix = (a: string, b: string, p: number): string =>
 	const [m, n] = [parseInt(a.slice(1), 16), parseInt(b.slice(1), 16)];
 	const c = [16, 8, 0].map((s) => Math.round(((m >> s) & 255) * (1 - p) + ((n >> s) & 255) * p));
 	return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
+};
+const colorGap = (a: string, b: string): number =>
+{
+	const [m, n] = [parseInt(a.slice(1), 16), parseInt(b.slice(1), 16)];
+	return [16, 8, 0].reduce((s, k) => s + Math.abs(((m >> k) & 255) - ((n >> k) & 255)), 0);
 };
 
 // The value at v of the line drawn through the points, flat beyond either end.
@@ -1329,7 +1337,20 @@ function hat(a: Art): void
 	const lift = LIFT[f.hairStyle] ?? 0;
 	const {hy, hw} = fit(f, g);
 	const c = HATC[f.hatColor]!;
-	const low = shade(c, -0.22);
+	const crown = crownColor(f);
+	// A fixed tone that is close to the hair or bare head under the hat swaps to its alternative, the way lines on the
+	// skin turn light on the darkest skins.
+	const apart = (tone: string, alt: string): string => (colorGap(tone, crown) < NEAR ? alt : tone);
+	// A shade of the hat's color that lightens instead of darkening when its darker shade would melt into the crown.
+	const away = (p: number): string => apart(shade(c, -p), shade(c, p));
+	// An edge that stands out from whatever the cell covers: the outline on the background or on light hair or skin,
+	// pale on dark hair or skin.
+	const rim = (X: number, Y: number): string =>
+	{
+		const under = px[cellRow(Y) * COLS + cellCol(X)];
+		return under && luma(under) < 60 ? PALE : OUTLINE;
+	};
+	const low = away(0.22);
 	const dome =
 		(h: number, half = hw): Test =>
 		(X, Y) =>
@@ -1365,6 +1386,8 @@ function hat(a: Art): void
 			// Headphones: a thin band arched over the hair and a big round cup over each ear.
 			const arch = (X: number, Y: number, side: number): boolean =>
 				a.head(X, Y, side) || a.head(X, Y + perch, side);
+			// The band has a rim along both edges, so it stands out on hair of nearly its color.
+			area(px, (X, Y) => Y < ey - 6 && arch(X, Y, 17) && !arch(X, Y, 4), rim);
 			area(
 				px,
 				(X, Y) => Y < ey - 6 && arch(X, Y, 14) && !arch(X, Y, 7),
@@ -1373,17 +1396,19 @@ function hat(a: Art): void
 			for (const side of [-1, 1])
 			{
 				const cx = 100 + side * (w + 4);
-				area(px, (X, Y) => oval(X, Y, cx, ey + 12, 10, 16), OUTLINE);
+				area(px, (X, Y) => oval(X, Y, cx, ey + 12, 10, 16), rim);
 				area(
 					px,
 					(X, Y) => oval(X, Y, cx, ey + 12, 7, 13),
-					(X, Y) => (off(X) < w + 2 ? "#3b3b45" : Y < ey + 4 && X < cx ? shade(c, 0.3) : c),
+					(X, Y) => (off(X) < w + 2 ? apart("#3b3b45", "#8a8a98") : Y < ey + 4 && X < cx ? shade(c, 0.3) : c),
 				);
 			}
 			break;
 		}
 		case 3:
-			// A top hat: a narrow tall crown with a colored band over a flat brim.
+		{
+			// A top hat: a narrow tall crown with a colored band over a flat brim. On black hair it is a slate grey.
+			const black = apart("#2d2d2d", "#5d5d70");
 			area(
 				px,
 				(X, Y) => off(X) < hw * 0.62 && Y > hy - 38 && Y < hy,
@@ -1391,18 +1416,23 @@ function hat(a: Art): void
 					Y > hy - 13 && Y < hy - 4
 						? c
 						: X < 100 - hw * 0.62 + 9 && X > 100 - hw * 0.62 + 4
-							? "#55555f"
-							: "#2d2d2d",
+							? apart("#55555f", "#8a8aa0")
+							: black,
 			);
 			area(
 				px,
 				(X, Y) => oval(X, Y, 100, hy, hw + 8, 5.5),
-				(_, Y) => (Y > hy ? "#2d2d2d" : "#44444e"),
+				(_, Y) => (Y > hy ? black : apart("#44444e", "#78788c")),
 			);
 			break;
+		}
 		case 4:
 		{
-			// A crown: three points over a band set with gems.
+			// A crown: three points over a band set with gems. On blonde hair it is silver.
+			const [base, tip, rim4] =
+				colorGap("#f5c542", crown) < NEAR
+					? ["#c4cad8", "#eef1f8", "#7d8496"]
+					: ["#f5c542", "#ffe68a", "#c9952a"];
 			const tips: Points = [
 				[0, hy - 32],
 				[hw * 0.4, hy - 12],
@@ -1413,7 +1443,7 @@ function hat(a: Art): void
 			area(
 				px,
 				(X, Y) => off(X) < hw * 0.88 && Y < hy + 3 && Y > along(off(X), tips),
-				(X, Y) => (Y > hy - 2 ? "#c9952a" : Y < along(off(X), tips) + CELL ? "#ffe68a" : "#f5c542"),
+				(X, Y) => (Y > hy - 2 ? rim4 : Y < along(off(X), tips) + CELL ? tip : base),
 			);
 			both(px, 0, row(hy - 9), 1, 2, "#e74c3c");
 			both(px, col(100 + hw * 0.6) - MID - 1, row(hy - 7), 2, 1, "#3498db");
@@ -1421,25 +1451,37 @@ function hat(a: Art): void
 		}
 		case 5:
 		{
-			// A headband with a bow to one side.
+			// A headband with a bow to one side, the bow ringed by a rim so it stands out on hair of nearly its color.
 			band(c);
 			const [bx, by] = [col(100 - w * 0.5), row(t + 4 - up)];
+			const bow = [
+				"BB........BB",
+				"BBBB....BBBB",
+				"BBBBBKKBBBBB",
+				"BBBBBKKBBBBB",
+				"DBBBBKKBBBBD",
+				"DDBB....BBDD",
+				"DD........DD",
+			];
+			const inBow = (i: number, j: number): boolean => (bow[j]?.[i] ?? ".") !== ".";
+			for (let j = -1; j <= bow.length; j++)
+			{
+				for (let i = -1; i <= bow[0]!.length; i++)
+				{
+					const edge = inBow(i - 1, j) || inBow(i + 1, j) || inBow(i, j - 1) || inBow(i, j + 1);
+					if (inBow(i, j) || !edge) continue;
+					const [x, y] = [bx - 6 + i, by - 4 + j];
+					dot(px, x, y, rim(cellX(x), cellY(y)));
+				}
+			}
 			stamp(
 				px,
 				bx - 6,
 				by - 4,
-				[
-					"BB........BB",
-					"BBBB....BBBB",
-					"BBBBBKKBBBBB",
-					"BBBBBKKBBBBB",
-					"DBBBBKKBBBBD",
-					"DDBB....BBDD",
-					"DD........DD",
-				],
+				bow,
 				{
 					B: c,
-					K: shade(c, -0.4),
+					K: away(0.4),
 					D: low,
 				},
 			);
@@ -1480,7 +1522,12 @@ function hat(a: Art): void
 			both(px, 0, row(hy - 38), 1, 2, c);
 			break;
 		case 8:
-			// A fedora: a pinched tan crown, a colored band and a wide brim.
+		{
+			// A fedora: a pinched tan crown, a colored band and a wide brim. On brown hair it is a pale straw.
+			const [pinch, dark, tan, top] =
+				colorGap("#7e5f3e", crown) < NEAR
+					? ["#8f7148", "#a88a5e", "#c8aa7c", "#dcc49a"]
+					: ["#6f5335", "#7e5f3e", "#9a7650", "#b08a60"];
 			area(
 				px,
 				(X, Y) =>
@@ -1494,20 +1541,15 @@ function hat(a: Art): void
 							[hw * 0.8, hy - 18],
 						]),
 				(X, Y) =>
-					Y > hy - 10 && Y < hy - 2
-						? c
-						: off(X) < 4 && Y < hy - 14
-							? "#6f5335"
-							: X > 100 + hw * 0.5
-								? "#7e5f3e"
-								: "#9a7650",
+					Y > hy - 10 && Y < hy - 2 ? c : off(X) < 4 && Y < hy - 14 ? pinch : X > 100 + hw * 0.5 ? dark : tan,
 			);
 			area(
 				px,
 				(X, Y) => oval(X, Y, 100, hy, hw + 16, 5.5),
-				(_, Y) => (Y > hy ? "#7e5f3e" : "#b08a60"),
+				(_, Y) => (Y > hy ? dark : top),
 			);
 			break;
+		}
 		case 9:
 		{
 			// A beret: a flat, wide, soft disc tipped down to one side, puffed on top over a flat rim, with a stalk.
@@ -1532,7 +1574,8 @@ function hat(a: Art): void
 		case 11:
 		{
 			const cat = f.hat === 10;
-			const tone = cat ? "#2b2b2b" : "#d92b2b";
+			// Black ears go light grey on black hair, and red horns a deep crimson on red hair.
+			const tone = cat ? apart("#2b2b2b", "#a9a9b4") : apart("#d92b2b", "#7c0f2a");
 			const by = t + 6 - up;
 			const from = (X: number): number => off(X) - w * 0.55;
 			if (cat)
