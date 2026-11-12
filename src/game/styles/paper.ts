@@ -1,4 +1,4 @@
-import {CLOTH, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
+import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
 import {geo, type Geo, shade, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
@@ -1097,12 +1097,51 @@ const CROWN: Record<number, number> =
 // How much bigger a perched hat is drawn than it is cut.
 const PERCH = 1.25;
 
+// How far apart, summed over red, green and blue, a hat must be from the hair or bare head under it to stand out alone.
+const NEAR = 100;
+const rgb = (hex: string): number[] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+function distance(a: string, b: string): number
+{
+	const [x, y] = [rgb(a), rgb(b)];
+	return x.reduce((s, v, i) => s + Math.abs(v - y[i]!), 0);
+}
+// The paper of each hat that is always the same color, and the paper it is cut from instead on a crown close to it:
+// the top hat, the crown, the fedora, the cat ears and the devil horns.
+const FIXED: Record<number, readonly [string, string]> =
+{
+	3: ["#2d2d2d", "#a3a3ae"],
+	4: ["#f5c542", "#b5800f"],
+	8: ["#9a7650", "#4f3523"],
+	10: ["#2b2b2b", "#c4c4cc"],
+	11: ["#d92b2b", "#6e0b1c"],
+};
+// The hats cut from the hat color keep it whatever they are worn on, so on a crown close to it they get a rim instead.
+const COLORED = new Set([1, 2, 5, 6, 7, 9]);
+// The stand-ins that are rimmed as well. A rim on the others would make them stand out more on that one crown than
+// anywhere else.
+const RIMMED = new Set([3, 10, 11]);
+// A hat on a crown of nearly its color is first glued onto a slightly bigger piece of paper that contrasts with the
+// crown, so its edge shows as a rim all round.
+const backed = (s: string, rim: string): string =>
+	s.replaceAll(
+		/<path fill="[^"]*"/g,
+		`<path fill="${rim}" stroke="${rim}" stroke-width="3.4" stroke-linejoin="round"`,
+	) + s;
+
 function hat(c: Ctx): string
 {
 	const {w, t, ey, L, R} = c.g;
 	const afro = c.f.hairStyle === 4;
 	const lift = LIFT[c.f.hairStyle] ?? 0;
 	const col = HATC[c.f.hatColor]!;
+	const crown = crownColor(c.f);
+	const rimColor = distance(WHITE, crown) > distance(DARK, crown) ? WHITE : DARK;
+	const stock = FIXED[c.f.hat];
+	const swapped = stock !== undefined && distance(stock[0], crown) < NEAR;
+	const fixed = stock?.[swapped ? 1 : 0] ?? "";
+	const rimmed = (swapped && RIMMED.has(c.f.hat)) || (COLORED.has(c.f.hat) && distance(col, crown) < NEAR);
+	// Each sheet of the hat, backed with the rim when it needs one.
+	const sheet = (s: string): string => layer(rimmed ? backed(s, rimColor) : s);
 	// The rim of a hat perched on the crown, and half its width.
 	const hy = t + (CROWN[c.f.hairStyle] ?? 0);
 	const hw = w * (afro ? 0.7 : 0.6);
@@ -1122,7 +1161,7 @@ function hat(c: Ctx): string
 		case 1:
 			// A baseball cap: a round crown with a seam and button, and a long stiff bill out to one side.
 			return perch(
-				layer(
+				sheet(
 					cut(
 						shade(col, -0.25),
 						d(
@@ -1130,7 +1169,7 @@ function hat(c: Ctx): string
 						),
 					),
 				) +
-					layer(
+					sheet(
 						cut(col, d(dome(hw, 24))) +
 							cut(shade(col, -0.22), d(pts`98.8,${hy - 24} 101.2,${hy - 24} 101.2,${hy} 98.8,${hy}`)) +
 							cut(WHITE, d(ngon(100, hy - 26, 4, 3.5, 6))),
@@ -1142,20 +1181,20 @@ function hat(c: Ctx): string
 			const cups = (x: number, s: number): string =>
 				cut(shade(col, -0.45), d(ngon(x + s * 6, ey + 12, 7, 15, 8))) +
 				cut(col, d(ngon(x - s * 2, ey + 12, 11, 17, 8)));
-			return layer(cut(col, d(strip(over(c, ey - 2, 12, 14), 6)))) + layer(cups(L - 4, 1) + cups(R + 4, -1));
+			return sheet(cut(col, d(strip(over(c, ey - 2, 12, 14), 6)))) + sheet(cups(L - 4, 1) + cups(R + 4, -1));
 		}
 		case 3:
 			// A top hat: a tall dark crown with a ribbon, on a narrow brim.
 			return perch(
-				layer(
+				sheet(
 					cut(
-						"#2d2d2d",
+						fixed,
 						d(
 							pts`${100 - hw * 0.72},${hy - 30} ${100 + hw * 0.72},${hy - 31} ${100 + hw * 0.66},${hy} ${100 - hw * 0.66},${hy}`,
 						),
 					),
 				) +
-					layer(
+					sheet(
 						cut(
 							col,
 							d(
@@ -1163,9 +1202,9 @@ function hat(c: Ctx): string
 							),
 						),
 					) +
-					layer(
+					sheet(
 						cut(
-							"#2d2d2d",
+							fixed,
 							d(
 								pts`${100 - hw - 6},${hy - 3} ${100 + hw + 6},${hy - 3.5} ${100 + hw + 4},${hy + 3} ${100 - hw - 4},${hy + 3}`,
 							),
@@ -1174,9 +1213,9 @@ function hat(c: Ctx): string
 			);
 		case 4:
 			return perch(
-				layer(
+				sheet(
 					cut(
-						"#f5c542",
+						fixed,
 						d(
 							sym(
 								pts`100,${hy - 24} ${100 - hw * 0.4},${hy - 10} ${100 - hw * 0.85},${hy - 22} ${100 - hw * 0.8},${hy + 2}`,
@@ -1184,7 +1223,7 @@ function hat(c: Ctx): string
 						),
 					),
 				) +
-					layer(
+					sheet(
 						cut("#e74c3c", d(ngon(100, hy - 5, 4, 4.8, 4))) +
 							cut("#3498db", both(ngon(100 - hw * 0.45, hy - 3, 3.4, 3.4, 4, Math.PI / 4))),
 					),
@@ -1194,15 +1233,15 @@ function hat(c: Ctx): string
 			const bx = 100 - w * 0.5,
 				by = t + 4 - (afro ? 20 : lift);
 			return (
-				layer(band(col)) +
-				layer(
+				sheet(band(col)) +
+				sheet(
 					cut(
 						col,
 						d(pts`${bx},${by} ${bx - 20},${by - 14} ${bx - 21},${by + 14}`) +
 							d(pts`${bx},${by} ${bx + 21},${by - 14} ${bx + 20},${by + 14}`),
 					),
 				) +
-				layer(cut(shade(col, -0.2), d(ngon(bx, by, 6.5, 6.5, 6))))
+				sheet(cut(shade(col, -0.2), d(ngon(bx, by, 6.5, 6.5, 6))))
 			);
 		}
 		case 6:
@@ -1219,8 +1258,8 @@ function hat(c: Ctx): string
 			] as const)
 				dots += d(ngon(x, py - y, 3.8, 3.8, 4, x));
 			return (
-				layer(cut(col, d(pts`74,${py} 106,${py - 66} 130,${py + 2}`))) +
-				layer(cut(WHITE, dots + d(ngon(106, py - 68, 7.5, 7.5, 7))))
+				sheet(cut(col, d(pts`74,${py} 106,${py - 66} 130,${py + 2}`))) +
+				sheet(cut(WHITE, dots + d(ngon(106, py - 68, 7.5, 7.5, 7))))
 			);
 		}
 		case 7:
@@ -1233,12 +1272,12 @@ function hat(c: Ctx): string
 					pts`${100 + bw * x - 4},${hy} ${100 + bw * x * 0.7 - 2.5},${hy - 18} ${100 + bw * x * 0.7 + 2.5},${hy - 18} ${100 + bw * x + 4},${hy}`,
 				);
 			return perch(
-				layer(cut(col, d(dome(bw, 20)))) +
-					layer(
+				sheet(cut(col, d(dome(bw, 20)))) +
+					sheet(
 						cut("#f1c40f", stripes + d(pts`96,${hy} 97,${hy - 20} 103,${hy - 20} 104,${hy}`)) +
 							cut("#3b3b45", d(pts`98.6,${hy - 20} 101.4,${hy - 20} 101.4,${hy - 28} 98.6,${hy - 28}`)),
 					) +
-					layer(
+					sheet(
 						cut("#f1c40f", both(pts`100,${hy - 29} 90,${hy - 33} 79,${hy - 29.5} 90,${hy - 25.5}`)) +
 							cut(col, d(ngon(100, hy - 29, 3.2, 3.2, 6))),
 					),
@@ -1247,9 +1286,9 @@ function hat(c: Ctx): string
 		case 8:
 			// A fedora: a pinched crown with a ribbon on a wide brim that turns up at the ends.
 			return perch(
-				layer(
+				sheet(
 					cut(
-						"#9a7650",
+						fixed,
 						d(
 							sym(
 								pts`100,${hy - 4} ${100 - hw - 8},${hy - 4} ${100 - hw - 15},${hy - 9} ${100 - hw - 9},${hy + 2} ${100 - hw * 0.6},${hy + 4} 100,${hy + 4}`,
@@ -1257,9 +1296,9 @@ function hat(c: Ctx): string
 						),
 					),
 				) +
-					layer(
+					sheet(
 						cut(
-							"#a9845c",
+							shade(fixed, 0.12),
 							d(
 								sym(
 									pts`100,${hy - 19} ${100 - hw * 0.3},${hy - 24} ${100 - hw * 0.66},${hy - 22} ${100 - hw * 0.76},${hy - 2} 100,${hy - 2}`,
@@ -1280,8 +1319,8 @@ function hat(c: Ctx): string
 			const bx = 100 + hw * 0.2;
 			const tip = (p: Pt[]): string => d(turn(p, -9, bx, hy));
 			return perch(
-				layer(cut("#3b3b45", d(strip(pts`${bx - 2},${hy - 13} ${bx - 4},${hy - 21}`, 3.4)))) +
-					layer(
+				sheet(cut("#3b3b45", d(strip(pts`${bx - 2},${hy - 13} ${bx - 4},${hy - 21}`, 3.4)))) +
+					sheet(
 						cut(
 							col,
 							tip(
@@ -1303,20 +1342,27 @@ function hat(c: Ctx): string
 		x = 100 - w * 0.55;
 	if (c.f.hat === 10)
 		return (
-			layer(
-				cut("#2b2b2b", both(pts`${x - 21},${by + 6} ${x - 6},${by - 44} ${x + 21},${by + 6}`)) +
+			sheet(
+				cut(fixed, both(pts`${x - 21},${by + 6} ${x - 6},${by - 44} ${x + 21},${by + 6}`)) +
 					cut("#ffb3c7", both(pts`${x - 11},${by + 1} ${x - 5},${by - 28} ${x + 11},${by + 1}`)),
-			) + layer(band("#2b2b2b"))
+			) + sheet(band(fixed))
 		);
+	// Devil horns: thick at the root, curving out to a sharp point, with a darker strip along the inner curve.
 	return (
-		layer(
+		sheet(
 			cut(
-				"#d92b2b",
+				fixed,
 				both(
-					pts`${x + 10},${by + 5} ${x + 6},${by - 12} ${x - 6},${by - 28} ${x - 20},${by - 38} ${x - 18},${by - 20} ${x - 10},${by + 5}`,
+					pts`${x + 14},${by + 5} ${x + 11},${by - 10} ${x + 3},${by - 26} ${x - 10},${by - 39} ${x - 25},${by - 48} ${x - 21},${by - 34} ${x - 17},${by - 18} ${x - 14},${by + 5}`,
 				),
-			),
-		) + layer(band("#d92b2b"))
+			) +
+				cut(
+					shade(fixed, -0.35),
+					both(
+						pts`${x + 14},${by + 5} ${x + 11},${by - 10} ${x + 3},${by - 26} ${x - 10},${by - 39} ${x - 25},${by - 48} ${x - 6},${by - 30} ${x + 3},${by - 14} ${x + 6},${by + 5}`,
+					),
+				),
+		) + sheet(band(fixed))
 	);
 }
 
