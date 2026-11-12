@@ -291,6 +291,27 @@ export function makeDecoy(t: Face, n: number, pool: readonly FeatureKey[], used:
 // How many tries to find a lineup that keeps every face apart, adding a feature to the mix every so often.
 const LINEUP_TRIES = 400;
 const TRIES_PER_FEATURE = 40;
+// How many random patterns one try draws before it gives up on fitting them all at least d bits apart.
+const PATTERN_DRAWS = 64;
+
+const bitsSet = (x: number): number =>
+{
+	let n = 0;
+	for (let y = x; y; y &= y - 1) n++;
+	return n;
+};
+
+// size random patterns of m bits, every two at least d bits apart, or none when the draws keep landing too close.
+function spread(size: number, m: number, d: number): number[] | undefined
+{
+	const patterns: number[] = [];
+	for (let draws = 0; draws < PATTERN_DRAWS && patterns.length < size; draws++)
+	{
+		const p = rnd(2 ** m);
+		if (patterns.every((q) => bitsSet(p ^ q) >= d)) patterns.push(p);
+	}
+	return patterns.length === size ? patterns : undefined;
+}
 
 // The wrong faces for a lineup of size faces around t. Each face takes either t's value or one other value for a few
 // features, in a random pattern that keeps every two faces at least d features apart, and t is a random one of the
@@ -300,16 +321,21 @@ export function makeLineup(t: Face, size: number, d: number, pool: readonly Feat
 	if (size < 2) return [];
 	const base = Math.max(d, Math.ceil(Math.log2(size)));
 	const keys = [...new Set(pool)].filter((k) => visible(t, k) && contestable(t, k));
+	// Patterns too short to keep size faces d apart cannot fit however often they are drawn, so a failed draw lengthens them.
+	let longer = 0;
 	for (let tries = 0; tries < LINEUP_TRIES; tries++)
 	{
-		const m = Math.min(keys.length, base + Math.floor(tries / TRIES_PER_FEATURE));
+		const m = Math.min(keys.length, base + longer + Math.floor(tries / TRIES_PER_FEATURE));
+		const patterns = spread(size, m, d);
+		if (!patterns)
+		{
+			longer++;
+			continue;
+		}
 		const contested = shuffle([...keys]).slice(0, m);
 		const other = contested.map((k) => otherValue(t, k));
-		if (2 ** m < size) continue;
-		const patterns = new Set<number>();
-		while (patterns.size < size) patterns.add(rnd(2 ** m));
 		// t's own pattern: every face that matches it on a feature has t's value there.
-		const mine = pick([...patterns]);
+		const mine = pick(patterns);
 		const wrong: Face[] = [];
 		for (const p of patterns)
 		{
