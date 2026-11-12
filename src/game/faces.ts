@@ -159,9 +159,23 @@ function visible(f: Face, k: FeatureKey): boolean
 	return true;
 }
 
+// How far apart, summed over red, green and blue, a hat's color must be from the hair or bare head under it.
+const MIN_HAT_CONTRAST = 100;
+const rgb = (hex: string): number[] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const distance = (a: string, b: string): number =>
+{
+	const [x, y] = [rgb(a), rgb(b)];
+	return x.reduce((s, v, i) => s + Math.abs(v - y[i]!), 0);
+};
+// The color of the head's crown: dyed or natural hair, or skin when bald.
+const crownColor = (f: Face): string =>
+	f.hairStyle === 0 ? SKIN[f.skin]! : f.hairDye ? DYEC[f.hairDye]! : HAIRC[f.hairColor]!;
+
 export function valid(f: Face): boolean
 {
-	return !(f.hat && f.hairStyle === 6);
+	if (f.hat && f.hairStyle === 6) return false;
+	// A colored hat on hair of its own color melts into it, so a hat whose color is asked about never matches the hair.
+	return !(visible(f, "hatColor") && distance(HATC[f.hatColor]!, crownColor(f)) < MIN_HAT_CONTRAST);
 }
 
 function randFeat(k: FeatureKey): number
