@@ -66,6 +66,10 @@ icons: install
 og-image: build
     node scripts/og-image.ts
 
+# scripts/parallel.sh "vp run --cache test:run" "pnpm run test:visibility" "pnpm exec playwright test"
+test-suites: install build
+    scripts/parallel.sh "vp run --cache test:run" "pnpm run test:visibility" "pnpm exec playwright test"
+
 # Run the Playwright browser tests against a fresh build
 test-browser *args: build
     pnpm exec playwright test {{ args }}
@@ -91,7 +95,7 @@ pre-commit: install
 # Run all pre-commit checks
 [arg("quick", long, value="true", help="Skip tests")]
 verify quick="": check build fallow pre-commit
-    {{ if quick != "true" { "just test && just test-visibility && just test-browser" } else { "true" } }}
+    {{ if quick != "true" { "just test-suites" } else { "true" } }}
     @echo "All pre-commit checks passed!"
 
 # Deprecated alias for `verify`
