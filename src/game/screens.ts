@@ -1,7 +1,19 @@
 import {levelPoints, type ModeId, type ScoreEntry} from "../shared/scores.ts";
 import {BUILD_ALL, BUILD_EASY, buildCount, buildMem, buildOpts, cfg, PLAIN, stage} from "./difficulty.ts";
 import {cropBox, FACE_ASPECT, faceSVG, featureBox} from "./draw.ts";
-import {diffKeys, type Face, FEATURES, type FeatureKey, HATC, KEYS, makeDecoy, randomFace, visKey} from "./faces.ts";
+import
+{
+	diffKeys,
+	type Face,
+	FEATURES,
+	type FeatureKey,
+	HATC,
+	KEYS,
+	makeDecoy,
+	makeLineup,
+	randomFace,
+	visKey,
+} from "./faces.ts";
 import {MODES, modeOf} from "./modes.ts";
 import {chooseStyle} from "./settings.ts";
 import {SFX} from "./sound.ts";
@@ -483,9 +495,9 @@ function classicRound(): void
 					f: face,
 					ok: true,
 				},
-				...range(c.choices - 1).map(() => (
+				...makeLineup(face, c.choices, c.changes, c.pool, used).map((f) => (
 				{
-					f: makeDecoy(face, c.changes, c.pool, used),
+					f,
 					ok: false,
 				})),
 			]);
@@ -884,15 +896,15 @@ function lineupRound(): void
 			targets.push(f);
 		}
 	}
-	const decoys = range(total - nT).map((i) =>
-	{
-		const src = targets[i % nT]!;
-		return {
-			f: makeDecoy(src, c.changes, c.pool, used),
+	// Each target hides among its own wrong faces, shared out in turn.
+	const decoys = targets.flatMap((src, i) =>
+		makeLineup(src, 1 + Math.ceil((total - nT - i) / nT), c.changes, c.pool, used).map((f) => (
+		{
+			f,
 			ok: false,
 			src,
-		};
-	});
+		})),
+	);
 	const opts: Option[] = shuffle([
 		...targets.map((f) => (
 		{

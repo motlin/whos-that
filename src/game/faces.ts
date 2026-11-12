@@ -1,4 +1,4 @@
-import {range, rnd, shuffle} from "./util.ts";
+import {pick, range, rnd, shuffle} from "./util.ts";
 
 export const SKIN = ["#ffe4ca", "#eab380", "#bd7c46", "#7e4c29", "#452816"];
 // Natural colors, for the hair, eyebrows and facial hair.
@@ -178,21 +178,22 @@ export function valid(f: Face): boolean
 	return !(visible(f, "hatColor") && distance(HATC[f.hatColor]!, crownColor(f)) < MIN_HAT_CONTRAST);
 }
 
+// An index drawn in proportion to its weight.
+function weighted(w: readonly number[]): number
+{
+	let r = Math.random() * w.reduce((a, b) => a + b);
+	for (const [i, x] of w.entries())
+	{
+		r -= x;
+		if (r < 0 && x > 0) return i;
+	}
+	return w.findLastIndex((x) => x > 0);
+}
+
 function randFeat(k: FeatureKey): number
 {
 	const F = FEATURES[k];
-	if (F.w)
-	{
-		const t = F.w.reduce((a, b) => a + b);
-		let r = Math.random() * t;
-		for (let i = 0; i < F.n; i++)
-		{
-			r -= F.w[i]!;
-			if (r < 0) return i;
-		}
-		return 0;
-	}
-	return rnd(F.n);
+	return F.w ? weighted(F.w) : rnd(F.n);
 }
 
 export function randomFace(): Face
@@ -249,4 +250,62 @@ export function makeDecoy(t: Face, n: number, pool: readonly FeatureKey[], used:
 	while (used.has(visKey(f)));
 	used.add(visKey(f));
 	return f;
+}
+
+// How many tries to find a lineup that keeps every face apart, adding a feature to the mix every so often.
+const LINEUP_TRIES = 400;
+const TRIES_PER_FEATURE = 40;
+
+// The wrong faces for a lineup of size faces around t. Each face takes either t's value or one other value for a few
+// features, in a random pattern that keeps every two faces at least d features apart, and t is a random one of the
+// patterns, so no face is more typical of the lineup than the right one.
+export function makeLineup(t: Face, size: number, d: number, pool: readonly FeatureKey[], used: Set<string>): Face[]
+{
+	if (size < 2) return [];
+	const base = Math.max(d, Math.ceil(Math.log2(size)));
+	const keys = [...new Set(pool)].filter((k) => visible(t, k));
+	for (let tries = 0; tries < LINEUP_TRIES; tries++)
+	{
+		const m = Math.min(keys.length, base + Math.floor(tries / TRIES_PER_FEATURE));
+		const contested = shuffle([...keys]).slice(0, m);
+		const other = contested.map((k) => otherValue(t, k));
+		if (2 ** m < size) continue;
+		const patterns = new Set<number>();
+		while (patterns.size < size) patterns.add(rnd(2 ** m));
+		// t's own pattern: every face that matches it on a feature has t's value there.
+		const mine = pick([...patterns]);
+		const wrong: Face[] = [];
+		for (const p of patterns)
+		{
+			if (p === mine) continue;
+			const f =
+			{
+				...t,
+			};
+			contested.forEach((k, j) =>
+			{
+				if (((p ^ mine) >> j) & 1) f[k] = other[j]!;
+			});
+			wrong.push(f);
+		}
+		const faces = [t, ...wrong];
+		const seen = wrong.map(visKey);
+		if (
+			!wrong.every(valid) ||
+			new Set([visKey(t), ...seen]).size < size ||
+			seen.some((k) => used.has(k)) ||
+			faces.some((a, i) => faces.slice(i + 1).some((b) => diffKeys(a, b).length < d))
+		)
+			continue;
+		for (const k of seen) used.add(k);
+		return wrong;
+	}
+	return range(size - 1).map(() => makeDecoy(t, d, pool, used));
+}
+
+// A value of k other than t's, as likely as it would be on a new face.
+function otherValue(t: Face, k: FeatureKey): number
+{
+	const w = FEATURES[k].w ?? Array<number>(FEATURES[k].n).fill(1);
+	return weighted(w.map((x, v) => (v === t[k] ? 0 : x)));
 }
