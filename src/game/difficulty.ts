@@ -1,41 +1,19 @@
 import type {Face, FeatureKey} from "./faces.ts";
 
-const POOLS: FeatureKey[][] = [
+// The features each stage adds to the ones before it, big and bold first, small and fine last.
+const ADDED: FeatureKey[][] = [
 	["hat", "glasses", "hairStyle", "hairColor", "hairDye", "facialHair", "shirt", "neckwear"],
-	[
-		"hat",
-		"glasses",
-		"hairStyle",
-		"hairColor",
-		"hairDye",
-		"facialHair",
-		"shirt",
-		"shirtStyle",
-		"neckwear",
-		// Noses, mouths, ears and cheeks are small or fine lines, so they wait for the next stage.
-		"eyes",
-		"eyebrows",
-		"skin",
-	],
-	[
-		"mouth",
-		"nose",
-		"eyes",
-		"ears",
-		"cheeks",
-		"eyebrows",
-		"faceShape",
-		"skin",
-		"hatColor",
-		"neckwear",
-		"shirtStyle",
-		"glasses",
-		"hairStyle",
-	],
-	["mouth", "nose", "eyes", "ears", "cheeks", "eyebrows", "faceShape", "hatColor", "eyeColor", "earrings"],
-	["eyeColor", "earrings", "eyebrows", "nose", "ears", "cheeks", "hatColor", "mouth"],
+	["shirtStyle", "eyes", "eyebrows", "skin"],
+	// Noses, mouths, ears and cheeks are small or fine lines, so they wait for the next stage.
+	["mouth", "nose", "ears", "cheeks", "faceShape", "hatColor"],
+	["eyeColor", "earrings"],
 ];
-export const stage = (L: number): number => (L <= 3 ? 0 : L <= 6 ? 1 : L <= 10 ? 2 : L <= 14 ? 3 : 4);
+const POOLS = ADDED.map((_, i) => ADDED.slice(0, i + 1).flat());
+export const stage = (L: number): number => (L <= 4 ? 0 : L <= 6 ? 1 : L <= 8 ? 2 : 3);
+// Every feature is in play and there are the most choices from this level, and only then does the time to memorize
+// shrink, a second every few levels.
+const FULL = 12;
+const MEM_STEP = 3;
 
 export interface LevelConfig
 {
@@ -49,9 +27,9 @@ export interface LevelConfig
 export function cfg(L: number): LevelConfig
 {
 	return {
-		mem: Math.max(5, 10 - Math.floor((L - 1) / 3)),
-		choices: Math.min(8, 3 + Math.floor((L - 1) / 3)),
-		changes: L <= 3 ? 3 : L <= 7 ? 2 : 1,
+		mem: L <= FULL ? 10 : Math.max(5, 9 - Math.floor((L - FULL - 1) / MEM_STEP)),
+		choices: Math.min(8, 3 + Math.floor((L - 1) / 2)),
+		changes: L <= 4 ? 3 : L <= 8 ? 2 : 1,
 		pool: POOLS[stage(L)]!,
 		pick: Math.max(6, 20 - (L - 1)),
 	};
