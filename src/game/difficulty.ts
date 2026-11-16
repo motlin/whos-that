@@ -11,14 +11,17 @@ const ADDED: FeatureKey[][] = [
 const POOLS = ADDED.map((_, i) => ADDED.slice(0, i + 1).flat());
 export const stage = (L: number): number => (L <= 4 ? 0 : L <= 6 ? 1 : L <= 8 ? 2 : 3);
 // Every feature is in play and there are the most choices from this level, and only then does the time to memorize
-// shrink, a second every few levels.
+// shrink, a second every few levels. The time to answer shrinks from the start, but more slowly.
 const FULL = 12;
-const MEM_STEP = 3;
-// The most time to memorize and to answer, which shrink a second at a time down to the hardest levels' floor.
+const MEM_STEP = 6;
+const PICK_STEP = 3;
+// The most time to memorize and to answer, and the least the hardest levels come down to.
 const MEM = 12;
-const MIN_MEM = 5;
+const MIN_MEM = 7;
 const PICK = 22;
-const MIN_PICK = 6;
+const MIN_PICK = 10;
+// Six faces is the most a phone shows at a size where small features still read.
+const MAX_CHOICES = 6;
 
 export interface LevelConfig
 {
@@ -32,11 +35,11 @@ export interface LevelConfig
 export function cfg(L: number): LevelConfig
 {
 	return {
-		mem: L <= FULL ? MEM : Math.max(MIN_MEM, MEM - 1 - Math.floor((L - FULL - 1) / MEM_STEP)),
-		choices: Math.min(8, 3 + Math.floor((L - 1) / 2)),
+		mem: Math.max(MIN_MEM, MEM - Math.floor(Math.max(0, L - FULL) / MEM_STEP)),
+		choices: Math.min(MAX_CHOICES, 3 + Math.floor((L - 1) / 2)),
 		changes: L <= 4 ? 3 : L <= 8 ? 2 : 1,
 		pool: POOLS[stage(L)]!,
-		pick: Math.max(MIN_PICK, PICK - (L - 1)),
+		pick: Math.max(MIN_PICK, PICK - Math.floor((L - 1) / PICK_STEP)),
 	};
 }
 
