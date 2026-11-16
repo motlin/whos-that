@@ -27,7 +27,7 @@ const GOLD_EDGE = [LINE, LINE, "#1f100a", PALE_INK, PALE_INK];
 const NEAR = 100;
 const INK_NEAR = 120;
 const darkSkin = (f: Face): boolean => f.skin >= 3;
-const DIMPLES = 7;
+const DIMPLES = 6;
 
 // Builds markup with every number rounded to one decimal.
 function p(parts: TemplateStringsArray, ...args: (number | string)[]): string
@@ -910,17 +910,6 @@ function cheeks(f: Face, g: Geo, sk: Skin): string
 				`<path d="${star(rx, cy, 16, 7.2)}" fill="${f.skin < 3 ? "#ffdd00" : "#ffd23f"}" stroke-width="2.4"/>` +
 				line(p`M${rx - 4.5} ${cy - 1.5} l3.3 -6.5`, "#fffbe0", 2.2)
 			);
-		case 6:
-		{
-			// A beauty mark: one mole on a cheek, dark on light skin and pale on dark skin, on a faint patch of its tone.
-			const mx = lx - 1,
-				my = cy + 2;
-			return (
-				p`<ellipse cx="${mx}" cy="${my}" rx="12" ry="10.5" fill="${darkSkin(f) ? shade(sk.base, 0.07) : shade(sk.base, -0.07)}" stroke="none"/>` +
-				p`<circle cx="${mx}" cy="${my}" r="6" fill="${darkSkin(f) ? sk.line : "#2e1a10"}" stroke="none"/>` +
-				(darkSkin(f) ? "" : p`<circle cx="${mx - 2}" cy="${my - 2.2}" r="1.5" fill="#8a6650" stroke="none"/>`)
-			);
-		}
 		case DIMPLES:
 		{
 			// Dimples: a curved crease just past each corner of the mouth, with the hollow shaded on its mouth side and

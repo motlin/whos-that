@@ -388,8 +388,7 @@ const PLASTER = [
 ];
 const STAR = ["#ffc20e", "#ffd60a", "#ffe866", "#ffd23f", "#ffd23f"];
 const GOLD = ["#e6b422", "#b9860a", "#ffe27a", "#f2c12e", "#f2c12e"];
-const MOLE = "#2b1a12";
-const DIMPLES = 7;
+const DIMPLES = 6;
 function cheeks(f: Face, g: Geo, sk: string): string
 {
 	const {w, ny} = g;
@@ -444,12 +443,6 @@ function cheeks(f: Face, g: Geo, sk: string): string
 				(darkSkin(f) ? `<path d="${d}" fill="none" stroke="${PALE_RIM}" stroke-width="6.4"/>` : "") +
 				`<path d="${d}" fill="${STAR[f.skin]}" stroke="${INK}" stroke-width="2.6"/>`
 			);
-		}
-		case 6:
-		{
-			// A beauty mark: one bold mole high on one cheek, dark on every skin but the darkest, where it is pale.
-			const mole = f.skin === 4 ? FACE_LINE[4]! : MOLE;
-			return `<circle cx="${rx + 3}" cy="${cy + 1}" r="11" fill="${mole}" stroke="none"/><circle cx="${rx}" cy="${cy - 2.5}" r="2.2" fill="#fff" stroke="none" opacity=".45"/>`;
 		}
 		case DIMPLES:
 		{

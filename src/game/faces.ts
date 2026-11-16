@@ -136,10 +136,10 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	cheeks:
 	{
-		n: 8,
+		n: 7,
 		label: "cheeks",
-		// Blush, freckles, face paint, bandage, star, beauty mark and dimples.
-		w: [4, 1.5, 1.5, 1, 1, 1, 1, 1],
+		// Blush, freckles, face paint, bandage, star and dimples.
+		w: [4, 1.5, 1.5, 1, 1, 1, 1],
 	},
 	earrings:
 	{
@@ -227,7 +227,7 @@ const distance = (a: string, b: string): number =>
 export const crownColor = (f: Face): string =>
 	f.hairStyle === 0 ? SKIN[f.skin]! : f.hairDye ? DYEC[f.hairDye]! : HAIRC[f.hairColor]!;
 
-const DIMPLES = 7;
+const DIMPLES = 6;
 const BEARDS_OVER_DIMPLES = new Set([2, 3, 8]);
 
 export function valid(f: Face): boolean

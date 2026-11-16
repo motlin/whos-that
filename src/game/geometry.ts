@@ -5,7 +5,7 @@ import type {Face, FeatureKey} from "./faces.ts";
 export const INK = "#2a2522";
 // The hat value that is a pair of headphones rather than something worn on the crown.
 export const HEADPHONES = 2;
-const DIMPLES = 7;
+const DIMPLES = 6;
 // The hats worn on a band over the hair: the bow, cat ears and devil horns.
 const HEADBANDS = new Set([5, 10, 11]);
 const SHAPES = [

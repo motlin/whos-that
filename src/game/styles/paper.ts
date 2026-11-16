@@ -22,8 +22,6 @@ const PLASTER = ["#dc9c6a", "#fffaf0", "#fdfaf2", "#fdfaf2", "#fdfaf2"];
 const PAD = ["#b06f44", "#b9773f", "#e9bd8e", "#dfa66c", "#dfa66c"];
 // The star is a deeper gold on the two lightest skins, the second of which is close to yellow itself.
 const STAR = ["#f2b40a", "#d98200", "#ffdd44", "#ffd23f", "#ffd23f"];
-// A beauty mark is darker than the skin, except on the darkest, where nothing darker would show.
-const MOLE = ["#5a3320", "#4a2814", "#3a1c0c", "#1e0f07", "#b07a4e"];
 // How the outline bulges on each face shape: the exponents of x and y above the widest point, then below it. The heart
 // narrows to a point below.
 const BULGE = [
@@ -905,9 +903,6 @@ function cheeks(c: Ctx): string
 		case 5:
 			return layer(cut(STAR[c.f.skin]!, star(200 - x, y, 18, 8)));
 		case 6:
-			// A beauty mark: one dark spot on one cheek.
-			return layer(cut(MOLE[c.f.skin]!, d(ngon(x + 3, y + 2, 11.2, 11.2, 9, 0.3))));
-		case 7:
 		{
 			// Dimples: a curved crease just past each corner of the mouth.
 			const dy = c.g.my + 4;

@@ -26,7 +26,6 @@ const BANDAGE = [
 ] as const;
 // A star sticker: orange gold on the light skins, yellow on the rest.
 const STAR = ["#f29a00", "#c96a00", "#ffe14d", "#ffd23f", "#ffd23f"];
-const MOLE = "#3b2416";
 const darkSkin = (f: Face): boolean => f.skin >= 3;
 
 type Value = string | number;
@@ -742,18 +741,6 @@ function cheeks(f: Face, g: Geo, sk: string): string
 		case 5:
 			return small(slab(star(rx, cy, 13, 6), STAR[f.skin]!, 2.5));
 		case 6:
-		{
-			// A beauty mark: one dark mole pressed into a shallow dent on one cheek. On the darkest skin, where dark on
-			// dark vanishes, it sits on a bed of the crease color like the hair does.
-			const x = rx - 3,
-				y = cy + 5,
-				dark = darkSkin(f);
-			return (
-				[0, 1, 2].map((i) => ball(x, y, 12.5 - 2.4 * i, dent(sk, 0.06 + 0.03 * i))).join("") +
-				small((f.skin === 4 ? ball(x, y, 7.5, CREASE[4]!) : "") + ball(x, y, 5.4, dark ? "#0c0604" : MOLE))
-			);
-		}
-		case 7:
 		{
 			// Dimples: a dent pressed in just past each corner of the mouth, with a crease curving round its outer side.
 			const y = g.my + 4;

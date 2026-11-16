@@ -1065,24 +1065,6 @@ function cheeks(a: Art): void
 			break;
 		}
 		case 6:
-		{
-			// A beauty mark: a round dark mole with a glint, in a soft ring of shade. On the darkest skin no mole is dark
-			// enough to show, so there the ring is the light face line.
-			const mole = f.skin >= 3 ? "#1c0e06" : "#3d2014";
-			stamp(
-				px,
-				MID + dx - 3,
-				top - 2,
-				["..SS..", ".SMMS.", "SMHMMS", "SMMMMS", ".SMMS.", "..SS.."],
-				{
-					M: mole,
-					H: mix(mole, sk, 0.35),
-					S: f.skin === 4 ? a.line : SHADOW[f.skin]!,
-				},
-			);
-			break;
-		}
-		case 7:
 			// Dimples: a crease that brackets each corner of the mouth, with a hollow of soft shade on the mouth's side.
 			twin(
 				px,
