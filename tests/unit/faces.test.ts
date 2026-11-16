@@ -36,13 +36,16 @@ it("hides the real face from anyone who counts which values are most common", ()
 });
 
 const FACES = 40000;
+// The two darkest skins, and the pig nose.
+const DARK_SKIN = 3;
+const PIG_NOSE = 6;
 const within = (x: number, lo: number, hi: number): boolean => x > lo && x < hi;
 const share = (faces: Face[], test: (f: Face) => boolean): number => faces.filter(test).length / faces.length;
 // Haircuts mostly worn by men or by women: bald, spiky, mohawk, balding and flat-top; long, ponytail, buns and pigtails.
 const MENS_CUTS = new Set([0, 1, 6, 9, 12]);
 const WOMENS_CUTS = new Set([3, 5, 7, 11]);
 
-it("draws violet eyes and red hair rarely", () =>
+it("draws violet eyes, red hair, pig noses and big ears rarely, and red hair on dark skin more rarely still", () =>
 {
 	const faces = Array.from(
 		{
@@ -50,20 +53,36 @@ it("draws violet eyes and red hair rarely", () =>
 		},
 		() => randomFace(),
 	);
+	const dark = faces.filter((f) => f.skin >= DARK_SKIN);
 	const rare =
 	{
 		violetEyes: share(faces, (f) => f.eyeColor === 4),
 		redHair: share(faces, (f) => f.hairColor === 3),
+		redHairOnDarkSkin: share(dark, (f) => f.hairColor === 3),
+		pigNose: share(faces, (f) => f.nose === PIG_NOSE),
+		smallEars: share(faces, (f) => f.ears === 0),
+		pointedEars: share(faces, (f) => f.ears === 1),
+		wideEars: share(faces, (f) => f.ears === 2),
 	};
 	expect(
 		{
-			violetEyes: rare.violetEyes > 0.01 && rare.violetEyes < 0.05,
-			redHair: rare.redHair > 0.03 && rare.redHair < 0.08,
+			violetEyes: within(rare.violetEyes, 0.01, 0.05),
+			redHair: within(rare.redHair, 0.02, 0.08),
+			redHairOnDarkSkin: within(rare.redHairOnDarkSkin, 0.002, 0.02),
+			pigNose: within(rare.pigNose, 0.01, 0.06),
+			smallEars: within(rare.smallEars, 0.65, 0.75),
+			pointedEars: within(rare.pointedEars, 0.12, 0.18),
+			wideEars: within(rare.wideEars, 0.12, 0.18),
 		},
 	).toStrictEqual(
 		{
 			violetEyes: true,
 			redHair: true,
+			redHairOnDarkSkin: true,
+			pigNose: true,
+			smallEars: true,
+			pointedEars: true,
+			wideEars: true,
 		},
 	);
 });

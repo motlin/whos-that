@@ -96,6 +96,8 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	{
 		n: 7,
 		label: "nose",
+		// The pig nose is rare.
+		w: [1, 1, 1, 1, 1, 1, 0.25],
 	},
 	mouth:
 	{
@@ -106,6 +108,8 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	{
 		n: 3,
 		label: "ears",
+		// Small ears are common; pointed and wide ears are rare.
+		w: [70, 15, 15],
 	},
 	facialHair:
 	{
@@ -179,14 +183,26 @@ const GENDERED: Partial<Record<FeatureKey, readonly [readonly number[], readonly
 		[4, 0.25, 0.25, 0.25, 0.25],
 	],
 };
-const weights = (k: FeatureKey, gender?: number): readonly number[] =>
-	(gender === undefined ? undefined : GENDERED[k]?.[gender]) ?? FEATURES[k].w ?? Array<number>(FEATURES[k].n).fill(1);
+// Red hair is rarer still on the two darkest skins.
+const DARK_SKIN = 3;
+const RED_HAIR = 3;
+const RED_ON_DARK = 0.15;
+// How likely each value of k is on a face drawn for t's gender and skin.
+function weights(k: FeatureKey, t: Partial<Face>): readonly number[]
+{
+	const w =
+		(t.gender === undefined ? undefined : GENDERED[k]?.[t.gender]) ??
+		FEATURES[k].w ??
+		Array<number>(FEATURES[k].n).fill(1);
+	if (k !== "hairColor" || t.skin === undefined || t.skin < DARK_SKIN) return w;
+	return w.map((x, v) => (v === RED_HAIR ? x * RED_ON_DARK : x));
+}
 // A lineup never turns on a feature one value of which this share of faces of that gender have, since the other
 // value would mark its face as a fake.
 const MAX_CONTESTED_SHARE = 0.85;
 const contestable = (t: Face, k: FeatureKey): boolean =>
 {
-	const w = weights(k, t.gender);
+	const w = weights(k, t);
 	return Math.max(...w) / w.reduce((a, b) => a + b) < MAX_CONTESTED_SHARE;
 };
 const HAT_COLORED = new Set([1, 2, 3, 5, 6, 7, 8, 9]);
@@ -238,7 +254,7 @@ export function randomFace(gender = rnd(2)): Face
 		{
 			gender,
 		} as Face;
-		for (const k of KEYS) f[k] = weighted(weights(k, gender));
+		for (const k of KEYS) f[k] = weighted(weights(k, f));
 	}
 	while (!valid(f));
 	return f;
@@ -368,5 +384,5 @@ export function makeLineup(t: Face, size: number, d: number, pool: readonly Feat
 // A value of k other than t's, as likely as it would be on a new face.
 function otherValue(t: Face, k: FeatureKey): number
 {
-	return weighted(weights(k, t.gender).map((x, v) => (v === t[k] ? 0 : x)));
+	return weighted(weights(k, t).map((x, v) => (v === t[k] ? 0 : x)));
 }
