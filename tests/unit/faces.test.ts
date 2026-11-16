@@ -200,8 +200,13 @@ const BLUE = 1;
 const RED_HAIR = 3;
 const BLUE_DYE = 1;
 const CAP = 1;
+const DIMPLES = 7;
+const MUSTACHE = 1;
+const HANDLEBAR = 2;
+const FULL_BEARD = 3;
+const MUTTON_CHOPS = 8;
 
-it("never puts a hat on hair of nearly the same color", () =>
+it("never puts a hat on hair of nearly the same color, or dimples under a beard that covers them", () =>
 {
 	expect(
 		{
@@ -243,6 +248,34 @@ it("never puts a hat on hair of nearly the same color", () =>
 					hairColor: RED_HAIR,
 				},
 			),
+			dimplesUnderFullBeard: valid(
+				{
+					...BASE,
+					cheeks: DIMPLES,
+					facialHair: FULL_BEARD,
+				},
+			),
+			dimplesUnderMuttonChops: valid(
+				{
+					...BASE,
+					cheeks: DIMPLES,
+					facialHair: MUTTON_CHOPS,
+				},
+			),
+			dimplesUnderHandlebar: valid(
+				{
+					...BASE,
+					cheeks: DIMPLES,
+					facialHair: HANDLEBAR,
+				},
+			),
+			dimplesWithMustache: valid(
+				{
+					...BASE,
+					cheeks: DIMPLES,
+					facialHair: MUSTACHE,
+				},
+			),
 		},
 	).toStrictEqual(
 		{
@@ -251,6 +284,10 @@ it("never puts a hat on hair of nearly the same color", () =>
 			redCapOnBlackHair: true,
 			blueCapOnRedHair: true,
 			redHairBare: true,
+			dimplesUnderFullBeard: false,
+			dimplesUnderMuttonChops: false,
+			dimplesUnderHandlebar: false,
+			dimplesWithMustache: true,
 		},
 	);
 });

@@ -1,5 +1,5 @@
 import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
-import {geo, type Geo, HEADPHONES, INK, N1, shade, star} from "../geometry.ts";
+import {geo, type Geo, headHalf, HEADPHONES, INK, N1, shade, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
 // Ink disappears on the two darkest skins, so lines drawn on the skin there use a warm tone a few shades lighter than
@@ -311,10 +311,20 @@ function beardBack(f: Face, g: Geo, hc: string, sk: string): string
 	}
 	if (f.facialHair === 6)
 	{
-		// Sideburns start under the hair, so they join it, and run to the jaw short of the cheeks.
-		const side = (x: number, s: number): string =>
-			`M${x - s * 3} ${N1(ey - 18)} L${x + s * 15} ${N1(ey - 18)} L${x + s * 17} ${N1(ny + 14)} Q${x + s * 11} ${N1(ny + 27)} ${x + s * 4} ${N1(ny + 20)}Z`;
-		return `<path fill="${hc}" d="${side(L, 1)} ${side(R, -1)}"/>`;
+		// Sideburns grow down from the hairline in front of each ear. They hug the edge of the face, keep their width to the
+		// middle of the ear and then sweep in to a blunt point short of the jaw.
+		const top = ey - 20,
+			full = ey + 6,
+			low = ny + 15,
+			wide = Math.min(14, w * 0.24);
+		const side = (o: number): string =>
+		{
+			const at = (Y: number, inset: number): string => `${N1(100 + o * (headHalf(f, g, Y) - inset))} ${N1(Y)}`;
+			const edge: string[] = [];
+			for (let i = 0; i <= 6; i++) edge.push(at(top + ((low - 3 - top) * i) / 6, -0.5));
+			return `M${edge.join(" L")} Q${at(low + 2, 1)} ${at(low, 5)} C${at(low - 4, wide * 0.8)} ${at(full + 12, wide + 2.5)} ${at(full, wide + 1)} L${at(top, wide)}Z`;
+		};
+		return `<path fill="${hc}" d="${side(-1)} ${side(1)}"/>`;
 	}
 	if (f.facialHair === 7)
 	{
@@ -368,6 +378,18 @@ function mustache(f: Face, g: Geo, hc: string): string
 	}
 	return "";
 }
+// The plaster's strip and pad, the star and the frames of gold glasses each take the tone that stands out from the skin.
+const PLASTER = [
+	["#d99a5b", "#b87b40"],
+	["#fff4e2", "#ffffff"],
+	["#f3c999", "#fff1dc"],
+	["#f3c999", "#e2a96f"],
+	["#f3c999", "#e2a96f"],
+];
+const STAR = ["#ffc20e", "#ffd60a", "#ffe866", "#ffd23f", "#ffd23f"];
+const GOLD = ["#e6b422", "#b9860a", "#ffe27a", "#f2c12e", "#f2c12e"];
+const MOLE = "#2b1a12";
+const DIMPLES = 7;
 function cheeks(f: Face, g: Geo, sk: string): string
 {
 	const {w, ny} = g;
@@ -406,9 +428,40 @@ function cheeks(f: Face, g: Geo, sk: string): string
 			return `<path fill="none" stroke="#3a78f2" stroke-width="5" d="${stripes(lx, -1)} ${stripes(rx, 1)}"/>`;
 		}
 		case 4:
-			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 17}" y="${cy - 7}" width="34" height="14" rx="5" fill="#f3c999" stroke="${INK}" stroke-width="2.4"/><rect x="${lx - 6}" y="${cy - 5.5}" width="12" height="11" fill="#e2a96f" stroke="none"/></g>`;
+		{
+			// A sticking plaster with a pad in the middle and two air holes at each end, in a tone that stands out from the skin.
+			const [strip, pad] = PLASTER[f.skin]!;
+			const holes = [-12.5, 12.5]
+				.flatMap((dx) => [-3, 3].map((dy) => `<circle cx="${lx + dx}" cy="${cy + dy}" r="1.1"/>`))
+				.join("");
+			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 18}" y="${cy - 7.5}" width="36" height="15" rx="6" fill="${strip}" stroke-width="2.4"/><rect x="${lx - 6.5}" y="${cy - 6.3}" width="13" height="12.6" fill="${pad}" stroke="none"/><g fill="${INK}" stroke="none" opacity=".55">${holes}</g></g>`;
+		}
 		case 5:
-			return `<path d="${star(rx, cy, 17, 7.8)}" fill="#ffd23f" stroke="${INK}" stroke-width="2.4"/>`;
+		{
+			// A star sticker, inked on every skin. On the two darkest, where ink melts away, it keeps a pale border.
+			const d = star(rx, cy, 17, 7.8);
+			return (
+				(darkSkin(f) ? `<path d="${d}" fill="none" stroke="${PALE_RIM}" stroke-width="6.4"/>` : "") +
+				`<path d="${d}" fill="${STAR[f.skin]}" stroke="${INK}" stroke-width="2.6"/>`
+			);
+		}
+		case 6:
+		{
+			// A beauty mark: one bold mole high on one cheek, dark on every skin but the darkest, where it is pale.
+			const mole = f.skin === 4 ? FACE_LINE[4]! : MOLE;
+			return `<circle cx="${rx + 3}" cy="${cy + 1}" r="11" fill="${mole}" stroke="none"/><circle cx="${rx}" cy="${cy - 2.5}" r="2.2" fill="#fff" stroke="none" opacity=".45"/>`;
+		}
+		case DIMPLES:
+		{
+			// Dimples: a shaded hollow just past each corner of the mouth, with a curved crease along its outer side.
+			const y = Number(N1(g.my + 4));
+			const dimple = (o: number): string =>
+			{
+				const x = 100 + o * 30;
+				return `<ellipse cx="${x - o}" cy="${y}" rx="7" ry="9" fill="${shade(sk, darkSkin(f) ? 0.16 : -0.1)}" stroke="none"/><path fill="none" stroke-width="3.8" d="M${x - o * 2} ${y - 7.5} Q${x + o * 9.5} ${y} ${x - o * 2} ${y + 7.5}"/>`;
+			};
+			return dimple(-1) + dimple(1);
+		}
 	}
 	return "";
 }
@@ -471,51 +524,6 @@ function neckwear(f: Face): string
 	}
 	return "";
 }
-function glasses(f: Face, g: Geo): string
-{
-	const {ey, ex, w} = g;
-	const y = Number(N1(ey)),
-		lx = Number(N1(100 - ex)),
-		rx = Number(N1(100 + ex)),
-		L = 100 - w,
-		R = 100 + w;
-	const arms = (d: number): string =>
-		`<path fill="none" d="M${lx + d} ${y - 2} Q100 ${y - 8} ${rx - d} ${y - 2} M${lx - d} ${y - 2} L${L - 1} ${y - 6} M${rx + d} ${y - 2} L${R + 1} ${y - 6}"/>`;
-	switch (f.glasses)
-	{
-		case 1:
-			return (
-				`<g fill="none"><circle cx="${lx}" cy="${y}" r="18"/><circle cx="${rx}" cy="${y}" r="18"/></g>` +
-				arms(18)
-			);
-		case 2:
-			return (
-				`<g fill="none"><rect x="${lx - 19}" y="${y - 17}" width="38" height="34" rx="5"/><rect x="${rx - 19}" y="${y - 17}" width="38" height="34" rx="5"/></g>` +
-				arms(19)
-			);
-		case 3:
-		{
-			// Aviators: thin gold teardrop frames with a top bar, and clear lenses like every other pair.
-			const lens = (x: number, s: number): string =>
-				`M${x - s * 17} ${y - 18} L${x + s * 19} ${y - 19} Q${x + s * 26} ${y + 8} ${x + s * 5} ${y + 22} Q${x - s * 18} ${y + 23} ${x - s * 17} ${y - 18}Z`;
-			const d = `${lens(lx, -1)} ${lens(rx, 1)} M${lx + 17} ${y - 17} L${rx - 17} ${y - 17}`;
-			return (
-				`<path fill="none" stroke-width="6" d="${d}"/><path fill="none" stroke="#e6b422" stroke-width="2.6" d="${d}"/>` +
-				arms(18)
-			);
-		}
-		case 4:
-			return `<circle cx="${rx}" cy="${y}" r="18" fill="none" stroke="#c9a227" stroke-width="4"/><path fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="3 3" d="M${rx + 13} ${y + 13} Q${rx + 22} ${y + 40} ${rx + 8} ${y + 62}"/>`;
-		case 5:
-		{
-			// Cat-eye frames: the outer corners sweep up, and the lens stays wider than the largest eye.
-			const lens = (x: number, s: number): string =>
-				`M${x - s * 18} ${y - 12} Q${x} ${y - 21} ${x + s * 27} ${y - 24} Q${x + s * 23} ${y + 14} ${x + s * 3} ${y + 19} Q${x - s * 18} ${y + 18} ${x - s * 18} ${y - 12}Z`;
-			return `<path fill="none" stroke="#ff4fa0" stroke-width="4.5" d="${lens(lx, -1)} ${lens(rx, 1)} M${lx + 18} ${y - 4} Q100 ${y - 9} ${rx - 18} ${y - 4}"/>`;
-		}
-	}
-	return "";
-}
 // A hat stands out from the hair or bare head under it. Ink melts into a dark crown, so a hat there is outlined in a pale
 // rim, and a hat tone that isn't the guessed hat color switches to its other tone when it comes too close to the crown.
 const PALE_RIM = "#efe9dc";
@@ -527,6 +535,62 @@ const luma = (hex: string): number =>
 	const [r, g, b] = rgb(hex) as [number, number, number];
 	return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 };
+function glasses(f: Face, g: Geo): string
+{
+	const {ey, ex, w} = g;
+	const y = Number(N1(ey)),
+		lx = Number(N1(100 - ex)),
+		rx = Number(N1(100 + ex)),
+		L = 100 - w,
+		R = 100 + w;
+	const arms = (d: number): string =>
+		`<path fill="none" d="M${lx + d} ${y - 2} Q100 ${y - 8} ${rx - d} ${y - 2} M${lx - d} ${y - 2} L${L - 1} ${y - 6} M${rx + d} ${y - 2} L${R + 1} ${y - 6}"/>`;
+	// Black frames melt into the two darkest skins, so there they are drawn over a pale rim, as hats are on dark hair.
+	const black = (shapes: string): string =>
+		(darkSkin(f) ? `<g fill="none" stroke="${PALE_RIM}" stroke-width="7">${shapes}</g>` : "") +
+		`<g fill="none" stroke="${INK}">${shapes}</g>`;
+	// Gold frames keep an ink edge, which on the two darkest skins is a pale gold.
+	const gold = GOLD[f.skin]!,
+		edge = darkSkin(f) ? "#f6e3b4" : INK;
+	switch (f.glasses)
+	{
+		case 1:
+			return black(`<circle cx="${lx}" cy="${y}" r="18"/><circle cx="${rx}" cy="${y}" r="18"/>` + arms(18));
+		case 2:
+			return black(
+				`<rect x="${lx - 19}" y="${y - 17}" width="38" height="34" rx="5"/><rect x="${rx - 19}" y="${y - 17}" width="38" height="34" rx="5"/>` +
+					arms(19),
+			);
+		case 3:
+		{
+			// Aviators: gold teardrop frames with a top bar, and clear lenses like every other pair.
+			const lens = (x: number, s: number): string =>
+				`M${x - s * 17} ${y - 18} L${x + s * 19} ${y - 19} Q${x + s * 26} ${y + 8} ${x + s * 5} ${y + 22} Q${x - s * 18} ${y + 23} ${x - s * 17} ${y - 18}Z`;
+			const d = `${lens(lx, -1)} ${lens(rx, 1)} M${lx + 17} ${y - 17} L${rx - 17} ${y - 17}`;
+			return (
+				`<path fill="none" stroke="${edge}" stroke-width="6.6" d="${d}"/><path fill="none" stroke="${gold}" stroke-width="3.2" d="${d}"/>` +
+				arms(18)
+			);
+		}
+		case 4:
+		{
+			// A monocle: a gold ring with an ink edge like the aviators', and a cord that hangs down the cheek.
+			const cord = `M${rx + 14} ${y + 14} Q${rx + 23} ${y + 40} ${rx + 9} ${y + 62}`;
+			return (
+				`<path fill="none" stroke="${edge}" stroke-width="5" d="${cord}"/><path fill="none" stroke="${gold}" stroke-width="2.4" d="${cord}"/>` +
+				`<circle cx="${rx}" cy="${y}" r="19" fill="none" stroke="${edge}" stroke-width="7.6"/><circle cx="${rx}" cy="${y}" r="19" fill="none" stroke="${gold}" stroke-width="4.2"/>`
+			);
+		}
+		case 5:
+		{
+			// Cat-eye frames: the outer corners sweep up, and the lens stays wider than the largest eye.
+			const lens = (x: number, s: number): string =>
+				`M${x - s * 18} ${y - 12} Q${x} ${y - 21} ${x + s * 27} ${y - 24} Q${x + s * 23} ${y + 14} ${x + s * 3} ${y + 19} Q${x - s * 18} ${y + 18} ${x - s * 18} ${y - 12}Z`;
+			return `<path fill="none" stroke="#ff4fa0" stroke-width="4.5" d="${lens(lx, -1)} ${lens(rx, 1)} M${lx + 18} ${y - 4} Q100 ${y - 9} ${rx - 18} ${y - 4}"/>`;
+		}
+	}
+	return "";
+}
 const hatRim = (f: Face): string => (luma(crownColor(f)) < 0.35 ? PALE_RIM : INK);
 const tone = (f: Face, usual: string, other: string): string =>
 	gap(usual, crownColor(f)) < MIN_TONE_GAP ? other : usual;
@@ -646,12 +710,27 @@ function bandTop(f: Face, g: Geo): number
 {
 	return f.hairStyle === 4 ? g.t - 6 : g.t - (HAIR_TOP[f.hairStyle] ?? 0) + 2;
 }
-// A band that runs from the sides of the head at height y over the top of the hair, peaking at the given height.
-function bandPath(g: Geo, y: number, peak: number, out: number): string
+// A band that runs from the sides of the head at height y over the top of the hair, peaking at the given height: the
+// four points of its curve.
+type Point = [number, number];
+function bandCurve(g: Geo, y: number, peak: number, out: number): Point[]
 {
 	const {L, R} = g;
-	const cy = N1((peak - 0.25 * y) / 0.75);
-	return `M${L - out} ${N1(y)} C${L - out - 4} ${cy} ${R + out + 4} ${cy} ${R + out} ${N1(y)}`;
+	const cy = (peak - 0.25 * y) / 0.75;
+	return [
+		[L - out, y],
+		[L - out - 4, cy],
+		[R + out + 4, cy],
+		[R + out, y],
+	];
+}
+const bandPath = ([a, b, c, d]: Point[]): string =>
+	`M${N1(a![0])} ${N1(a![1])} C${N1(b![0])} ${N1(b![1])} ${N1(c![0])} ${N1(c![1])} ${N1(d![0])} ${N1(d![1])}`;
+// The point a share u of the way along a band.
+function bandAt(band: Point[], u: number): Point
+{
+	const k = [(1 - u) ** 3, 3 * (1 - u) ** 2 * u, 3 * (1 - u) * u * u, u ** 3];
+	return [0, 1].map((i) => band.reduce((sum, p, j) => sum + p[i]! * k[j]!, 0)) as Point;
 }
 function hat(f: Face, g: Geo): string
 {
@@ -665,14 +744,25 @@ function hatShape(f: Face, g: Geo): string
 	{
 		case HEADPHONES:
 		{
-			// A band over the top of the hair and a big cup over each ear.
+			// A padded band over the top of the hair and a big cup over each ear: a shell in the hat color and a dark
+			// cushion against the head.
 			// The band lies on top of the hair, inside its outline. On a bare top it arches clear of the head, so it stays
 			// off tufts over the ears and the shine on the scalp.
 			const bare = !HAIR_TOP[f.hairStyle] && f.hairStyle !== 4;
-			const band = bare ? bandPath(g, ey, g.t - 14, 10) : bandPath(g, ey, Math.max(g.t - 18, bandTop(f, g)), 4);
-			const cup = (x: number): string =>
-				`<rect fill="${c}" x="${x - 11}" y="${N1(ey - 2)}" width="22" height="28" rx="10"/><rect fill="${shade(c, -0.3)}" x="${x - 4.5}" y="${N1(ey + 4)}" width="9" height="16" rx="4.5"/>`;
-			return `<path d="${band}" fill="none" stroke-width="8.5"/><path d="${band}" fill="none" stroke="${c}" stroke-width="5"/>${cup(L - 4)}${cup(R + 4)}`;
+			const band = bandPath(
+				bare ? bandCurve(g, ey, g.t - 14, 10) : bandCurve(g, ey, Math.max(g.t - 18, bandTop(f, g)), 5),
+			);
+			const dark = shade(c, -0.5);
+			const cup = (x: number, o: number): string =>
+			{
+				const P = (u: number, v: number): string => `${N1(x + o * u)} ${N1(ey + v)}`;
+				return (
+					`<path fill="${c}" d="M${P(0, -7)} C${P(19, -7)} ${P(19, 31)} ${P(0, 31)}Z"/>` +
+					`<path fill="none" stroke="${shade(c, 0.5)}" stroke-width="2.4" d="M${P(6.5, 1)} Q${P(10, 7)} ${P(9.5, 14)}"/>` +
+					`<rect fill="${dark}" x="${N1(x + (o < 0 ? -1 : -9))}" y="${N1(ey - 5)}" width="10" height="34" rx="5"/>`
+				);
+			};
+			return `<path d="${band}" fill="none" stroke-width="10.5"/><path d="${band}" fill="none" stroke="${c}" stroke-width="7"/>${cup(L - 4, -1)}${cup(R + 4, 1)}`;
 		}
 		case 5:
 		case 10:
@@ -680,33 +770,57 @@ function hatShape(f: Face, g: Geo): string
 		{
 			// Headbands: a thin band over the top of the hair, with a bow, cat ears or devil horns on it.
 			const peak = bandTop(f, g);
-			const band = bandPath(g, ey - 16, peak, 2);
+			const curve = bandCurve(g, ey - 16, peak, 2);
+			const band = bandPath(curve);
 			const by = peak + 5;
 			const cat = f.hat === 10,
 				usual = cat ? "#2b2b2b" : "#d92b2b",
 				col = f.hat === 5 ? c : tone(f, usual, cat ? "#c8c8ce" : "#7a0f1f");
-			const thin = `<path d="${band}" fill="none" stroke-width="8"/><path d="${band}" fill="none" stroke="${col}" stroke-width="4.5"/>`;
+			const thin = `<path d="${band}" fill="none" stroke-width="8.5"/><path d="${band}" fill="none" stroke="${col}" stroke-width="5"/>`;
 			if (f.hat === 5)
 			{
 				const bx = Number(N1(100 + w * 0.45));
 				return `${thin}<path fill="${c}" d="M${bx} ${by} L${bx - 18} ${by - 13} L${bx - 18} ${by + 13}Z M${bx} ${by} L${bx + 18} ${by - 13} L${bx + 18} ${by + 13}Z"/><circle fill="${c}" cx="${bx}" cy="${by}" r="5.5"/>`;
 			}
-			// Each ear or horn is drawn in coordinates that run outward from the middle of the face, so the pair mirrors.
-			const ear = (s: number): string =>
+			// Each ear or horn stands on the band itself: its base runs along the band between two points of it, and it
+			// rises square to the band there, leaning a little back toward upright. It is drawn in coordinates that run
+			// outward along its base and up from it, on the left side, and mirrored for the right.
+			const [u0, u1] = cat ? [0.2, 0.43] : [0.23, 0.42];
+			const [outer, inner, mid] = [bandAt(curve, u0), bandAt(curve, u1), bandAt(curve, (u0 + u1) / 2)];
+			const half = Math.hypot(outer[0] - inner[0], outer[1] - inner[1]) / 2;
+			const along: Point = [(outer[0] - inner[0]) / (2 * half), (outer[1] - inner[1]) / (2 * half)];
+			const lean = cat ? 0.35 : 0.5;
+			const ux = -along[1] * (1 - lean),
+				uy = along[0] * (1 - lean) - lean,
+				ul = Math.hypot(ux, uy);
+			const up: Point = [ux / ul, uy / ul];
+			const piece = (s: number): string =>
 			{
-				const x = Number(N1(100 + s * w * 0.5));
-				const P = (u: number, v: number): string => `${N1(x + s * u)} ${N1(by + v)}`;
+				// u runs along the base in units of half its width, from -1 at the inner end to 1 at the outer; v rises from it.
+				const P = (u: number, v: number): string =>
+				{
+					const x = (outer[0] + inner[0]) / 2 + along[0] * u * half + up[0] * v,
+						y = (outer[1] + inner[1]) / 2 + along[1] * u * half + up[1] * v;
+					return `${N1(s < 0 ? x : 200 - x)} ${N1(y)}`;
+				};
+				const base = `L${N1(s < 0 ? mid[0] : 200 - mid[0])} ${N1(mid[1])}`;
 				if (cat)
-					return `<path fill="${col}" d="M${P(-15, 6)} L${P(6, -34)} L${P(15, 6)}Z"/><path fill="#ffb3c7" stroke="none" d="M${P(-7.5, 1)} L${P(5, -20)} L${P(7.5, 1)}Z"/>`;
-				// A devil horn: a broad base that bulges outward and hooks back in to a sharp tip, with a shine along its inner
-				// curve. A horn that went dark to stand out from red hair keeps a pale rim.
+				{
+					// A cat ear: a broad triangle with bowed sides and a pink inside.
+					return (
+						`<path fill="${col}" d="M${P(-1, 0)} Q${P(-0.75, 22)} ${P(0.1, 36)} Q${P(1.05, 20)} ${P(1, 0)} ${base}Z"/>` +
+						`<path fill="#ffb3c7" stroke="none" d="M${P(-0.5, 3)} Q${P(-0.4, 15)} ${P(0.08, 24)} Q${P(0.6, 14)} ${P(0.55, 3)}Z"/>`
+					);
+				}
+				// A devil horn: a broad base that bulges outward and hooks back in to a sharp tip, with a shine along its
+				// outer curve. A horn that went dark to stand out from red hair keeps a pale rim.
 				const rim = col === usual ? "" : ` stroke="${PALE_RIM}"`;
 				return (
-					`<path fill="${col}"${rim} d="M${P(-14, 6)} C${P(2, -6)} ${P(2, -30)} ${P(-5, -46)} C${P(20, -40)} ${P(30, -14)} ${P(14, 6)}Z"/>` +
-					`<path fill="none" stroke="${shade(col, 0.45)}" stroke-width="2.5" d="M${P(5, -2)} C${P(8, -14)} ${P(7, -26)} ${P(2, -36)}"/>`
+					`<path fill="${col}"${rim} d="M${P(-1, 0)} C${P(-0.55, 14)} ${P(-0.2, 30)} ${P(-0.95, 46)} C${P(1.0, 42)} ${P(1.9, 18)} ${P(1, 0)} ${base}Z"/>` +
+					`<path fill="none" stroke="${shade(col, 0.5)}" stroke-width="2.6" d="M${P(0.72, 8)} C${P(0.95, 18)} ${P(0.7, 29)} ${P(0.05, 37)}"/>`
 				);
 			};
-			return `${ear(-1)}${ear(1)}${thin}`;
+			return `${piece(-1)}${piece(1)}${thin}`;
 		}
 	}
 	return perched(f, g, c);

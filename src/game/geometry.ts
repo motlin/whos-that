@@ -5,6 +5,7 @@ import type {Face, FeatureKey} from "./faces.ts";
 export const INK = "#2a2522";
 // The hat value that is a pair of headphones rather than something worn on the crown.
 export const HEADPHONES = 2;
+const DIMPLES = 7;
 // The hats worn on a band over the hair: the bow, cat ears and devil horns.
 const HEADBANDS = new Set([5, 10, 11]);
 const SHAPES = [
@@ -177,6 +178,12 @@ export function regions(f: Face, k: FeatureKey): Region[]
 				[R + 4, ey + 24, 22, 38],
 			];
 		case "cheeks":
+			// Dimples sit just past the corners of the mouth.
+			if (f.cheeks === DIMPLES)
+				return [
+					[100 - 30, my + 4, 10, 13],
+					[100 + 30, my + 4, 10, 13],
+				];
 			return [
 				[100 - w * 0.52, ny + 8, 18, 17],
 				[100 + w * 0.52, ny + 8, 18, 17],

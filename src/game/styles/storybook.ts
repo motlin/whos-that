@@ -1,5 +1,5 @@
 import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, KEYS, SKIN} from "../faces.ts";
-import {geo, type Geo, shade, star} from "../geometry.ts";
+import {geo, type Geo, headHalf, shade, solve, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
 // A warm brown ink. It disappears on the two darkest skins, so lines drawn on the skin there use a warm tone lighter
@@ -15,12 +15,19 @@ const UNION = 6.4;
 const CREAM = "#fffaf0";
 const RED = "#ff4d6d";
 const GOLD = "#e6b422";
+const PALE_INK = "#f3e6d2";
+// Gold is close to the medium skins and dull on the dark ones, so on every skin but the lightest gold frames turn a
+// brighter, yellower gold.
+const BRIGHT_GOLD = "#ffd200";
+const goldOn = (f: Face): string => (f.skin ? BRIGHT_GOLD : GOLD);
+// The ink around gold frames: darker on the middle skin, where brown ink is closest to the skin, and pale on dark skin.
+const GOLD_EDGE = [LINE, LINE, "#1f100a", PALE_INK, PALE_INK];
 // How close a hat's fixed tone may come to the hair or bare head under it before it switches; the ink outline, which
 // is thin and so needs more room, switches to a pale one sooner, on dark and brown hair.
 const NEAR = 100;
 const INK_NEAR = 120;
-const PALE_INK = "#f3e6d2";
 const darkSkin = (f: Face): boolean => f.skin >= 3;
+const DIMPLES = 7;
 
 // Builds markup with every number rounded to one decimal.
 function p(parts: TemplateStringsArray, ...args: (number | string)[]): string
@@ -61,6 +68,19 @@ const line = (d: string, color: string, width: number): string =>
 	`<path fill="none" stroke="${color}" stroke-width="${width}" d="${d}"/>`;
 const path = (d: string): string => `<path d="${d}"/>`;
 const flat = (d: string, color: string): string => `<path fill="${color}" stroke="none" d="${d}"/>`;
+// A point on a cubic curve, and the angle in degrees the curve runs at there.
+type Point = [number, number];
+type Cubic = [Point, Point, Point, Point];
+function cubicAt(c: Cubic, u: number): [number, number, number]
+{
+	const v = 1 - u;
+	const at = (i: 0 | 1): number =>
+		v * v * v * c[0][i] + 3 * v * v * u * c[1][i] + 3 * v * u * u * c[2][i] + u * u * u * c[3][i];
+	const slope = (i: 0 | 1): number =>
+		v * v * (c[1][i] - c[0][i]) + 2 * v * u * (c[2][i] - c[1][i]) + u * u * (c[3][i] - c[2][i]);
+	return [at(0), at(1), (Math.atan2(slope(1), slope(0)) * 180) / Math.PI];
+}
+const cubicPath = (curve: Cubic): string => "M" + curve.map(([x, y], i) => p`${i === 1 ? "C" : ""}${x} ${y}`).join(" ");
 const union = (body: string, fill: string): string =>
 	`<g fill="${fill}" stroke-width="${UNION}">${body}</g><g fill="${fill}" stroke="none">${body}</g>`;
 
@@ -708,6 +728,9 @@ function mouth(f: Face, g: Geo, sk: Skin): string
 	}
 	return "";
 }
+// How wide a sideburn is on its way down, from 0 at the top to 1 at its tip: it swells out of the hair, then tapers.
+const sideburnWidth = (u: number): number =>
+	13 * Math.min(1, (u / 0.18) ** 0.7) * (1 - 0.82 * Math.max(0, (u - 0.3) / 0.7) ** 1.5);
 function beardBack(f: Face, g: Geo, hr: Tones, sk: Skin): string
 {
 	const {L, R, b, ey, ny, my, w} = g;
@@ -736,12 +759,32 @@ function beardBack(f: Face, g: Geo, hr: Tones, sk: Skin): string
 			);
 		case 6:
 		{
-			// Sideburns start under the hair, so they join it, and run to the jaw short of the cheeks.
-			const side = (x: number, s: number): string =>
-				p`M${x - s * 3} ${ey - 18} L${x + s * 15} ${ey - 18} L${x + s * 17} ${ny + 14} Q${x + s * 11} ${ny + 27} ${x + s * 4} ${ny + 20}Z`;
-			const comb = (x: number, s: number): string =>
-				p`M${x + s * 5} ${ey + 22} l${s} 14 M${x + s * 10} ${ey + 14} l${s * 1.5} 18 M${x + s * 8} ${ny + 6} l${s} 10 `;
-			return p`<path fill="${hc}" d="${side(L, 1)} ${side(R, -1)}"/>` + strands(comb(L, 1) + comb(R, -1), hr);
+			// Sideburns grow down out of the hair in front of each ear: a strip that hugs the edge of the face, widest at
+			// the temple and tapering to a point at the jaw. The edge of the face is its outer outline.
+			const top = ey - 22,
+				end = ny + 10,
+				N = 14;
+			let fill = "",
+				inner = "",
+				comb = "";
+			for (const s of [-1, 1])
+			{
+				const outer: string[] = [],
+					edge: string[] = [];
+				for (let i = 0; i <= N; i++)
+				{
+					const u = i / N,
+						Y = top + (end - top) * u,
+						x = 100 + s * (headHalf(f, g, Y) - 1.2);
+					outer.push(p`${x} ${Y}`);
+					edge.push(p`${x - s * sideburnWidth(u)} ${Y}`);
+					if (i === 5 || i === 7 || i === 9)
+						comb += p`M${x - s * sideburnWidth(u) * 0.5} ${Y - 1} l${s * 0.8} 7 `;
+				}
+				fill += `M${outer.join(" L")} L${edge.toReversed().join(" L")}Z `;
+				inner += `M${outer[0]} L${edge.join(" L")} L${outer[N]} `;
+			}
+			return flat(fill, hc) + `<path fill="none" d="${inner}"/>` + strands(comb, hr);
 		}
 		case 7:
 		{
@@ -852,16 +895,56 @@ function cheeks(f: Face, g: Geo, sk: Skin): string
 			);
 		}
 		case 4:
+		{
+			// A sticking plaster: tan on the lightest skin, and cream on the others, where tan would melt into the skin.
+			const [strip, pad] = f.skin === 0 ? ["#dc9f63", "#c5844a"] : [CREAM, "#ffe9cc"];
 			return (
-				p`<g transform="rotate(-25 ${lx} ${cy}) translate(${lx} ${cy}) scale(1.4) translate(${-lx} ${-cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="#f3c999" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="#e2a96f" stroke="none"/>` +
+				p`<g transform="rotate(-25 ${lx} ${cy}) translate(${lx} ${cy}) scale(1.4) translate(${-lx} ${-cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="${strip}" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="${pad}" stroke="none"/>` +
+				line(p`M${lx - 4} ${cy - 4} v8 M${lx + 4} ${cy - 4} v8`, "#b98148", 1) +
 				line(p`M${lx - 8.5} ${cy - 1.5} v3 M${lx + 8.5} ${cy - 1.5} v3`, "#b98148", 1.4) +
 				`</g>`
 			);
+		}
 		case 5:
 			return (
-				`<path d="${star(rx, cy, 16, 7.2)}" fill="#ffd23f" stroke-width="2.4"/>` +
-				line(p`M${rx - 4.5} ${cy - 1.5} l3.3 -6.5`, "#fff3b8", 2.2)
+				`<path d="${star(rx, cy, 16, 7.2)}" fill="${f.skin < 3 ? "#ffdd00" : "#ffd23f"}" stroke-width="2.4"/>` +
+				line(p`M${rx - 4.5} ${cy - 1.5} l3.3 -6.5`, "#fffbe0", 2.2)
 			);
+		case 6:
+		{
+			// A beauty mark: one mole on a cheek, dark on light skin and pale on dark skin, on a faint patch of its tone.
+			const mx = lx - 1,
+				my = cy + 2;
+			return (
+				p`<ellipse cx="${mx}" cy="${my}" rx="12" ry="10.5" fill="${darkSkin(f) ? shade(sk.base, 0.07) : shade(sk.base, -0.07)}" stroke="none"/>` +
+				p`<circle cx="${mx}" cy="${my}" r="6" fill="${darkSkin(f) ? sk.line : "#2e1a10"}" stroke="none"/>` +
+				(darkSkin(f) ? "" : p`<circle cx="${mx - 2}" cy="${my - 2.2}" r="1.5" fill="#8a6650" stroke="none"/>`)
+			);
+		}
+		case DIMPLES:
+		{
+			// Dimples: a curved crease just past each corner of the mouth, with the hollow shaded on its mouth side and
+			// a touch of light on its cheek side. On a narrow chin they move in to stay on the face.
+			const y = g.my,
+				dx = Math.min(29, headHalf(f, g, y + 10) - 5);
+			let hollow = "",
+				crease = "",
+				lit = "";
+			for (const s of [-1, 1])
+			{
+				const x = 100 + s * dx;
+				const arc = p`M${x - s * 1.5} ${y - 6} Q${x + s * 5.5} ${y + 3.5} ${x - s * 1.5} ${y + 13}`;
+				hollow += p`${arc} Q${x - s * 8} ${y + 3.5} ${x - s * 1.5} ${y - 6}Z `;
+				crease += arc + " ";
+				lit += p`M${x + s * 5} ${y - 3} Q${x + s * 7.5} ${y + 3.5} ${x + s * 5} ${y + 10} `;
+			}
+			// A pale line on dark skin reads thinner than a dark one on light skin, so there it is drawn wider.
+			return (
+				flat(hollow, sk.shadow) +
+				line(lit, sk.lite, 2.6) +
+				`<path fill="none" stroke-width="${darkSkin(f) ? 4.2 : 3.4}" d="${crease}"/>`
+			);
+		}
 	}
 	return "";
 }
@@ -1003,13 +1086,18 @@ function glasses(f: Face, g: Geo): string
 			const lens = (x: number, s: number): string =>
 				p`M${x - s * 17} ${y - 18} L${x + s * 19} ${y - 19} Q${x + s * 26} ${y + 8} ${x + s * 5} ${y + 22} Q${x - s * 18} ${y + 23} ${x - s * 17} ${y - 18}Z`;
 			const d = p`${lens(lx, -1)} ${lens(rx, 1)} M${lx + 17} ${y - 17} L${rx - 17} ${y - 17}`;
-			return `<path fill="none" stroke-width="5.8" d="${d}"/>` + line(d, GOLD, 2.6) + arms(18);
+			return line(d, GOLD_EDGE[f.skin]!, 5.8) + line(d, goldOn(f), 2.6) + arms(18);
 		}
 		case 4:
+		{
+			// A gold monocle on a chain of gold beads.
+			const chain = p`M${rx + 13} ${y + 15} Q${rx + 22} ${y + 40} ${rx + 8} ${y + 62}`;
 			return (
-				p`<circle cx="${rx}" cy="${y}" r="18.4" fill="none" stroke-width="5"/><circle cx="${rx}" cy="${y}" r="18.4" fill="none" stroke="#d9ae2c" stroke-width="2.6"/>` +
-				p`<path fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="3 3" d="M${rx + 13} ${y + 14} Q${rx + 22} ${y + 40} ${rx + 8} ${y + 62}"/>`
+				p`<circle cx="${rx}" cy="${y}" r="18.4" fill="none" stroke="${GOLD_EDGE[f.skin]!}" stroke-width="5.4"/><circle cx="${rx}" cy="${y}" r="18.4" fill="none" stroke="${goldOn(f)}" stroke-width="2.6"/>` +
+				`<path fill="none" stroke="${GOLD_EDGE[f.skin]!}" stroke-width="4.6" stroke-dasharray="0.1 5.6" d="${chain}"/>` +
+				`<path fill="none" stroke="${goldOn(f)}" stroke-width="2.4" stroke-dasharray="0.1 5.6" d="${chain}"/>`
 			);
+		}
 		case 5:
 		{
 			// Cat-eye frames: the outer corners sweep up, and the lens stays wider than the largest eye.
@@ -1092,6 +1180,13 @@ function hat(f: Face, g: Geo): string
 	const body = hatBody(f, g);
 	return distance(LINE, crownColor(f)) < INK_NEAR ? `<g stroke="${PALE_INK}">${body}</g>` : body;
 }
+const pompom = (x: number, y: number, r: number): string =>
+	p`<circle fill="${CREAM}" cx="${x}" cy="${y}" r="${r}"/>` +
+	line(
+		p`M${x - r * 0.5} ${y - r * 0.1} q${r * 0.2} ${-r * 0.5} ${r * 0.6} ${-r * 0.45} M${x - r * 0.1} ${y + r * 0.5} q${r * 0.4} ${r * 0.1} ${r * 0.6} ${-r * 0.3}`,
+		"#cdbba8",
+		1.4,
+	);
 function hatBody(f: Face, g: Geo): string
 {
 	const {w, t, ey, L, R} = g;
@@ -1115,15 +1210,28 @@ function hatBody(f: Face, g: Geo): string
 			lit,
 			3,
 		);
-	const pompom = (x: number, y: number, r: number): string =>
-		p`<circle fill="${CREAM}" cx="${x}" cy="${y}" r="${r}"/>` +
-		line(
-			p`M${x - r * 0.5} ${y - r * 0.1} q${r * 0.2} ${-r * 0.5} ${r * 0.6} ${-r * 0.45} M${x - r * 0.1} ${y + r * 0.5} q${r * 0.4} ${r * 0.1} ${r * 0.6} ${-r * 0.3}`,
-			"#cdbba8",
-			1.4,
-		);
 	const sink = afro ? 0 : Math.max(0, 9 - (CROWN[f.hairStyle] ?? 0));
-	const band = p`M${100 - w + 4} ${t + 30 + sink} C${100 - w - 4} ${t - 24 + sink} ${100 + w + 4} ${t - 24 + sink} ${100 + w - 4} ${t + 30 + sink}`;
+	// The band runs from temple to temple over the hair. Under ears or horns it rides higher on an afro, so they stand
+	// clear of the hair.
+	const rise = afro && f.hat !== 5 ? 16 : 0;
+	const bandCurve: Cubic = [
+		[100 - w + 4, t + 30 + sink],
+		[100 - w - 4, t - 24 + sink - (rise * 4) / 3],
+		[100 + w + 4, t - 24 + sink - (rise * 4) / 3],
+		[100 + w - 4, t + 30 + sink],
+	];
+	const band = cubicPath(bandCurve);
+	// Ears and horns stand on the band a little out from the middle, square to it, so they lean out as the band curves
+	// down. The right one is the mirror image of the left.
+	const onBand = (drawn: string): string =>
+	{
+		const [x, y, turn] = cubicAt(
+			bandCurve,
+			solve((u) => cubicAt(bandCurve, u)[0], 100 - w * 0.5),
+		);
+		const left = p`<g transform="translate(${x} ${y}) rotate(${turn})">${drawn}</g>`;
+		return left + `<g transform="translate(200 0) scale(-1 1)">${left}</g>`;
+	};
 	const hairband = (col: string): string =>
 		`<path d="${band}" fill="none" stroke-width="9.8"/>` + line(band, col, 6) + line(band, light(col, 0.4), 1.2);
 	switch (f.hat)
@@ -1152,21 +1260,39 @@ function hatBody(f: Face, g: Geo): string
 		}
 		case 2:
 		{
-			// Headphones: a band over the top of the head and a big cup over each ear, so the hair shows between.
-			const top = t - 40,
-				lx = L - 6,
+			// Headphones: a band over the top of the head, a slider at each end, and over each ear a big shell
+			// in the hat color on a soft cushion. The hair shows between.
+			const lx = L - 6,
 				rx = R + 6,
-				cy = ey + 6;
-			const arc = p`M${lx - 4} ${cy - 13} C${lx - 14} ${top} ${rx + 14} ${top} ${rx + 4} ${cy - 13}`;
+				cy = ey + 8;
+			const curve: Cubic = [
+				[lx - 4, cy - 13],
+				[lx - 14, t - 40],
+				[rx + 14, t - 40],
+				[rx + 4, cy - 13],
+			];
+			const dark = !near("#3a3330"),
+				soft = dark ? "#3a3330" : "#cfc6bd",
+				crease = dark ? "#7a6f69" : "#8f867e";
+			// Each slider is the first stretch of the band, counted from its own end.
+			const slider = (from: Cubic): string =>
+				`<path d="${cubicPath(from)}" fill="none" stroke-width="10.8" stroke-dasharray="14 999"/>` +
+				`<path d="${cubicPath(from)}" fill="none" stroke="${soft}" stroke-width="7" stroke-dasharray="14 999"/>`;
 			const cup = (x: number, s: number): string =>
-				p`<rect fill="${tone("#3a3330", "#cfc6bd")}" stroke-width="2.6" x="${x + s * 5 - 4}" y="${cy - 14}" width="8" height="28" rx="4"/>` +
-				p`<ellipse fill="${c}" ${big} cx="${x - s * 2}" cy="${cy}" rx="11" ry="16"/>` +
-				p`<ellipse fill="${dim}" stroke="none" cx="${x - s * 4}" cy="${cy + 2}" rx="5.5" ry="10"/>` +
-				line(p`M${x - 7} ${cy - 6} Q${x - 5} ${cy - 12} ${x} ${cy - 13}`, lit, 2.2);
+				p`<ellipse fill="${c}" ${big} cx="${x + s * 4}" cy="${cy}" rx="8.5" ry="16.5"/>` +
+				flat(
+					p`M${x + s * 11} ${cy + 5} Q${x + s * 10} ${cy + 13.5} ${x + s * 4} ${cy + 14.5} Q${x + s * 7} ${cy + 9.5} ${x + s * 8} ${cy + 3.5}Z`,
+					dim,
+				) +
+				line(p`M${x + s * 9.5} ${cy - 8} Q${x + s * 8} ${cy - 12} ${x + s * 4.5} ${cy - 13.5}`, lit, 2.2) +
+				p`<rect fill="${soft}" stroke-width="2.6" x="${x - s * 4 - 4.5}" y="${cy - 13}" width="9" height="26" rx="4.5"/>` +
+				line(p`M${x - s * 4} ${cy - 8} v16`, crease, 1.4);
 			return (
-				`<path d="${arc}" fill="none" stroke-width="10.4"/>` +
-				line(arc, c, 6.6) +
-				line(arc, lit, 1.4) +
+				`<path d="${cubicPath(curve)}" fill="none" stroke-width="10.8"/>` +
+				line(cubicPath(curve), c, 7) +
+				line(cubicPath(curve), lit, 1.4) +
+				slider(curve) +
+				slider(curve.toReversed() as Cubic) +
 				cup(lx, -1) +
 				cup(rx, 1)
 			);
@@ -1302,42 +1428,36 @@ function hatBody(f: Face, g: Geo): string
 				`</g>`
 			);
 		case 10:
+		{
+			// Black cat ears, or pale grey ones on hair or skin of nearly their color: each a tall rounded triangle with
+			// a pink inside and a tuft of fur, its foot tucked behind the band.
+			const col = tone("#2b2b2b", "#c4c4c4");
+			return (
+				onBand(
+					`<path fill="${col}" ${big} d="M-18.5 3 Q-16 -20 -3.5 -40.5 Q-1 -44 1.5 -40.5 Q12.5 -21 18.5 3Z"/>` +
+						flat("M-10.5 -4 Q-9 -18 -1.5 -31.5 Q5.5 -18 10.5 -4Z", "#ffb3c7") +
+						flat("M-1.5 -31.5 Q5.5 -18 10.5 -4 L4 -4 Q3 -18 -1.5 -31.5Z", "#f58fab") +
+						line("M-5.5 -5 l1 -8.5 M-1.5 -5 l0.5 -11 M2.5 -5 l-0.5 -7", "#fff1f5", 1.6) +
+						line("M-13.5 -8 Q-11 -21 -5.5 -31", light(col, near("#2b2b2b") ? 0.7 : 0.3), 1.8),
+				) + hairband(col)
+			);
+		}
 		case 11:
 		{
-			const by = t + 2 + sink - (afro ? 20 : lift);
-			if (f.hat === 10)
-			{
-				// Black cat ears, or pale grey ones on hair or skin of nearly their color.
-				const col = tone("#2b2b2b", "#c4c4c4");
-				const ear = (s: number): string =>
-				{
-					const x = 100 + s * w * 0.55;
-					return (
-						p`<path fill="${col}" ${big} d="M${x - s * 21} ${by + 6} L${x + s * 6} ${by - 44} L${x + s * 21} ${by + 6}Z"/>` +
-						p`<path fill="#ffb3c7" stroke="none" d="M${x - s * 10.5} ${by + 1} L${x + s * 5} ${by - 27} L${x + s * 10.5} ${by + 1}Z"/>` +
-						line(p`M${x - s * 2} ${by - 1} l${s * 2.5} -8 M${x + s * 4} ${by - 1} l${s} -6`, "#f08aa6", 1.4)
-					);
-				};
-				return ear(-1) + ear(1) + hairband(col);
-			}
-			// Devil horns: a bold horn on each side that sweeps out from the band and hooks up to a point, mirrored
-			// about the middle of the face. On red hair they go a deep crimson with a light rim.
+			// Devil horns: a stout horn on each side that swells out from the band and hooks in to a point, ringed near
+			// its foot. On red hair they go a deep crimson with a light rim.
 			const crimson = near("#d92b2b"),
 				col = crimson ? "#7a0d1e" : "#d92b2b",
-				rim = crimson ? "#ffd0c4" : "#ff8f7e";
-			const horn = (s: number): string =>
-			{
-				const x = 100 + s * w * 0.55;
-				return (
-					p`<path fill="${col}" ${big} d="M${x - s * 13} ${by + 5} C${x - s * 9} ${by - 16} ${x + s * 12} ${by - 20} ${x + s * 12} ${by - 49} C${x + s * 26} ${by - 32} ${x + s * 26} ${by - 8} ${x + s * 13} ${by + 5}Z"/>` +
-					line(
-						p`M${x - s * 5} ${by - 3} C${x - s * 1} ${by - 12} ${x + s * 9} ${by - 18} ${x + s * 11} ${by - 38}`,
-						rim,
-						2.6,
-					)
-				);
-			};
-			return horn(-1) + horn(1) + hairband(col);
+				rim = crimson ? "#ffd0c4" : "#ff8f7e",
+				ring = crimson ? "#4a0510" : "#9c1420";
+			return (
+				onBand(
+					`<path fill="${col}" ${big} d="M-16 3 C-22 -14 -13 -36 10 -46 C0 -36 4 -16 15 3Z"/>` +
+						flat("M10 -46 C0 -36 4 -16 15 3 L8 3 C0 -15 -2 -32 10 -46Z", ring) +
+						line("M-16 -8 Q-4 -13 9 -8 M-14 -20 Q-4.5 -24.5 4.5 -19.5", ring, 1.6) +
+						line("M-12.5 -5 C-15 -17 -9.5 -30 0 -37.5", rim, 2.6),
+				) + hairband(col)
+			);
 		}
 	}
 	return "";

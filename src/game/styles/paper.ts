@@ -1,5 +1,5 @@
 import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
-import {geo, type Geo, shade, star} from "../geometry.ts";
+import {geo, type Geo, shade, solve, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
 type Pt = [number, number];
@@ -15,6 +15,15 @@ const WHITE = "#fffdf5";
 const DARK = "#1b1b1f";
 const TIE = "#ff4d6d";
 const GOLD = "#dba51c";
+// Gold frames are cut from a deeper gold on the skin that is close to gold itself, and a paler one on the mid brown.
+const FRAME_GOLD = [GOLD, "#a06c05", "#ffe98a", GOLD, GOLD];
+// A plaster and its pad: tan on the lightest skin, where a white one would vanish, and white on the others.
+const PLASTER = ["#dc9c6a", "#fffaf0", "#fdfaf2", "#fdfaf2", "#fdfaf2"];
+const PAD = ["#b06f44", "#b9773f", "#e9bd8e", "#dfa66c", "#dfa66c"];
+// The star is a deeper gold on the two lightest skins, the second of which is close to yellow itself.
+const STAR = ["#f2b40a", "#d98200", "#ffdd44", "#ffd23f", "#ffd23f"];
+// A beauty mark is darker than the skin, except on the darkest, where nothing darker would show.
+const MOLE = ["#5a3320", "#4a2814", "#3a1c0c", "#1e0f07", "#b07a4e"];
 // How the outline bulges on each face shape: the exponents of x and y above the widest point, then below it. The heart
 // narrows to a point below.
 const BULGE = [
@@ -764,14 +773,27 @@ function beard(c: Ctx): string
 			return cut(shade(c.hc, c.dark ? 0.5 : -0.4), dots);
 		}
 		case 6:
-			// Sideburns start under the hair, so they join it, and run to the jaw short of the cheeks.
+		{
+			// Sideburns grow down from under the hair in front of each ear and narrow to a point at the jaw. Their
+			// front edge is snipped into tufts, so they read as hair.
+			const rows = Array.from(
+				{
+					length: 8,
+				},
+				(_, i): [number, number] => [ey - 24 + i * 8.5, 14.5 - i * 0.95 + (i % 2 ? -1.6 : 1.6)],
+			);
+			const side = burn(rows);
+			const low = ey + 45;
 			return fur(
 				c,
 				twin([
-					...burn(pts`${ey - 18},15 ${ey + 6},16 ${ny + 10},17`),
-					...pts`${100 - edge(c, ny + 22) + 8},${ny + 23} ${100 - edge(c, ny + 20) - 1},${ny + 20}`,
+					...side.slice(0, rows.length),
+					[100 - edge(c, low) - 1, low],
+					[100 - edge(c, low - 3) + 3, low - 2],
+					...side.slice(rows.length),
 				]),
 			);
+		}
 		case 7:
 		{
 			// A goatee circles the mouth: mustache, chin and the strips that join them.
@@ -858,22 +880,42 @@ function cheeks(c: Ctx): string
 			return layer(cut("#3a78f2", stripe(-3) + stripe(6)));
 		}
 		case 4:
+		{
+			// A plaster: a strip with a pad across the middle and two air holes at each end.
+			const hole = (dx: number, dy: number): string => d(ngon(x + dx, y + dy, 1.5, 1.5, 4));
 			return layer(
 				`<g transform="rotate(-25 ${r1(x)} ${r1(y)})">` +
 					cut(
-						"#fdfaf2",
+						PLASTER[c.f.skin]!,
 						d(
 							pts`${x - 17},${y - 5} ${x - 14.5},${y - 7.5} ${x + 14.5},${y - 7.5} ${x + 17},${y - 5} ${x + 17},${y + 5} ${x + 14.5},${y + 7.5} ${x - 14.5},${y + 7.5} ${x - 17},${y + 5}`,
 						),
 					) +
 					cut(
-						"#dfa66c",
-						d(pts`${x - 6},${y - 7.5} ${x + 6},${y - 7.5} ${x + 6},${y + 7.5} ${x - 6},${y + 7.5}`),
+						PAD[c.f.skin]!,
+						d(pts`${x - 6},${y - 7.5} ${x + 6},${y - 7.5} ${x + 6},${y + 7.5} ${x - 6},${y + 7.5}`) +
+							hole(-12.5, -3) +
+							hole(-10.5, 3) +
+							hole(10.5, -3) +
+							hole(12.5, 3),
 					) +
 					"</g>",
 			);
+		}
 		case 5:
-			return layer(cut("#ffd23f", star(200 - x, y, 18, 8)));
+			return layer(cut(STAR[c.f.skin]!, star(200 - x, y, 18, 8)));
+		case 6:
+			// A beauty mark: one dark spot on one cheek.
+			return layer(cut(MOLE[c.f.skin]!, d(ngon(x + 3, y + 2, 11.2, 11.2, 9, 0.3))));
+		case 7:
+		{
+			// Dimples: a curved crease just past each corner of the mouth.
+			const dy = c.g.my + 4;
+			return layer(
+				cut(LUMP[c.f.skin]!, both(ngon(70.5, dy, 9.5, 10, 8, 0.2))) +
+					cut(c.tone, both(strip(pts`75,${dy - 8} 70.5,${dy - 4} 69.5,${dy + 2} 72.5,${dy + 8}`, 4.4))),
+			);
+		}
 	}
 	return "";
 }
@@ -979,6 +1021,7 @@ function glasses(c: Ctx): string
 	const lx = 100 - ex,
 		rx = 100 + ex;
 	const paper = c.dark ? "#efe6d2" : "#24242c";
+	const gold = FRAME_GOLD[c.f.skin]!;
 	// The bridge between the lenses and an arm from each lens to the side of the head.
 	const arms = (reach: number, by: number): string =>
 	{
@@ -1006,14 +1049,14 @@ function glasses(c: Ctx): string
 			// Aviators: thin gold teardrop frames with a top bar, and clear lenses like every other pair.
 			return layer(
 				holed(
-					GOLD,
+					gold,
 					pair(
 						pts`${lx + 17.5},${y - 18.5} ${lx - 19},${y - 19.5} ${lx - 23.5},${y - 4} ${lx - 18},${y + 12} ${lx - 5},${y + 22.5} ${lx + 9.5},${y + 20} ${lx + 17},${y + 6}`,
 						2.8,
 					),
 				) +
 					cut(
-						GOLD,
+						gold,
 						arms(20, -5) +
 							d(
 								pts`${lx + 16},${y - 19.5} ${rx - 16},${y - 19.5} ${rx - 16},${y - 16.5} ${lx + 16},${y - 16.5}`,
@@ -1038,13 +1081,15 @@ function glasses(c: Ctx): string
 					),
 				);
 			}
-			return layer(holed(GOLD, frame(ngon(rx, y, 20.4, 20.4, 12, Math.PI / 12), 3.4)) + cut(GOLD, chain));
+			return layer(holed(gold, frame(ngon(rx, y, 20.4, 20.4, 12, Math.PI / 12), 3.8)) + cut(gold, chain));
 		}
 		case 5:
 		{
 			// Cat-eye frames: the outer corners sweep up, and the lens stays wider than the largest eye.
 			const lens: Pt[] = pts`${lx + 18.5},${y - 12} ${lx},${y - 19.5} ${lx - 28},${y - 25} ${lx - 24.5},${y - 4} ${lx - 17.5},${y + 13} ${lx - 3},${y + 19.5} ${lx + 12},${y + 17.5} ${lx + 18.5},${y + 5}`;
-			return layer(holed("#ff4fa0", pair(lens, 3.2)) + cut("#ff4fa0", arms(22, -5)));
+			// The pink is deeper on the lighter skins, which are closer to it.
+			const pink = c.dark ? "#ff4fa0" : "#ff1f96";
+			return layer(holed(pink, pair(lens, 3.8)) + cut(pink, arms(22, -5)));
 		}
 	}
 	return "";
@@ -1077,6 +1122,8 @@ const CROWN: Record<number, number> =
 	13: -6,
 };
 
+// How far off the scalp the middle of a headband runs.
+const BAND = 2.5;
 // How much bigger a perched hat is drawn than it is cut.
 const PERCH = 1.25;
 
@@ -1113,7 +1160,7 @@ const backed = (s: string, rim: string): string =>
 
 function hat(c: Ctx): string
 {
-	const {w, t, ey, L, R} = c.g;
+	const {w, t, ey, L} = c.g;
 	const afro = c.f.hairStyle === 4;
 	const lift = LIFT[c.f.hairStyle] ?? 0;
 	const col = HATC[c.f.hatColor]!;
@@ -1136,7 +1183,24 @@ function hat(c: Ctx): string
 			pts`100,${y - h - 1} ${100 - width * 0.34},${y - h} ${100 - width * 0.72},${y - h * 0.82} ${100 - width * 0.95},${y - h * 0.46} ${100 - width},${y}`,
 		);
 	// A band over the top of the head, for whatever is worn on one.
-	const band = (fill: string): string => cut(fill, d(strip(over(c, ey - 4, 8, 2.5), 6.4)));
+	const band = (fill: string): string => cut(fill, d(strip(over(c, ey - 4, 16, BAND), 6.6)));
+	// Whatever stands on the band is cut as its left one, in the band's own directions where it stands: across runs
+	// along the band towards the top of the head, and up runs straight out from it, leaning a little upright. Its foot
+	// tucks under the band, so the two always line up.
+	// The point of the band's left half that is at x.
+	const at = (x: number): Pt =>
+		hp(c, Math.PI * (1 + solve((v) => hp(c, Math.PI * (1 + v / 2), BAND)[0], x) / 2), BAND);
+	const onBand = (shape: Pt[]): Pt[] =>
+	{
+		const [x0, y0] = at(100 - w * 0.47),
+			[ax, ay] = at(100 - w * 0.47 - 8),
+			[bx, by] = at(100 - w * 0.47 + 8);
+		const l = Math.hypot(bx - ax, by - ay),
+			[ux, uy] = [(bx - ax) / l, (by - ay) / l];
+		const n = Math.hypot(uy, -ux - 0.7),
+			[nx, ny] = [uy / n, (-ux - 0.7) / n];
+		return shape.map(([across, up]) => [x0 + across * ux + up * nx, y0 + across * uy + up * ny]);
+	};
 	switch (c.f.hat)
 	{
 		case 0:
@@ -1160,11 +1224,33 @@ function hat(c: Ctx): string
 			);
 		case 2:
 		{
-			// Headphones: a band arching over the hair and a big cup over each ear.
-			const cups = (x: number, s: number): string =>
-				cut(shade(col, -0.45), d(ngon(x + s * 6, ey + 12, 7, 15, 8))) +
-				cut(col, d(ngon(x - s * 2, ey + 12, 11, 17, 8)));
-			return sheet(cut(col, d(strip(over(c, ey - 2, 12, 14), 6)))) + sheet(cups(L - 4, 1) + cups(R + 4, -1));
+			// Headphones: a padded band over the hair, and over each ear a cushion against the head with a big cup
+			// on it.
+			const x = L - 8,
+				y = ey + 14;
+			const dark = shade(col, -0.45);
+			return (
+				sheet(
+					cut(col, d(strip(over(c, ey - 4, 14, 11), 6.6))) +
+						cut(dark, d(strip(sweep(c, Math.PI * 1.36, Math.PI * 1.64, 6, 12), 10))),
+				) +
+				sheet(
+					cut(
+						dark,
+						both(
+							pts`${x + 6},${y - 13} ${x + 12},${y - 11} ${x + 14},${y} ${x + 12},${y + 11} ${x + 6},${y + 13}`,
+						),
+					) +
+						cut(
+							col,
+							both(
+								pts`${x - 11},${y - 11} ${x - 7},${y - 17.5} ${x + 5},${y - 17.5} ${x + 9},${y - 13} ${x + 9},${y + 13} ${x + 5},${y + 17.5} ${x - 7},${y + 17.5} ${x - 11},${y + 11}`,
+							),
+						) +
+						cut(shade(col, 0.35), both(ngon(x - 1, y, 5, 8, 6, Math.PI / 6))) +
+						cut(dark, both(ngon(x - 1, y, 2, 3.4, 6, Math.PI / 6))),
+				)
+			);
 		}
 		case 3:
 			// A top hat: a tall dark crown with a ribbon, on a narrow brim.
@@ -1321,29 +1407,25 @@ function hat(c: Ctx): string
 		}
 	}
 	// Cat ears and devil horns stand on a band.
-	const by = t + 6 - (afro ? 20 : lift),
-		x = 100 - w * 0.55;
 	if (c.f.hat === 10)
 		return (
 			sheet(
-				cut(fixed, both(pts`${x - 21},${by + 6} ${x - 6},${by - 44} ${x + 21},${by + 6}`)) +
-					cut("#ffb3c7", both(pts`${x - 11},${by + 1} ${x - 5},${by - 28} ${x + 11},${by + 1}`)),
+				cut(fixed, both(onBand(pts`-15,-3 -15.5,9 -11,24 -4,38 5,24 12,11 15,-3`))) +
+					cut("#ffb3c7", both(onBand(pts`-8.5,3 -9,9.5 -7,19 -3.5,27.5 2,18 7,9 8.5,3`))),
 			) + sheet(band(fixed))
 		);
-	// Devil horns: thick at the root, curving out to a sharp point, with a darker strip along the inner curve.
+	// Devil horns: thick at the root and curving out and up to a sharp point, with a darker strip along the inner curve
+	// and two rings round the root.
+	const horn: Pt[] = pts`-14,-3 -18,9 -19,22 -15.5,34 -7,43 4,49 -1,37 0,26 4,16 9.5,7 13,-3`;
+	const dim = shade(fixed, swapped ? 0.3 : -0.35);
 	return (
 		sheet(
-			cut(
-				fixed,
-				both(
-					pts`${x + 14},${by + 5} ${x + 11},${by - 10} ${x + 3},${by - 26} ${x - 10},${by - 39} ${x - 25},${by - 48} ${x - 21},${by - 34} ${x - 17},${by - 18} ${x - 14},${by + 5}`,
-				),
-			) +
+			cut(fixed, both(onBand(horn))) +
+				cut(dim, both(onBand(pts`4,49 -1,37 0,26 4,16 9.5,7 13,-3 6,-3 3.5,7 -2,16 -5.5,26 -5.5,37`))) +
 				cut(
-					shade(fixed, -0.35),
-					both(
-						pts`${x + 14},${by + 5} ${x + 11},${by - 10} ${x + 3},${by - 26} ${x - 10},${by - 39} ${x - 25},${by - 48} ${x - 6},${by - 30} ${x + 3},${by - 14} ${x + 6},${by + 5}`,
-					),
+					dim,
+					both(onBand(pts`-16.5,5 11,4 9.5,7.5 -17.5,8.5`)) +
+						both(onBand(pts`-18.8,15.5 5,14 3.6,17.5 -19,19`)),
 				),
 		) + sheet(band(fixed))
 	);

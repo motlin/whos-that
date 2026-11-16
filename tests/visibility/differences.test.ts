@@ -54,12 +54,12 @@ function totalDistance(a: Uint8Array, b: Uint8Array): number
 }
 
 // The pixels that change by more than a glance at a dark edge on dark hair would notice.
-function strongPixels(a: Uint8Array, b: Uint8Array): number
+function strongPixels(a: Uint8Array, b: Uint8Array, contrast = MIN_HAT_CONTRAST): number
 {
 	let n = 0;
 	for (let i = 0; i < a.length; i += 4)
 	{
-		if (colorDistance(a, b, i) > MIN_HAT_CONTRAST) n++;
+		if (colorDistance(a, b, i) > contrast) n++;
 	}
 	return n;
 }
@@ -266,6 +266,54 @@ it("draws every hat so it stands out from the hair or head under it", async () =
 		}
 	}
 	expect(melted).toStrictEqual([]);
+});
+
+// Glasses and cheek marks sit on bare skin, so like a hat each one stands out as clearly on every skin as on the one it
+// shows best on: dark frames and dark marks lighten on dark skin, and gold and pale ones darken on light skin. Thin
+// frames need a stronger contrast than a hat to read at all. Blush is a soft wash by design, so it is left out.
+const ON_SKIN: readonly FeatureKey[] = ["glasses", "cheeks"];
+const MIN_SKIN_CONTRAST = 140;
+const BLUSH = 1;
+const DARK_SKIN = 3;
+const WHITE_HAIR = 5;
+it("draws every pair of glasses and every cheek mark so it stands out on every skin", async () =>
+{
+	const faint: string[] = [];
+	for (const k of ON_SKIN)
+	{
+		for (const v of values(k).filter((x) => x > 0 && !(k === "cheeks" && x === BLUSH)))
+		{
+			await breathe();
+			const shown = values("skin").map((skin) =>
+			{
+				// Glasses lift the eyebrows, so the brows take a hair color that shows on this skin, as the frames must.
+				const bare =
+				{
+					...BASE,
+					eyes: 1,
+					skin,
+					hairColor: skin >= DARK_SKIN ? WHITE_HAIR : 0,
+				};
+				return strongPixels(
+					render(bare),
+					render(
+						{
+							...bare,
+							[k]: v,
+						},
+					),
+					MIN_SKIN_CONTRAST,
+				);
+			});
+			const best = Math.max(...shown);
+			for (const [skin, n] of shown.entries())
+			{
+				if (n < MIN_HAT_CONTRAST_SHARE * best)
+					faint.push(`${k} ${v} on skin ${skin}: ${Math.round((n / best) * 100)}%`);
+			}
+		}
+	}
+	expect(faint).toStrictEqual([]);
 });
 
 // The pixels a change alters, as indexes into the render.

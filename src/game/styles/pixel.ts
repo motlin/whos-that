@@ -151,6 +151,28 @@ function stamp(px: Tone[], left: number, top: number, rows: readonly string[], i
 	}
 }
 
+// The empty cells that touch a picture's inked ones, as a picture one cell bigger all round.
+function halo(rows: readonly string[]): string[]
+{
+	const inked = (i: number, j: number): boolean => (rows[j]?.[i] ?? ".") !== ".";
+	return Array.from(
+		{
+			length: rows.length + 2,
+		},
+		(_, j) =>
+			Array.from(
+				{
+					length: rows[0]!.length + 2,
+				},
+				(__, i) =>
+					!inked(i - 1, j - 1) &&
+					(inked(i - 2, j - 1) || inked(i, j - 1) || inked(i - 1, j - 2) || inked(i - 1, j))
+						? "O"
+						: ".",
+			).join(""),
+	);
+}
+
 // Stamps a picture on the right of the face and its mirror image on the left.
 function twin(px: Tone[], left: number, top: number, rows: readonly string[], inks: Inks): void
 {
@@ -837,14 +859,18 @@ function mouth(a: Art): void
 function beard(a: Art): void
 {
 	const {f, g, px} = a;
-	const {w, b, ey, ny, my} = g;
+	const {w, b, ny, my} = g;
 	const hc = a.natural;
 	// Cells counted from the middle of the face and from the mouth line.
 	const u = (X: number): number => off(X) / CELL;
 	const v = (Y: number): number => (Y - Y0) / CELL - a.mouthRow;
-	// Sideburns hug the edge of the face and stop short of the cheeks.
+	// Rows counted from the eyes, where the ears are.
+	const r = (Y: number): number => cellRow(Y) - a.eyeRow;
+	// Sideburns grow down from the hairline at the temple, in front of each ear, as a strip so many cells in from the
+	// edge of the face, and stop short of the cheeks.
 	const cheek = (Math.round((w * 0.52) / CELL) + 3) * CELL;
-	const burns: Test = (X, Y) => Y > ey - 18 && a.head(X, Y) && off(X) > Math.max(headHalf(f, g, Y) - 13, cheek);
+	const burns = (X: number, Y: number, cells: number): boolean =>
+		r(Y) >= -7 && off(X) > cheek && a.head(X, Y) && !a.head(100 + off(X) + cells * CELL, Y);
 	switch (f.facialHair)
 	{
 		case 3:
@@ -877,7 +903,8 @@ function beard(a: Art): void
 			break;
 		}
 		case 6:
-			mass(a, (X, Y) => burns(X, Y) && Y < ny + 20 - Math.max(0, headHalf(f, g, Y) - off(X) - 5), hc);
+			// Sideburns run past the ear and narrow a cell at a time to a point on the jaw.
+			mass(a, (X, Y) => r(Y) <= 10 && burns(X, Y, r(Y) < 6 ? 3 : r(Y) < 9 ? 2 : 1), hc);
 			break;
 		case 7:
 			// A goatee circles the mouth: mustache, chin and the strips that join them.
@@ -897,7 +924,7 @@ function beard(a: Art): void
 				a,
 				(X, Y) =>
 					a.head(X, Y) &&
-					((burns(X, Y) && Y < my + 12) ||
+					((burns(X, Y, 3) && Y < my + 12) ||
 						(v(Y) > -4 &&
 							v(Y) < (u(X) < 3 ? -1 : u(X) < 6 ? 0 : u(X) < 9 ? 1 : 3) &&
 							!(u(X) < 1 && v(Y) > -2))),
@@ -997,27 +1024,74 @@ function cheeks(a: Art): void
 			);
 			break;
 		case 4:
+			// A plaster: tan with a darker pad on the palest skin, where a cream one would vanish, and cream with a
+			// gauze pad on every other.
 			stamp(
 				px,
 				MID - dx - 4,
 				top,
 				[".OOOOOO.", "OTTPPTTO", "OTTPPTTO", ".OOOOOO."],
 				{
-					O: "#9a6233",
-					T: "#fff1d6",
-					P: "#dba566",
+					O: f.skin >= 3 ? a.line : shade(a.line, -0.3),
+					T: f.skin ? "#fff1d6" : "#d99a6c",
+					P: f.skin ? "#c8d4e0" : "#b87548",
 				},
 			);
 			break;
 		case 5:
+		{
+			// A star in a yellow no skin comes near, ringed so its points stay sharp: by the face line on light skin and by
+			// orange on dark.
+			const rows = ["...Y...", "...Y...", "YYYYYYY", ".YYYYY.", "..YYY..", ".YYDYY.", ".YD.DY."];
 			stamp(
 				px,
 				MID + dx - 4,
-				top - 2,
-				["...Y...", "...Y...", "YYYYYYY", ".YYYYY.", "..YYY..", ".YYDYY.", ".YD.DY."],
+				top - 3,
+				halo(rows),
 				{
-					Y: "#ffd23f",
-					D: "#d99a16",
+					O: f.skin >= 3 ? "#ff9a1f" : a.line,
+				},
+			);
+			stamp(
+				px,
+				MID + dx - 3,
+				top - 2,
+				rows,
+				{
+					Y: "#ffd400",
+					D: "#e09a00",
+				},
+			);
+			break;
+		}
+		case 6:
+		{
+			// A beauty mark: a round dark mole with a glint, in a soft ring of shade. On the darkest skin no mole is dark
+			// enough to show, so there the ring is the light face line.
+			const mole = f.skin >= 3 ? "#1c0e06" : "#3d2014";
+			stamp(
+				px,
+				MID + dx - 3,
+				top - 2,
+				["..SS..", ".SMMS.", "SMHMMS", "SMMMMS", ".SMMS.", "..SS.."],
+				{
+					M: mole,
+					H: mix(mole, sk, 0.35),
+					S: f.skin === 4 ? a.line : SHADOW[f.skin]!,
+				},
+			);
+			break;
+		}
+		case 7:
+			// Dimples: a crease that brackets each corner of the mouth, with a hollow of soft shade on the mouth's side.
+			twin(
+				px,
+				MID + 5,
+				a.mouthRow - 2,
+				["SL.", "SSL", "SSL", "SSL", "SSL", "SL."],
+				{
+					L: a.line,
+					S: f.skin >= 3 ? mix(sk, a.line, 0.3) : SHADOW[f.skin]!,
 				},
 			);
 			break;
@@ -1281,6 +1355,19 @@ function glasses(a: Art): void
 	if (!f.glasses) return;
 	const rows = FRAMES[f.glasses - 1]!;
 	const dark = f.skin >= 3 ? a.line : FRAME;
+	// Gold melts into the medium skins, so it is a deep gold on light skin and a bright one on medium and dark skin.
+	const gold =
+		f.skin < 2
+			?
+				{
+					F: "#c48a00",
+					D: "#8f6400",
+				}
+			:
+				{
+					F: "#ffd84a",
+					D: "#ffb300",
+				};
 	const inks = [
 		{
 			F: dark,
@@ -1288,14 +1375,8 @@ function glasses(a: Art): void
 		{
 			F: dark,
 		},
-		{
-			F: "#d49a00",
-			D: "#8f6400",
-		},
-		{
-			F: "#d49a00",
-			D: "#8f6400",
-		},
+		gold,
+		gold,
 		{
 			F: "#ff4fa0",
 		},
@@ -1306,7 +1387,7 @@ function glasses(a: Art): void
 	{
 		// A monocle sits on one eye, with a chain hanging down the cheek.
 		stamp(px, left, top, rows, inks);
-		for (const [i, dx] of [5, 5, 5, 4, 3, 2].entries()) dot(px, MID + a.eyeCol + dx, a.eyeRow + 5 + i * 2, GOLD);
+		for (const [i, dx] of [5, 5, 5, 4, 3, 2].entries()) dot(px, MID + a.eyeCol + dx, a.eyeRow + 5 + i * 2, gold.F);
 		return;
 	}
 	twin(px, left, top, rows, inks);
@@ -1350,6 +1431,21 @@ function hat(a: Art): void
 	{
 		area(px, (X, Y) => Y < ey - 4 && a.head(X, Y, 4) && !a.head(X, Y, -1), tone);
 	};
+	// Stamps a picture right of the middle and its mirror image on the left; O is a rim.
+	const worn = (dx: number, top: number, rows: readonly string[], inks: Inks): void =>
+	{
+		for (const [j, line] of rows.entries())
+		{
+			for (let i = 0; i < line.length; i++)
+			{
+				for (const x of [MID + dx + i, MID - dx - i - 1])
+				{
+					const ink = line[i] === "O" ? rim(cellX(x), cellY(top + j)) : inks[line[i]!];
+					if (ink) dot(px, x, top + j, ink);
+				}
+			}
+		}
+	};
 	const up = afro ? 20 : lift;
 	const perch = afro ? 40 : (PERCH[f.hairStyle] ?? 0);
 	switch (f.hat)
@@ -1373,26 +1469,30 @@ function hat(a: Art): void
 		}
 		case 2:
 		{
-			// Headphones: a thin band arched over the hair and a big round cup over each ear.
+			// Headphones: a padded band arched over the hair, a metal slider at each end, and a big cup over each ear with
+			// a dark cushion against the head.
 			const arch = (X: number, Y: number, side: number): boolean =>
 				a.head(X, Y, side) || a.head(X, Y + perch, side);
 			// The band has a rim along both edges, so it stands out on hair of nearly its color.
-			area(px, (X, Y) => Y < ey - 6 && arch(X, Y, 17) && !arch(X, Y, 4), rim);
+			area(px, (X, Y) => Y < ey - 20 && arch(X, Y, 17) && !arch(X, Y, 4), rim);
 			area(
 				px,
-				(X, Y) => Y < ey - 6 && arch(X, Y, 14) && !arch(X, Y, 7),
-				(X) => (X > 100 + w * 0.5 ? low : c),
+				(X, Y) => Y < ey - 20 && arch(X, Y, 14) && !arch(X, Y, 7),
+				(X, Y) => (X > 100 + w * 0.5 ? low : X < 100 - w * 0.2 && !arch(X, Y, 10) ? shade(c, 0.35) : c),
 			);
-			for (const side of [-1, 1])
-			{
-				const cx = 100 + side * (w + 4);
-				area(px, (X, Y) => oval(X, Y, cx, ey + 12, 10, 16), rim);
-				area(
-					px,
-					(X, Y) => oval(X, Y, cx, ey + 12, 7, 13),
-					(X, Y) => (off(X) < w + 2 ? apart("#3b3b45", "#8a8a98") : Y < ey + 4 && X < cx ? shade(c, 0.3) : c),
-				);
-			}
+			// The sliders are thin and bare, so the tip of a pointed ear shows beside them.
+			area(px, (X, Y) => Y > ey - 24 && Y < ey && arch(X, Y, 12) && !arch(X, Y, 8), apart("#c9cbd6", "#6c7080"));
+			worn(
+				Math.floor(w / CELL) - 2,
+				row(ey + 12) - 4,
+				[".OOOO.", "OKCCCO", "OKHHCO", "OKHCCO", "OKCCCO", "OKCCDO", "OKCDDO", "OKDDDO", ".OOOO."],
+				{
+					C: c,
+					H: shade(c, 0.4),
+					D: low,
+					K: apart("#3b3b45", "#8a8a98"),
+				},
+			);
 			break;
 		}
 		case 3:
@@ -1566,37 +1666,87 @@ function hat(a: Art): void
 			const cat = f.hat === 10;
 			// Black ears go light grey on black hair, and red horns a deep crimson on red hair.
 			const tone = cat ? apart("#2b2b2b", "#a9a9b4") : apart("#d92b2b", "#7c0f2a");
-			const by = t + 6 - up;
-			const from = (X: number): number => off(X) - w * 0.55;
+			// The band arches over the hair, two cells thick on top and one down the sides, where it would hide the hair
+			// over the ears, and the ears or horns stand on it.
+			const arch = (X: number, Y: number, side: number): boolean => a.head(X, Y, side) || a.head(X, Y + up, side);
+			const banded: Test = (X, Y) => Y < ey - 4 && arch(X, Y, 6) && !arch(X, Y, Y < t + 18 - up ? -2 : 2);
+			// The row of the band's top edge in a column.
+			const bandTop = (x: number): number =>
+			{
+				let y = 0;
+				while (y < ROWS && !banded(cellX(x), cellY(y))) y++;
+				return y;
+			};
+			// Stands a picture on the band right of the middle, and its mirror image on the left. The picture's middle
+			// column rests on the band; the band hides whatever dips under it nearer the top of the head, and the bottom
+			// row runs on down to it further out, so the whole base follows the curve of the band.
+			const plant = (dx: number, rows: readonly string[], inks: Inks): void =>
+			{
+				const wide = rows[0]!.length;
+				const base = bandTop(MID + dx + Math.floor(wide / 2)) - rows.length;
+				for (let i = 0; i < wide; i++)
+				{
+					const stop = bandTop(MID + dx + i);
+					for (let y = base; y < stop; y++)
+					{
+						const ink = inks[rows[Math.min(y - base, rows.length - 1)]![i]!];
+						if (!ink) continue;
+						dot(px, MID + dx + i, y, ink);
+						dot(px, MID - dx - i - 1, y, ink);
+					}
+				}
+			};
+			const at = Math.round((w * 0.5) / CELL);
 			if (cat)
 			{
-				// Cat ears: black triangles with pink insides.
-				area(
-					px,
-					(X, Y) => Y < by + 6 && from(X) > -21 + (by + 6 - Y) * 0.54 && from(X) < 21 - (by + 6 - Y) * 0.3,
-					tone,
-				);
-				area(
-					px,
-					(X, Y) => Y < by + 1 && from(X) > -10 + (by + 1 - Y) * 0.54 && from(X) < 11 - (by + 1 - Y) * 0.22,
-					"#ffb3c7",
+				// Cat ears: tall triangles that lean outward, lit along the inner edge, with pink insides.
+				plant(
+					at - 4,
+					[
+						"......T..",
+						".....LTT.",
+						"....LTPTT",
+						"...LTPPDT",
+						"..LTPPPDT",
+						".LTPPPPDT",
+						".LTPPPPDT",
+						"LTTPPPDDT",
+						"TTTTTTTTT",
+					],
+					{
+						T: tone,
+						L: shade(tone, 0.3),
+						P: "#ffb3c7",
+						D: "#e8809f",
+					},
 				);
 			}
 			else
 			{
-				// Devil horns: red, curving up and out to a point.
-				const rise = (Y: number): number => Math.max(0, (by + 5 - Y) / 43);
-				area(
-					px,
-					(X, Y) =>
-						Y < by + 5 &&
-						Y > by - 38 &&
-						from(X) > -10 + 30 * rise(Y) ** 2.2 &&
-						from(X) < 10 + 11 * rise(Y) ** 0.6,
-					(X, Y) => (from(X) < -6 + 30 * rise(Y) ** 2.2 ? "#ff7a6a" : tone),
+				// Devil horns: fat at the root, bowed outward, and curling in to a sharp tip.
+				plant(
+					at - 3,
+					[
+						"..H....",
+						"..HR...",
+						"..HRR..",
+						"...HRR.",
+						"...HRRR",
+						"...HRRD",
+						"..HRRRD",
+						".HRRRRD",
+						"HRRRRDD",
+						"RRRRRDD",
+					],
+					{
+						R: tone,
+						H: "#ff7a6a",
+						D: shade(tone, -0.3),
+					},
 				);
 			}
-			band(tone);
+			// The top edge of the band catches the light.
+			area(px, banded, (X, Y) => (arch(X, Y, 2) || Y >= t + 18 - up ? tone : shade(tone, 0.3)));
 			break;
 		}
 	}

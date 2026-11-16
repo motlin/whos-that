@@ -1,5 +1,5 @@
 import {CLOTH, crownColor, DYEC, EYEC, type Face, HAIRC, HATC, SKIN} from "../faces.ts";
-import {geo, type Geo, headHalf, shade, star} from "../geometry.ts";
+import {geo, type Geo, headHalf, shade, solve, star} from "../geometry.ts";
 import type {ArtStyle} from "./style.ts";
 
 // Creases pressed into the skin (nose shadows, ear folds, pucker lines) and the thin bed under hair that lies on the
@@ -14,6 +14,19 @@ const TOOTH = "#ffffff";
 const POMPOM = "#fbf6ec";
 const TIE_RED = "#ff4d6d";
 const GOLD = "#e6b422";
+// Gold worn on the skin: deep gold on the light skins and bright gold on the dark ones, so it never melts into either.
+const GOLD_ON = ["#c48a00", "#9a6800", "#ffe873", "#f5c542", "#f5c542"];
+// A bandage's strip and its pad: brown tones on the light skins, pale ones on the rest.
+const BANDAGE = [
+	["#c98a52", "#9a5f2e"],
+	["#9c6234", "#6e4120"],
+	["#f8dcb4", "#fff6e6"],
+	["#f8dcb4", "#d99a5c"],
+	["#f8dcb4", "#d99a5c"],
+] as const;
+// A star sticker: orange gold on the light skins, yellow on the rest.
+const STAR = ["#f29a00", "#c96a00", "#ffe14d", "#ffd23f", "#ffd23f"];
+const MOLE = "#3b2416";
 const darkSkin = (f: Face): boolean => f.skin >= 3;
 
 type Value = string | number;
@@ -500,6 +513,9 @@ function mouth(f: Face, g: Geo): string
 	return "";
 }
 
+// A shallow dent pressed into a piece. It is painted flat, so it starts from the piece's color as the light leaves it,
+// which is paler than the clay itself, and goes a little darker.
+const dent = (color: string, depth: number): string => shade(shade(color, 0.19), -depth);
 // Stubble: the same scatter of dots on every face.
 const STUBBLE = ((): [number, number][] =>
 {
@@ -514,6 +530,8 @@ const STUBBLE = ((): [number, number][] =>
 	}
 	return a;
 })();
+// How wide a sideburn is on its way down, from 0 under the hair to 1 at its tip: a round shoulder, then a slow taper.
+const sideburnWidth = (u: number): number => (4.5 + 8 * (1 - u ** 2.2)) * Math.min(1, 0.5 + u * 4);
 function beard(f: Face, g: Geo, hc: string): string
 {
 	const {L, R, b, ey, ny, my, w} = g;
@@ -563,10 +581,31 @@ function beard(f: Face, g: Geo, hc: string): string
 		}
 		case 6:
 		{
-			// Sideburns start under the hair, so they join it, and run to the jaw short of the cheeks.
-			const side = (x: number, s: number): string =>
-				svg`M${x - s * 3} ${ey - 18} L${x + s * 15} ${ey - 18} L${x + s * 17} ${ny + 14} Q${x + s * 11} ${ny + 27} ${x + s * 4} ${ny + 20}Z`;
-			return small(onSkin(f, `<path d="${side(L, 1)} ${side(R, -1)}"/>`, hc));
+			// Sideburns grow down from under the hair in front of each ear, hugging the edge of the face and narrowing to
+			// a round tip at the jaw. Two strands are pressed along each.
+			const top = ey - 22,
+				low = ny + 6;
+			let burns = "",
+				strands = "";
+			for (const s of [-1, 1])
+			{
+				const at = (u: number, inset: number): string =>
+				{
+					const Y = top + (low - top) * u;
+					return svg`${100 + s * (headHalf(f, g, Y) - 0.5 - inset * sideburnWidth(u))} ${Y}`;
+				};
+				const us = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+				burns += "M" + [...us.map((u) => at(u, 0)), ...us.toReversed().map((u) => at(u, 1))].join(" L") + "Z ";
+				for (const inset of [0.36, 0.7])
+					strands +=
+						"M" +
+						us
+							.filter((u) => u > 0.3 && u < 0.9)
+							.map((u) => at(u, inset))
+							.join(" L") +
+						" ";
+			}
+			return small(onSkin(f, `<path d="${burns}"/>`, hc, 2.5) + sausage(strands, deep(hc), 1.5));
 		}
 		case 7:
 		{
@@ -690,11 +729,49 @@ function cheeks(f: Face, g: Geo, sk: string): string
 			return small(sausage(stripes(lx, -1) + " " + stripes(rx, 1), "#3a78f2", 5.5));
 		}
 		case 4:
+		{
+			// A bandage: a strip with a pad in the middle and air holes at each end, in tones that stand out from the skin.
+			const [strip, pad] = BANDAGE[f.skin]!;
+			let holes = "";
+			for (const dx of [-13, -10, 10, 13])
+				for (const dy of [-3, 3]) holes += ball(lx + dx, cy + dy, 1.1, deep(strip));
 			return small(
-				svg`<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 18}" y="${cy - 8}" width="36" height="16" rx="6.5" fill="#f8dcb4"/><rect x="${lx - 6.5}" y="${cy - 6}" width="13" height="12" rx="2.5" fill="#d99a5c"/></g>`,
+				svg`<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 18}" y="${cy - 8}" width="36" height="16" rx="6.5" fill="${strip}"/><rect x="${lx - 6.5}" y="${cy - 6.5}" width="13" height="13" rx="2.5" fill="${pad}"/>${holes}</g>`,
 			);
+		}
 		case 5:
-			return small(slab(star(rx, cy, 13, 6), "#ffd23f", 2.5));
+			return small(slab(star(rx, cy, 13, 6), STAR[f.skin]!, 2.5));
+		case 6:
+		{
+			// A beauty mark: one dark mole pressed into a shallow dent on one cheek. On the darkest skin, where dark on
+			// dark vanishes, it sits on a bed of the crease color like the hair does.
+			const x = rx - 3,
+				y = cy + 5,
+				dark = darkSkin(f);
+			return (
+				[0, 1, 2].map((i) => ball(x, y, 12.5 - 2.4 * i, dent(sk, 0.06 + 0.03 * i))).join("") +
+				small((f.skin === 4 ? ball(x, y, 7.5, CREASE[4]!) : "") + ball(x, y, 5.4, dark ? "#0c0604" : MOLE))
+			);
+		}
+		case 7:
+		{
+			// Dimples: a dent pressed in just past each corner of the mouth, with a crease curving round its outer side.
+			const y = g.my + 4;
+			let dents = "",
+				creases = "";
+			for (const s of [-1, 1])
+			{
+				const x = 100 + s * 30;
+				dents +=
+					svg`<ellipse cx="${x - s}" cy="${y}" rx="8.2" ry="9.6" fill="${dent(sk, 0.07)}"/>` +
+					svg`<ellipse cx="${x}" cy="${y}" rx="5" ry="7" fill="${dent(sk, 0.13)}"/>`;
+				creases += svg`M${x + s * 1.5} ${y - 6.5} Q${x + s * 7} ${y} ${x + s * 1.5} ${y + 6.5} `;
+			}
+			return (
+				dents +
+				sausage(creases, darkSkin(f) ? CREASE[f.skin]! : shade(CREASE[f.skin]!, -0.25), f.skin === 2 ? 4 : 3.5)
+			);
+		}
 	}
 	return "";
 }
@@ -811,6 +888,7 @@ function glasses(f: Face, g: Geo): string
 		rx = 100 + ex;
 	// Dark frames vanish on the darkest skins, so the plain frames are rolled from pale clay there.
 	const frame = darkSkin(f) ? "#efe8d8" : "#34343f";
+	const gold = GOLD_ON[f.skin]!;
 	const arms = (d: number): string =>
 		svg`M${lx + d} ${y - 2} Q100 ${y - 8} ${rx - d} ${y - 2} M${lx - d} ${y - 2} L${L - 1} ${y - 6} M${rx + d} ${y - 2} L${R + 1} ${y - 6}`;
 	switch (f.glasses)
@@ -833,7 +911,7 @@ function glasses(f: Face, g: Geo): string
 			return small(
 				sausage(
 					svg`${lens(lx, -1)} ${lens(rx, 1)} M${lx + 17} ${y - 17} L${rx - 17} ${y - 17} M${lx - 18} ${y - 4} L${L - 1} ${y - 7} M${rx + 18} ${y - 4} L${R + 1} ${y - 7}`,
-					GOLD,
+					gold,
 					3.4,
 				),
 			);
@@ -849,10 +927,10 @@ function glasses(f: Face, g: Geo): string
 					rx + (1 - u) * (1 - u) * 14 + 2 * u * (1 - u) * 23 + u * u * 8,
 					y + (1 - u) * (1 - u) * 14 + 2 * u * (1 - u) * 40 + u * u * 62,
 					2,
-					"#c9a227",
+					gold,
 				);
 			}
-			return small(sausage(oval(rx, y, 18, 18), "#c9a227", 4.2) + chain);
+			return small(sausage(oval(rx, y, 18.5, 18.5), gold, 4.2) + chain);
 		}
 		case 5:
 		{
@@ -898,19 +976,50 @@ const PERCH: Record<number, number> =
 // A gore of a beanie: a stripe from the base up to the top, between two fractions of the half width.
 const gore = (hy: number, hw: number, h: number, a: number, b: number): string =>
 	svg`M${100 + a * hw} ${hy} Q${100 + a * hw * 0.92} ${hy - h * 0.8} 100 ${hy - h} Q${100 + b * hw * 0.92} ${hy - h * 0.8} ${100 + b * hw} ${hy}Z`;
+// The band the bow, cat ears and devil horns sit on. It runs over the head from temple to temple and rides up with the
+// hair. Whatever sits on it is drawn through seat: a point given as how far along the band, away from the middle of the
+// face, and how far out from the band it lies, so the piece stands where the band is and leans the way it does there.
+function headband(
+	f: Face,
+	g: Geo,
+):
+{
+	d: string;
+	seat: (side: number, from: number) => (a: number, n: number) => string;
+}
+{
+	const {w, t, ey, L, R} = g;
+	const rise = f.hairStyle === 4 ? 10 : (LIFT[f.hairStyle] ?? 0);
+	const ends = ey - 4,
+		pull = t - 24 - (rise * 4) / 3;
+	const bx = (u: number): number =>
+		(1 - u) ** 3 * (L - 2) + 3 * (1 - u) ** 2 * u * (L - 6) + 3 * (1 - u) * u * u * (R + 6) + u ** 3 * (R + 2);
+	return {
+		d: svg`M${L - 2} ${ends} C${L - 6} ${pull} ${R + 6} ${pull} ${R + 2} ${ends}`,
+		seat: (side, from) =>
+		{
+			const u = solve(bx, 100 + from);
+			const px = bx(u),
+				py = ((1 - u) ** 3 + u ** 3) * ends + 3 * (1 - u) * u * pull;
+			const dx = 3 * (1 - u) ** 2 * -4 + 6 * (1 - u) * u * (2 * w + 12) + 3 * u * u * -4,
+				dy = 3 * (1 - u) ** 2 * (pull - ends) + 3 * u * u * (ends - pull);
+			const tx = dx / Math.hypot(dx, dy),
+				ty = dy / Math.hypot(dx, dy);
+			return (a, n) => svg`${100 + side * (px - 100 + a * tx + n * ty)} ${py + a * ty - n * tx}`;
+		},
+	};
+}
 function hat(f: Face, g: Geo): string
 {
 	if (!f.hat) return "";
 	const {w, t, ey, L, R} = g;
 	const afro = f.hairStyle === 4;
-	const lift = LIFT[f.hairStyle] ?? 0;
 	// The hats that cover the crown are small and perched on top, so the hairline and the sides of the hair show.
 	const hy = afro ? t - 10 : t + 12 - (PERCH[f.hairStyle] ?? 0);
 	const hw = w * 0.66 + 4;
 	const c = HATC[f.hatColor]!;
 	const dome = (h: number): string =>
 		svg`<path fill="${c}" d="M${100 - hw} ${hy} Q${100 - hw} ${hy - h} 100 ${hy - h - 2} Q${100 + hw} ${hy - h} ${100 + hw} ${hy}Z"/>`;
-	const band = svg`M${L - 2} ${ey - 4} C${L - 6} ${t - 24} ${R + 6} ${t - 24} ${R + 2} ${ey - 4}`;
 	switch (f.hat)
 	{
 		case 1:
@@ -929,20 +1038,42 @@ function hat(f: Face, g: Geo): string
 			);
 		case 2:
 		{
-			// Headphones: a thin band over the top of the head and a big cup over each ear, ending above the earrings.
+			// Headphones: a padded band over the top of the head or hair and a big cup over each ear, ending above the
+			// earrings. Each cup is a shell in the hat color with a speaker plate, on a cushion that rests on the head.
 			const cy = ey + 12;
-			const top = Math.min(hy - 18, t - 12);
-			let o = small(
-				sausage(
-					svg`M${L - 5} ${cy - 8} C${L - 14} ${top - 4} ${R + 14} ${top - 4} ${R + 5} ${cy - 8}`,
-					against(f, shade(c, -0.25), shade(c, 0.45)),
-					6,
-				),
-			);
-			for (const x of [L - 4, R + 4])
+			const apex = afro ? t - 7 : hy - 12;
+			const pull = (apex - 0.25 * (cy - 8)) / 0.75;
+			const bandColor = against(f, shade(c, -0.25), shade(c, 0.45));
+			// The padding follows the middle of the band.
+			let padding = "";
+			for (let u = 0.34; u < 0.67; u += 0.04)
+			{
+				const v = 1 - u;
+				padding +=
+					(padding ? " L" : "M") +
+					svg`${(v ** 3 + 3 * v * v * u) * (L - 14) + (3 * v * u * u + u ** 3) * (R + 14) + (v ** 3 - u ** 3) * 9} ${(v ** 3 + u ** 3) * (cy - 8) + 3 * v * u * pull}`;
+			}
+			let o =
+				small(
+					sausage(
+						svg`M${L - 5} ${cy - 8} C${L - 14} ${pull} ${R + 14} ${pull} ${R + 5} ${cy - 8}`,
+						bandColor,
+						7,
+					),
+				) + small(sausage(padding, bandColor, 11));
+			for (const s of [-1, 1])
+			{
+				const x = 100 + s * (w + 4);
 				o +=
-					big(svg`<rect fill="${c}" x="${x - 12}" y="${cy - 19}" width="24" height="31" rx="11"/>`) +
-					small(svg`<rect fill="#3a3a44" x="${x - 5.5}" y="${cy - 13}" width="11" height="19" rx="5.5"/>`);
+					small(
+						svg`<rect fill="${shade(c, -0.45)}" x="${x - s * 5.5 - 6.5}" y="${cy - 16}" width="13" height="27" rx="6.5"/>`,
+					) +
+					big(
+						svg`<rect fill="${c}" x="${x + s * 4 - 10.5}" y="${cy - 19}" width="21" height="32" rx="10.5"/>`,
+					) +
+					small(svg`<ellipse fill="${shade(c, -0.3)}" cx="${x + s * 4.5}" cy="${cy - 3}" rx="5" ry="9.5"/>`) +
+					small(ball(x + s * 4.5, cy - 3, 2.4, shade(c, 0.35)));
+			}
 			return o;
 		}
 		case 3:
@@ -980,17 +1111,15 @@ function hat(f: Face, g: Geo): string
 			);
 		case 5:
 		{
-			const bx = 100 - w * 0.5,
-				by = t + 4 - (afro ? 20 : lift);
+			// A bow tied on the band, to one side: two loops and a knot, leaning with the band.
+			const band = headband(f, g),
+				P = band.seat(-1, w * 0.5);
 			return (
-				small(sausage(band, c, 7)) +
+				small(sausage(band.d, c, 7)) +
 				small(
-					slab(
-						svg`M${bx - 2} ${by} L${bx - 20} ${by - 13} L${bx - 20} ${by + 13}Z M${bx + 2} ${by} L${bx + 20} ${by - 13} L${bx + 20} ${by + 13}Z`,
-						c,
-					),
+					slab(`M${P(-2, 0)} L${P(-20, 13)} L${P(-20, -13)}Z M${P(2, 0)} L${P(20, 13)} L${P(20, -13)}Z`, c),
 				) +
-				small(ball(bx, by, 6.5, shade(c, -0.2)))
+				small(sausage(`M${P(0, 0)} L${P(0, 0)}`, shade(c, -0.2), 13))
 			);
 		}
 		case 6:
@@ -1043,36 +1172,44 @@ function hat(f: Face, g: Geo): string
 		case 10:
 		case 11:
 		{
-			const by = t + 6 - (afro ? 20 : lift);
 			const cat = f.hat === 10,
 				own = cat ? CAT_EARS : HORNS,
 				// On a crown of nearly their color, the ears go light grey and the horns deep maroon, both with a pale rim.
 				changed = melts(f, own),
 				col = changed ? (cat ? "#c4c4ce" : "#6a1426") : own,
 				rim = changed ? 1.5 : 0;
-			// A cat's ear: a tall triangle leaning out, with a pink inside.
-			const ear = (X: (dx: number) => number): string =>
-				svg`M${X(-20)} ${by + 5} L${X(6)} ${by - 42} L${X(20)} ${by + 5}Z`;
-			const inside = (X: (dx: number) => number): string =>
-				svg`M${X(-10.5)} ${by + 1} L${X(5)} ${by - 27} L${X(10.5)} ${by + 1}Z`;
-			// A devil's horn: a thick base on the band that bulges out and curves back in to a sharp tip pointing up.
-			const horn = (X: (dx: number) => number): string =>
-				svg`M${X(-15)} ${by + 5} C${X(-7)} ${by - 4} ${X(-1)} ${by - 24} ${X(-1)} ${by - 48} C${X(22)} ${by - 36} ${X(32)} ${by - 12} ${X(17)} ${by + 5}Z`;
+			// Each ear or horn grows straight out of the band: its base is tucked under the band where it stands.
+			const band = headband(f, g);
 			let o = "";
-			// Both sides are drawn from one outline, with every offset from the side's middle flipped on the left, so
-			// the left ear or horn is the right one's mirror image.
+			// Both sides are drawn from one outline, mirrored about the middle of the face.
 			for (const s of [-1, 1])
 			{
-				const X = (dx: number): number => 100 + s * (w * 0.55 + dx),
-					d = cat ? ear(X) : horn(X),
-					round = cat ? 3 : 2;
-				o += big(
-					(rim ? slab(d, HAT_RIM, round + 2 * rim) : "") +
-						slab(d, col, round) +
-						(cat ? svg`<path fill="#ffb3c7" d="${inside(X)}"/>` : ""),
-				);
+				const P = band.seat(s, w * 0.45);
+				if (cat)
+				{
+					// A cat's ear: a broad triangle with bowed sides and a pink inside.
+					const ear = `M${P(-16, -2)} Q${P(-13, 24)} ${P(1, 39)} Q${P(13, 23)} ${P(16, -2)}Z`;
+					o += big(
+						(rim ? slab(ear, HAT_RIM, 3 + 2 * rim) : "") +
+							slab(ear, col, 3) +
+							`<path fill="#ffb3c7" d="M${P(-8.5, 5)} Q${P(-7, 19)} ${P(1, 28)} Q${P(7, 18)} ${P(8.5, 5)}Z"/>`,
+					);
+				}
+				else
+				{
+					// A devil's horn: a thick base on the band that bows out and curls back in to a point, with two
+					// rings pressed round it.
+					const horn = `M${P(-13, -2)} C${P(-11, 12)} ${P(-13, 28)} ${P(-10, 46)} C${P(8, 39)} ${P(22, 20)} ${P(15, -2)}Z`;
+					o +=
+						big((rim ? slab(horn, HAT_RIM, 2 + 2 * rim) : "") + slab(horn, col, 2)) +
+						sausage(
+							`M${P(-11.5, 13)} Q${P(2, 17)} ${P(16.5, 10)} M${P(-11.5, 26)} Q${P(0, 29)} ${P(11, 24)}`,
+							deep(col),
+							1.8,
+						);
+				}
 			}
-			return o + small(sausage(band, col, 7));
+			return o + small(sausage(band.d, col, 7));
 		}
 	}
 	return "";

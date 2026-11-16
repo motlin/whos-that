@@ -136,9 +136,10 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	cheeks:
 	{
-		n: 6,
+		n: 8,
 		label: "cheeks",
-		w: [4, 1.5, 1.5, 1, 1, 1],
+		// Blush, freckles, face paint, bandage, star, beauty mark and dimples.
+		w: [4, 1.5, 1.5, 1, 1, 1, 1, 1],
 	},
 	earrings:
 	{
@@ -226,9 +227,14 @@ const distance = (a: string, b: string): number =>
 export const crownColor = (f: Face): string =>
 	f.hairStyle === 0 ? SKIN[f.skin]! : f.hairDye ? DYEC[f.hairDye]! : HAIRC[f.hairColor]!;
 
+const DIMPLES = 7;
+const BEARDS_OVER_DIMPLES = new Set([2, 3, 8]);
+
 export function valid(f: Face): boolean
 {
 	if (f.hat && f.hairStyle === 6) return false;
+	// A handlebar mustache, a full beard and mutton chops cover the corners of the mouth, where dimples sit.
+	if (f.cheeks === DIMPLES && BEARDS_OVER_DIMPLES.has(f.facialHair)) return false;
 	// A colored hat on hair of its own color melts into it, so a hat whose color is asked about never matches the hair.
 	return !(visible(f, "hatColor") && distance(HATC[f.hatColor]!, crownColor(f)) < MIN_HAT_CONTRAST);
 }
