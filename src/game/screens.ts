@@ -1,5 +1,5 @@
 import {levelPoints, type ModeId, type ScoreEntry} from "../shared/scores.ts";
-import {BUILD_ALL, BUILD_EASY, buildCount, buildMem, buildOpts, cfg, PLAIN, stage} from "./difficulty.ts";
+import {BUILD_ALL, BUILD_EASY, buildCount, buildMem, buildOpts, cfg, lineupSize, PLAIN, stage} from "./difficulty.ts";
 import {cropBox, FACE_ASPECT, faceSVG, featureBox} from "./draw.ts";
 import
 {
@@ -881,8 +881,7 @@ function lineupRound(): void
 {
 	const L = G.level,
 		c = cfg(L),
-		nT = L <= 4 ? 2 : 3,
-		total = Math.min(9, nT + 2 + Math.floor((L - 1) / 2)),
+		{targets: nT, total} = lineupSize(L),
 		mem = Math.round(c.mem * nT * 0.8);
 	const used = new Set<string>(),
 		targets: Face[] = [];

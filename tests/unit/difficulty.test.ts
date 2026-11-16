@@ -1,5 +1,5 @@
 import {expect, it} from "vite-plus/test";
-import {cfg} from "../../src/game/difficulty.ts";
+import {cfg, lineupSize} from "../../src/game/difficulty.ts";
 import {type FeatureKey, KEYS} from "../../src/game/faces.ts";
 
 const LEVELS = Array.from(
@@ -65,6 +65,23 @@ it("adds choices and features before it shortens the time to memorize", () =>
 		"43: 6 choices, 1 apart, 7s to memorize, 10s to answer",
 		"44: 6 choices, 1 apart, 7s to memorize, 10s to answer",
 		"45: 6 choices, 1 apart, 7s to memorize, 10s to answer",
+	]);
+});
+
+// The lineup mode asks for several faces at once, and shows no more faces than a round of the classic mode.
+it("shows a lineup of at most six faces", () =>
+{
+	expect(
+		[1, 4, 5, 6, 7, 9, 12, 20].map((L) => `${L}: ${lineupSize(L).targets} of ${lineupSize(L).total} faces`),
+	).toStrictEqual([
+		"1: 2 of 4 faces",
+		"4: 2 of 5 faces",
+		"5: 3 of 6 faces",
+		"6: 3 of 6 faces",
+		"7: 3 of 6 faces",
+		"9: 3 of 6 faces",
+		"12: 3 of 6 faces",
+		"20: 3 of 6 faces",
 	]);
 });
 

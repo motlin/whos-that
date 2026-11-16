@@ -43,6 +43,22 @@ export function cfg(L: number): LevelConfig
 	};
 }
 
+// How many faces a lineup round asks for, and how many it shows in all.
+export const lineupSize = (
+	L: number,
+):
+{
+	targets: number;
+	total: number;
+} =>
+{
+	const targets = L <= 4 ? 2 : 3;
+	return {
+		targets,
+		total: Math.min(MAX_CHOICES, targets + 2 + Math.floor((L - 1) / 2)),
+	};
+};
+
 export const BUILD_ALL: FeatureKey[] = [
 	"faceShape",
 	"skin",
