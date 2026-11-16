@@ -16,13 +16,14 @@ const TIE_RED = "#ff4d6d";
 const GOLD = "#e6b422";
 // Gold worn on the skin: deep gold on the light skins and bright gold on the dark ones, so it never melts into either.
 const GOLD_ON = ["#c48a00", "#9a6800", "#ffe873", "#f5c542", "#f5c542"];
-// A bandage's strip and its pad: brown tones on the light skins, pale ones on the rest.
+// A bandage comes in the shade of the skin it is worn on: its strip is a little lighter and warmer than the skin, and
+// its edge, its pad and its air holes are the tones that make it stand out.
 const BANDAGE = [
-	["#c98a52", "#9a5f2e"],
-	["#9c6234", "#6e4120"],
-	["#f8dcb4", "#fff6e6"],
-	["#f8dcb4", "#d99a5c"],
-	["#f8dcb4", "#d99a5c"],
+	["#f3cfa8", "#b9814f", "#cf9a66"],
+	["#f2c08f", "#8a5628", "#a06a38"],
+	["#cc8c55", "#552d10", "#f0c9a0"],
+	["#93603a", "#c99468", "#d9a877"],
+	["#5c3a24", "#a06f48", "#b88458"],
 ] as const;
 // A star sticker: orange gold on the light skins, yellow on the rest.
 const STAR = ["#f29a00", "#c96a00", "#ffe14d", "#ffd23f", "#ffd23f"];
@@ -729,13 +730,13 @@ function cheeks(f: Face, g: Geo, sk: string): string
 		}
 		case 4:
 		{
-			// A bandage: a strip with a pad in the middle and air holes at each end, in tones that stand out from the skin.
-			const [strip, pad] = BANDAGE[f.skin]!;
+			// A bandage in the shade of the skin: a strip with a rolled edge, a pad in the middle and air holes at each end.
+			const [strip, edge, pad] = BANDAGE[f.skin]!;
 			let holes = "";
-			for (const dx of [-13, -10, 10, 13])
-				for (const dy of [-3, 3]) holes += ball(lx + dx, cy + dy, 1.1, deep(strip));
+			for (const dx of [-12.5, -9.5, 9.5, 12.5])
+				for (const dy of [-3, 3]) holes += ball(lx + dx, cy + dy, 1.3, edge);
 			return small(
-				svg`<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 18}" y="${cy - 8}" width="36" height="16" rx="6.5" fill="${strip}"/><rect x="${lx - 6.5}" y="${cy - 6.5}" width="13" height="13" rx="2.5" fill="${pad}"/>${holes}</g>`,
+				svg`<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 17}" y="${cy - 7}" width="34" height="14" rx="5.5" fill="${strip}" stroke="${edge}" stroke-width="2.2"/><rect x="${lx - 6.5}" y="${cy - 6}" width="13" height="12" rx="2.5" fill="${pad}"/>${holes}</g>`,
 			);
 		}
 		case 5:

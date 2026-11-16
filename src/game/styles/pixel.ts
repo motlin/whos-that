@@ -23,6 +23,15 @@ const LINE = ["#9c6247", "#8a5230", "#5a3115", "#e8bd92", "#c9905f"];
 const SHADOW = ["#f0c4a2", "#d49a62", "#a2663a", "#673c1f", "#331c0f"];
 const LIP = ["#7a2f2f", "#6e2a24", "#4a1c14", "#f0c7a0", "#d69a6a"];
 
+// How far a plaster's strip and its pad move from each skin toward a warm pale tone, or a tan on the palest skin.
+const PLASTER = [
+	[0.4, 0.15],
+	[0.4, 0.6],
+	[0.28, 0.42],
+	[0.18, 0.28],
+	[0.15, 0.23],
+] as const;
+
 type Tone = string | null;
 type Test = (X: number, Y: number) => boolean;
 type Inks = Record<string, string>;
@@ -1024,20 +1033,27 @@ function cheeks(a: Art): void
 			);
 			break;
 		case 4:
-			// A plaster: tan with a darker pad on the palest skin, where a cream one would vanish, and cream with a
-			// gauze pad on every other.
+		{
+			// A plaster in a shade of the skin it is worn on, as real ones come: a little lighter and warmer than the
+			// skin, or a little tanner on the palest, which has no lighter shade. The outline and air holes give it its
+			// shape, and the pad is a patch in the middle, soft enough that it shows no more on one skin than another.
+			const toward = f.skin ? "#ffe0b8" : "#e0a878";
+			const [strip, pad] = PLASTER[f.skin]!;
+			const edge = f.skin >= 3 ? a.line : shade(a.line, -0.3);
 			stamp(
 				px,
-				MID - dx - 4,
+				MID - dx - 5,
 				top,
-				[".OOOOOO.", "OTTPPTTO", "OTTPPTTO", ".OOOOOO."],
+				[".OOOOOOO.", "OTTPPPTTO", "OHTPPPTHO", "OTTPPPTTO", ".OOOOOOO."],
 				{
-					O: f.skin >= 3 ? a.line : shade(a.line, -0.3),
-					T: f.skin ? "#fff1d6" : "#d99a6c",
-					P: f.skin ? "#c8d4e0" : "#b87548",
+					O: edge,
+					H: edge,
+					T: mix(sk, toward, strip),
+					P: mix(sk, toward, pad),
 				},
 			);
 			break;
+		}
 		case 5:
 		{
 			// A star in a yellow no skin comes near, ringed so its points stay sharp: by the face line on light skin and by

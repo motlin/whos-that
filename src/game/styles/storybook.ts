@@ -26,6 +26,10 @@ const GOLD_EDGE = [LINE, LINE, "#1f100a", PALE_INK, PALE_INK];
 // is thin and so needs more room, switches to a pale one sooner, on dark and brown hair.
 const NEAR = 100;
 const INK_NEAR = 120;
+// Sticking plasters come in skin shades: one for each skin.
+const BANDAGE = ["#f2cba4", "#f6c99b", "#d39560", "#9a6540", "#63402a"];
+// The ink drawn on a plaster: softer on the lightest skin and darker on the middle one, so it shows alike on each.
+const BANDAGE_INK = ["#6b4630", LINE, "#1f100a", ...FACE_LINE.slice(3)];
 const darkSkin = (f: Face): boolean => f.skin >= 3;
 const DIMPLES = 6;
 
@@ -896,12 +900,14 @@ function cheeks(f: Face, g: Geo, sk: Skin): string
 		}
 		case 4:
 		{
-			// A sticking plaster: tan on the lightest skin, and cream on the others, where tan would melt into the skin.
-			const [strip, pad] = f.skin === 0 ? ["#dc9f63", "#c5844a"] : [CREAM, "#ffe9cc"];
+			// A sticking plaster in a shade made for the skin it is on, a little lighter or warmer than the skin. Its ink
+			// outline, the edges of its pad and its air holes are what make it stand out.
+			const strip = BANDAGE[f.skin]!,
+				ink = BANDAGE_INK[f.skin]!;
 			return (
-				p`<g transform="rotate(-25 ${lx} ${cy}) translate(${lx} ${cy}) scale(1.4) translate(${-lx} ${-cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="${strip}" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="${pad}" stroke="none"/>` +
-				line(p`M${lx - 4} ${cy - 4} v8 M${lx + 4} ${cy - 4} v8`, "#b98148", 1) +
-				line(p`M${lx - 8.5} ${cy - 1.5} v3 M${lx + 8.5} ${cy - 1.5} v3`, "#b98148", 1.4) +
+				p`<g transform="rotate(-25 ${lx} ${cy}) translate(${lx} ${cy}) scale(1.4) translate(${-lx} ${-cy})"><rect x="${lx - 12}" y="${cy - 5}" width="24" height="10" rx="4" fill="${strip}" stroke="${ink}" stroke-width="2"/><rect x="${lx - 4}" y="${cy - 4}" width="8" height="8" fill="${mix(strip, "#ffd2a4", 0.1)}" stroke="none"/>` +
+				line(p`M${lx - 4} ${cy - 4} v8 M${lx + 4} ${cy - 4} v8`, ink, 1.2) +
+				p`<g fill="${ink}" stroke="none">${[-1, 1].map((s) => [-2, 2].map((dy) => [6.3, 9].map((dx) => p`<circle cx="${lx + s * dx}" cy="${cy + dy}" r="1"/>`).join("")).join("")).join("")}</g>` +
 				`</g>`
 			);
 		}

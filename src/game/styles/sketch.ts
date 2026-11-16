@@ -378,13 +378,14 @@ function mustache(f: Face, g: Geo, hc: string): string
 	}
 	return "";
 }
-// The plaster's strip and pad, the star and the frames of gold glasses each take the tone that stands out from the skin.
+// The plaster's strip and pad come in a shade for each skin; the star and the frames of gold glasses each take the tone
+// that stands out from the skin.
 const PLASTER = [
-	["#d99a5b", "#b87b40"],
-	["#fff4e2", "#ffffff"],
-	["#f3c999", "#fff1dc"],
-	["#f3c999", "#e2a96f"],
-	["#f3c999", "#e2a96f"],
+	["#f3c9a0", "#f9e1c9"],
+	["#f6cda0", "#fae3cb"],
+	["#d39a66", "#e3bb97"],
+	["#9c663c", "#aa7850"],
+	["#68432b", "#775038"],
 ];
 const STAR = ["#ffc20e", "#ffd60a", "#ffe866", "#ffd23f", "#ffd23f"];
 const GOLD = ["#e6b422", "#b9860a", "#ffe27a", "#f2c12e", "#f2c12e"];
@@ -428,12 +429,18 @@ function cheeks(f: Face, g: Geo, sk: string): string
 		}
 		case 4:
 		{
-			// A sticking plaster with a pad in the middle and two air holes at each end, in a tone that stands out from the skin.
-			const [strip, pad] = PLASTER[f.skin]!;
-			const holes = [-12.5, 12.5]
-				.flatMap((dx) => [-3, 3].map((dy) => `<circle cx="${lx + dx}" cy="${cy + dy}" r="1.1"/>`))
+			// A sticking plaster in a shade made for the skin, a little apart from it, as real ones come. Its outline, the
+			// edges of its paler pad and the air holes at each end are in the face line, and they are what make it stand out.
+			const [strip, pad] = PLASTER[f.skin]!,
+				line = FACE_LINE[f.skin]!;
+			const holes = [-14, -10.5, 10.5, 14]
+				.flatMap((dx) => [-3.2, 3.2].map((dy) => `<circle cx="${lx + dx}" cy="${cy + dy}" r="1.5"/>`))
 				.join("");
-			return `<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 18}" y="${cy - 7.5}" width="36" height="15" rx="6" fill="${strip}" stroke-width="2.4"/><rect x="${lx - 6.5}" y="${cy - 6.3}" width="13" height="12.6" fill="${pad}" stroke="none"/><g fill="${INK}" stroke="none" opacity=".55">${holes}</g></g>`;
+			return (
+				`<g transform="rotate(-25 ${lx} ${cy})"><rect x="${lx - 19}" y="${cy - 8}" width="38" height="16" rx="6.5" fill="${strip}" stroke-width="2.8"/>` +
+				`<rect x="${lx - 6.5}" y="${cy - 8}" width="13" height="16" fill="${pad}" stroke-width="2"/>` +
+				`<g fill="${line}" stroke="none">${holes}</g></g>`
+			);
 		}
 		case 5:
 		{

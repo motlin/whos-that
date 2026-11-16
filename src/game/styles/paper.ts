@@ -17,9 +17,9 @@ const TIE = "#ff4d6d";
 const GOLD = "#dba51c";
 // Gold frames are cut from a deeper gold on the skin that is close to gold itself, and a paler one on the mid brown.
 const FRAME_GOLD = [GOLD, "#a06c05", "#ffe98a", GOLD, GOLD];
-// A plaster and its pad: tan on the lightest skin, where a white one would vanish, and white on the others.
-const PLASTER = ["#dc9c6a", "#fffaf0", "#fdfaf2", "#fdfaf2", "#fdfaf2"];
-const PAD = ["#b06f44", "#b9773f", "#e9bd8e", "#dfa66c", "#dfa66c"];
+// A plaster comes in the shade of the skin it is worn on, a little warmer, so its backing, pad and air holes give it
+// its shape.
+const PLASTER = ["#f4cba3", "#f6c89c", "#d39561", "#9c653c", "#693f24"];
 // The star is a deeper gold on the two lightest skins, the second of which is close to yellow itself.
 const STAR = ["#f2b40a", "#d98200", "#ffdd44", "#ffd23f", "#ffd23f"];
 // How the outline bulges on each face shape: the exponents of x and y above the widest point, then below it. The heart
@@ -879,23 +879,28 @@ function cheeks(c: Ctx): string
 		}
 		case 4:
 		{
-			// A plaster: a strip with a pad across the middle and two air holes at each end.
-			const hole = (dx: number, dy: number): string => d(ngon(x + dx, y + dy, 1.5, 1.5, 4));
+			// A plaster: a strip on a slightly bigger backing that shows as its edge, with a pad across the middle and
+			// two air holes at each end.
+			const hole = (dx: number, dy: number): string => d(ngon(x + dx, y + dy, 1.7, 1.7, 4));
+			const tape: Pt[] = pts`${x - 17},${y - 5} ${x - 14.5},${y - 7.5} ${x + 14.5},${y - 7.5} ${x + 17},${y - 5} ${x + 17},${y + 5} ${x + 14.5},${y + 7.5} ${x - 14.5},${y + 7.5} ${x - 17},${y + 5}`;
 			return layer(
 				`<g transform="rotate(-25 ${r1(x)} ${r1(y)})">` +
+					cut(c.tone, d(inset(tape, -1.8))) +
+					cut(PLASTER[c.f.skin]!, d(tape)) +
 					cut(
-						PLASTER[c.f.skin]!,
+						c.tone,
 						d(
-							pts`${x - 17},${y - 5} ${x - 14.5},${y - 7.5} ${x + 14.5},${y - 7.5} ${x + 17},${y - 5} ${x + 17},${y + 5} ${x + 14.5},${y + 7.5} ${x - 14.5},${y + 7.5} ${x - 17},${y + 5}`,
-						),
-					) +
-					cut(
-						PAD[c.f.skin]!,
-						d(pts`${x - 6},${y - 7.5} ${x + 6},${y - 7.5} ${x + 6},${y + 7.5} ${x - 6},${y + 7.5}`) +
+							pts`${x - 6.5},${y - 7.5} ${x + 6.5},${y - 7.5} ${x + 6.5},${y + 7.5} ${x - 6.5},${y + 7.5}`,
+						) +
 							hole(-12.5, -3) +
 							hole(-10.5, 3) +
 							hole(10.5, -3) +
 							hole(12.5, 3),
+					) +
+					cut(
+						shade(c.tone, c.dark ? 0.22 : -0.16),
+						d(strip(pts`${x - 2.2},${y - 5} ${x - 2.2},${y + 5}`, 1.6)) +
+							d(strip(pts`${x + 2.2},${y - 5} ${x + 2.2},${y + 5}`, 1.6)),
 					) +
 					"</g>",
 			);
@@ -904,12 +909,14 @@ function cheeks(c: Ctx): string
 			return layer(cut(STAR[c.f.skin]!, star(200 - x, y, 18, 8)));
 		case 6:
 		{
-			// Dimples: a curved crease just past each corner of the mouth.
+			// Dimples: at each corner of the mouth a crescent of shadow, with a thin crease along the side nearest the
+			// mouth.
 			const dy = c.g.my + 4;
-			return layer(
-				cut(LUMP[c.f.skin]!, both(ngon(70.5, dy, 9.5, 10, 8, 0.2))) +
-					cut(c.tone, both(strip(pts`75,${dy - 8} 70.5,${dy - 4} 69.5,${dy + 2} 72.5,${dy + 8}`, 4.4))),
-			);
+			const crescent = (deep: number): Pt[] => [
+				...pts`76,${dy - 12.5} 72.2,${dy - 7} 70.6,${dy} 72.2,${dy + 7} 76,${dy + 12.5}`,
+				...pts`${72.2 - deep * 0.72},${dy + 8} ${70.6 - deep},${dy} ${72.2 - deep * 0.72},${dy - 8}`,
+			];
+			return layer(cut(LUMP[c.f.skin]!, both(crescent(10.5))) + cut(c.tone, both(crescent(4))));
 		}
 	}
 	return "";
@@ -1293,21 +1300,12 @@ function hat(c: Ctx): string
 					),
 			);
 		case 5:
-		{
-			const bx = 100 - w * 0.5,
-				by = t + 4 - (afro ? 20 : lift);
+			// A bow tied on the band: a wing along it to each side of a knot.
 			return (
 				sheet(band(col)) +
-				sheet(
-					cut(
-						col,
-						d(pts`${bx},${by} ${bx - 20},${by - 14} ${bx - 21},${by + 14}`) +
-							d(pts`${bx},${by} ${bx + 21},${by - 14} ${bx + 20},${by + 14}`),
-					),
-				) +
-				sheet(cut(shade(col, -0.2), d(ngon(bx, by, 6.5, 6.5, 6))))
+				sheet(cut(col, d(onBand(pts`0,1 -21,-12 -22,15`)) + d(onBand(pts`0,1 21,-13 22,14`)))) +
+				sheet(cut(shade(col, -0.2), d(onBand(ngon(0, 1, 6.5, 6.5, 6)))))
 			);
-		}
 		case 6:
 		{
 			// A party hat stands on the top of the head, where it always has.
