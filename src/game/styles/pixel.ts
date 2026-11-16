@@ -1028,20 +1028,15 @@ function body(a: Art): void
 {
 	const {f, g, px} = a;
 	const cloth = CLOTH[f.shirt]!;
-	const dark = shade(cloth, -0.45);
 	box(px, MID - 4, row(g.b - 16), 8, row(236) - row(g.b - 16), shade(SHADOW[f.skin]!, -0.1));
 	const pattern = (X: number, Y: number): string | undefined =>
 	{
 		const dx = off(X);
 		switch (f.shirtStyle)
 		{
-			case 1:
-				return Y > 244 ? (Y < 248 ? dark : undefined) : Y > 236 && Y < 240 ? dark : undefined;
-			case 3:
-				return dx > 40 + (Y - 219) * 0.4 ? shade(cloth, -0.35) : undefined;
-			case 4:
+			case 2:
 				return Math.abs(dx - 30 - (Y - 224) * 0.15) < 6 ? "#3b3b45" : undefined;
-			case 5:
+			case 3:
 				return Math.abs(Y - 247 + 10 * tri((X - 16) / 14)) < 3.6 ? "#fff" : undefined;
 		}
 		return undefined;
@@ -1059,7 +1054,7 @@ function body(a: Art): void
 			return X > 168 ? shade(cloth, -0.18) : cloth;
 		},
 	);
-	if (f.shirtStyle === 2)
+	if (f.shirtStyle === 1)
 	{
 		for (const [x, y] of [
 			[30, 244],

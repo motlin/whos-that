@@ -415,12 +415,9 @@ function cheeks(f: Face, g: Geo, sk: string): string
 // Every pattern spreads across the whole shirt, so neckwear never covers all of it.
 function shirtPattern(f: Face): string
 {
-	const c = CLOTH[f.shirt]!;
 	switch (f.shirtStyle)
 	{
 		case 1:
-			return `<path fill="none" stroke="${shade(c, -0.45)}" stroke-width="4" d="M20 237 H180 M16 247 H184"/>`;
-		case 2:
 		{
 			let s = "";
 			for (const [x, y] of [
@@ -436,11 +433,9 @@ function shirtPattern(f: Face): string
 				s += `<circle cx="${x}" cy="${y}" r="3.6"/>`;
 			return `<g fill="#fff" stroke-width="1.5">${s}</g>`;
 		}
-		case 3:
-			return `<g fill="${shade(c, -0.35)}"><path d="M12 254 Q16 226 60 219 L46 254Z"/><path d="M188 254 Q184 226 140 219 L154 254Z"/></g>`;
-		case 4:
+		case 2:
 			return `<g fill="#3b3b45"><path d="M65 222 L60 254 L72 254 L76 226Z"/><path d="M135 222 L140 254 L128 254 L124 226Z"/></g>`;
-		case 5:
+		case 3:
 		{
 			const d =
 				"M16 247 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10";

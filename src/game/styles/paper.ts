@@ -878,24 +878,12 @@ function cheeks(c: Ctx): string
 	return "";
 }
 
-// The shirt's left edge at height y.
-const sleeve = (y: number): number => 12 + ((254 - y) * 15) / 27;
-
 // Every pattern spreads across the whole shirt, so neckwear never covers all of it.
 function shirtPattern(c: Ctx): string
 {
-	const cloth = CLOTH[c.f.shirt]!;
 	switch (c.f.shirtStyle)
 	{
 		case 1:
-		{
-			const band = (y: number): string =>
-				d(
-					pts`${sleeve(y) + 0.6},${y} ${200 - sleeve(y) - 0.6},${y} ${200 - sleeve(y + 4.4) - 0.6},${y + 4.4} ${sleeve(y + 4.4) + 0.6},${y + 4.4}`,
-				);
-			return layer(cut(shade(cloth, -0.45), band(233.4) + band(243.6)));
-		}
-		case 2:
 		{
 			let dots = "";
 			for (const [i, [x, y]] of (
@@ -909,11 +897,9 @@ function shirtPattern(c: Ctx): string
 				dots += both(ngon(x, y, 4, 4, 5, i));
 			return layer(cut(WHITE, dots));
 		}
-		case 3:
-			return layer(cut(shade(cloth, -0.35), both(pts`12,254 27,227 60,218.5 46,254`)));
-		case 4:
+		case 2:
 			return layer(cut("#3b3b45", both(pts`63.5,219 75.5,223 72,254 60,254`)));
-		case 5:
+		case 3:
 		{
 			const zig: Pt[] = [];
 			for (let i = 0; i <= 12; i++) zig.push([18 + (i * 164) / 12, i % 2 ? 237 : 247.5]);

@@ -702,12 +702,9 @@ function cheeks(f: Face, g: Geo, sk: string): string
 // Every pattern spreads across the whole shirt, so neckwear never covers all of it.
 function shirtPattern(f: Face): string
 {
-	const c = CLOTH[f.shirt]!;
 	switch (f.shirtStyle)
 	{
 		case 1:
-			return small(sausage("M21 237 H179 M17 247.5 H183", shade(c, -0.45), 4.5));
-		case 2:
 		{
 			let s = "";
 			for (const [x, y] of [
@@ -723,15 +720,11 @@ function shirtPattern(f: Face): string
 				s += ball(x, y, 4, "#fff");
 			return small(s);
 		}
-		case 3:
-			return big(
-				`<g fill="${shade(c, -0.35)}"><path d="M12 300 V254 Q16 226 60 219 L46 254 V300Z"/><path d="M188 300 V254 Q184 226 140 219 L154 254 V300Z"/></g>`,
-			);
-		case 4:
+		case 2:
 			return small(
 				`<g fill="#3b3b45"><path d="M65 222 L56 300 L68 300 L76 226Z"/><path d="M135 222 L144 300 L132 300 L124 226Z"/></g>`,
 			);
-		case 5:
+		case 3:
 			return small(
 				sausage(
 					"M16 247 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10 l14 -10 l14 10",

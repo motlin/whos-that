@@ -6,8 +6,8 @@ export const HAIRC = ["#2b2118", "#734a26", "#ecc65a", "#c9512b", "#999999", "#f
 // Dye colors the hair on the head only. The first entry is no dye.
 export const DYEC = ["", "#4a8fe0", "#ff7eb6", "#35b56a", "#8e5be0"];
 export const EYEC = ["#6b3e1f", "#3a7bd5", "#3fa34d", "#8a8f98", "#9b4dca"];
-export const CLOTH = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#ff8c42", "#1abc9c"];
-export const HATC = ["#e74c3c", "#3498db", "#2ecc71", "#9b59b6", "#ff8c42", "#f06292"];
+export const CLOTH = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6"];
+export const HATC = ["#e74c3c", "#3498db", "#2ecc71", "#9b59b6", "#f06292"];
 
 export type FeatureKey =
 	| "faceShape"
@@ -131,7 +131,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	hatColor:
 	{
-		n: 6,
+		n: 5,
 		label: "hat color",
 	},
 	cheeks:
@@ -154,14 +154,14 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	shirt:
 	{
-		n: 7,
+		n: 5,
 		label: "shirt color",
 	},
 	shirtStyle:
 	{
-		n: 6,
+		n: 4,
 		label: "shirt pattern",
-		w: [3, 1, 1, 1, 1, 1],
+		w: [3, 1, 1, 1],
 	},
 };
 export const KEYS = Object.keys(FEATURES) as FeatureKey[];
