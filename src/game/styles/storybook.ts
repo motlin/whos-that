@@ -462,7 +462,6 @@ function ears(f: Face, g: Geo, sk: Skin): string
 	const y = ey + 10;
 	const EB = [
 		[5, 14],
-		[9, 21],
 		[8, 14],
 		[14, 9],
 	];
@@ -480,11 +479,6 @@ function ears(f: Face, g: Geo, sk: Skin): string
 				break;
 			case 1:
 				o +=
-					p`<ellipse cx="${x + s * 9}" cy="${y}" rx="15" ry="21"/><ellipse cx="${x + s * 14}" cy="${y + 1}" rx="5.5" ry="12" fill="${sk.shadow}" stroke="none"/>` +
-					fold(p`M${x + s * 16} ${y - 11} q${-s * 9} 11 0 22`);
-				break;
-			case 2:
-				o +=
 					p`<path d="M${x} ${y - 10} Q${x + s * 14} ${y - 18} ${x + s * 24} ${y - 30} Q${x + s * 18} ${y - 4} ${x + s * 8} ${y + 14} Q${x + s * 2} ${y + 16} ${x} ${y + 10}Z"/>` +
 					flat(
 						p`M${x + s * 5} ${y + 6} Q${x + s * 8} ${y - 10} ${x + s * 20} ${y - 23} Q${x + s * 15} ${y - 6} ${x + s * 8} ${y + 8}Z`,
@@ -492,7 +486,7 @@ function ears(f: Face, g: Geo, sk: Skin): string
 					) +
 					fold(p`M${x + s * 5} ${y + 6} Q${x + s * 8} ${y - 10} ${x + s * 19} ${y - 22}`);
 				break;
-			case 3:
+			case 2:
 				o +=
 					p`<g transform="rotate(${-s * 25} ${x + s * 14} ${y})"><ellipse cx="${x + s * 14}" cy="${y}" rx="16" ry="11"/><ellipse cx="${x + s * 17}" cy="${y + 0.5}" rx="8" ry="5" fill="${sk.shadow}" stroke="none"/>` +
 					fold(p`M${x + s * 9} ${y + 4} Q${x + s * 20} ${y + 7} ${x + s * 24} ${y - 1}`) +

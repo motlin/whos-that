@@ -104,7 +104,7 @@ export const FEATURES: Record<FeatureKey, Feature> =
 	},
 	ears:
 	{
-		n: 4,
+		n: 3,
 		label: "ears",
 	},
 	facialHair:

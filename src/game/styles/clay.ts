@@ -276,7 +276,6 @@ function ears(f: Face, g: Geo, sk: string): string
 	const fold = darkSkin(f) ? shade(sk, 0.2) : shade(sk, -0.2);
 	const EB = [
 		[5, 14],
-		[9, 21],
 		[8, 14],
 		[14, 9],
 	];
@@ -291,12 +290,9 @@ function ears(f: Face, g: Geo, sk: string): string
 				lobes += svg`<ellipse cx="${x + s * 5}" cy="${y}" rx="10" ry="14"/><ellipse cx="${x + s * 8}" cy="${y}" rx="3" ry="7" fill="${fold}"/>`;
 				break;
 			case 1:
-				lobes += svg`<ellipse cx="${x + s * 9}" cy="${y}" rx="15" ry="21"/><ellipse cx="${x + s * 13}" cy="${y}" rx="5" ry="11" fill="${fold}"/>`;
-				break;
-			case 2:
 				lobes += svg`<path d="M${x} ${y - 10} Q${x + s * 14} ${y - 18} ${x + s * 24} ${y - 30} Q${x + s * 18} ${y - 4} ${x + s * 8} ${y + 14} Q${x + s * 2} ${y + 16} ${x} ${y + 10}Z"/>`;
 				break;
-			case 3:
+			case 2:
 				lobes += svg`<g transform="rotate(${-s * 25} ${x + s * 14} ${y})"><ellipse cx="${x + s * 14}" cy="${y}" rx="16" ry="11"/><ellipse cx="${x + s * 18}" cy="${y}" rx="8" ry="4.5" fill="${fold}"/></g>`;
 				break;
 		}

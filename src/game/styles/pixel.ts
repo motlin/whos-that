@@ -581,10 +581,6 @@ function ears(a: Art): void
 			area(px, (X, Y) => Math.abs(side(X) - 7) < 2 && Math.abs(Y - y) < 6, a.line);
 			break;
 		case 1:
-			area(px, (X, Y) => oval(side(X), Y, 9, y, 15, 21), sk);
-			area(px, (X, Y) => Math.abs(side(X) - 13) < 2 && Math.abs(Y - y) < 10, a.line);
-			break;
-		case 2:
 			// A pointed ear: the tip sweeps up and out.
 			area(
 				px,
@@ -606,7 +602,7 @@ function ears(a: Art): void
 				sk,
 			);
 			break;
-		case 3:
+		case 2:
 			area(px, (X, Y) => oval(side(X), Y, 13, y - 1, 16, 11.5), sk);
 			area(px, (X, Y) => oval(side(X), Y, 16, y - 1, 6, 4), a.line);
 			break;
@@ -615,7 +611,6 @@ function ears(a: Art): void
 	const [dx, dy] = (
 		[
 			[5, 14],
-			[9, 21],
 			[8, 14],
 			[14, 9],
 		] as const

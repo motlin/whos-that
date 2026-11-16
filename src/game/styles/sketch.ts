@@ -150,7 +150,6 @@ function ears(f: Face, g: Geo, sk: string): string
 	const y = ey + 10;
 	const EB = [
 		[5, 14],
-		[9, 21],
 		[8, 14],
 		[14, 9],
 	];
@@ -164,12 +163,9 @@ function ears(f: Face, g: Geo, sk: string): string
 				o += `<ellipse cx="${x + s * 5}" cy="${y}" rx="10" ry="14"/><path fill="none" stroke="${line}" stroke-width="2" d="M${x + s * 7} ${y - 6} q${-s * 5} 6 0 12"/>`;
 				break;
 			case 1:
-				o += `<ellipse cx="${x + s * 9}" cy="${y}" rx="15" ry="21"/><path fill="none" stroke="${line}" stroke-width="2" d="M${x + s * 12} ${y - 10} q${-s * 8} 10 0 20"/>`;
-				break;
-			case 2:
 				o += `<path d="M${x} ${y - 10} Q${x + s * 14} ${y - 18} ${x + s * 24} ${y - 30} Q${x + s * 18} ${y - 4} ${x + s * 8} ${y + 14} Q${x + s * 2} ${y + 16} ${x} ${y + 10}Z"/>`;
 				break;
-			case 3:
+			case 2:
 				o += `<ellipse cx="${x + s * 14}" cy="${y}" rx="16" ry="11" transform="rotate(${-s * 25} ${x + s * 14} ${y})"/>`;
 				break;
 		}

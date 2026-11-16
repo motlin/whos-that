@@ -406,8 +406,6 @@ function ears(c: Ctx): string
 		case 0:
 			return cut(skin, both(ngon(x - 5, y, 10, 14, 7, 0.2))) + fold(7, 7);
 		case 1:
-			return cut(skin, both(ngon(x - 9, y, 15, 21, 7, 0.2))) + fold(12, 11);
-		case 2:
 			return cut(
 				skin,
 				both(
@@ -423,7 +421,6 @@ function earrings(c: Ctx): string
 	const [dx, dy] = (
 		[
 			[5, 14],
-			[9, 21],
 			[8, 14],
 			[14, 9],
 		] as const
