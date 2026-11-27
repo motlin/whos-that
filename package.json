@@ -29,7 +29,7 @@
 		"@playwright/test": "1.65.1",
 		"@resvg/resvg-js": "^2.6.2",
 		"@types/node": "^26.6.6",
-		"fallow": "^3.43.2",
+		"fallow": "^3.45.0",
 		"markdownlint-cli2": "^0.24.2",
 		"miniflare": "5.20261104.0-beta",
 		"typescript": "^7.0.2",
